@@ -1,0 +1,11 @@
+# Composer
+api/vendor/
+composer.phar
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/

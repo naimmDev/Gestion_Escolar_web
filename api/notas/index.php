@@ -1,6 +1,8 @@
 <?php
 require '../config/db.php';
 require '../config/auth_middleware.php';
+//para que el analizador y editor de código reconozca la variable $authUser y su tipo, se agrega esta anotación:
+/** @var array{usuario_id: int, rol: string, id_referencia: int|null} $authUser */
 
 $method = $_SERVER['REQUEST_METHOD'];
 

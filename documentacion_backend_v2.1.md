@@ -1,7 +1,7 @@
 # Documentación Backend — Sistema de Gestión Escolar
-**Versión:** 2.0
+**Versión:** 2.1
 **Stack:** PHP 8.2 · MariaDB 10.4 · XAMPP
-**Fecha:** Junio 2026
+**Fecha de inicio:** Junio 2026
 
 ---
 
@@ -326,6 +326,42 @@ Igual estructura que Estudiantes (`/profesores/`, `/profesores/delete.php`), mis
 
 ### Notas
 Ver sección 8 (Sistema de Notas).
+
+### Exportación de reportes
+
+| Método | Endpoint | Rol | Descripción |
+|---|---|---|---|
+| GET | `/notas/exportar.php` | profesor, estudiante | Genera y descarga un reporte de notas en PDF o Excel |
+
+**Parámetros (query string):**
+
+| Parámetro | Obligatorio | Descripción |
+|---|---|---|
+| `format` | Sí | `pdf` o `excel` |
+| `materia_id` | Sí | Materia a exportar |
+| `estudiante_id` | No | Si se envía → reporte individual. Si se omite (solo profesor) → reporte grupal de todos los matriculados |
+| `trimestre` | No | Filtra el reporte individual a un solo trimestre; si se omite, incluye los 3 + promedio final |
+
+**Reglas de permisos:**
+- Estudiante: solo puede exportar su propio reporte (`estudiante_id` se ignora y se fuerza al propio); requiere estar matriculado en la materia (403 si no).
+- Profesor: solo materias donde es `profesor_id` (403 si no es dueño); si pide un `estudiante_id` específico, debe estar matriculado en la materia (404 si no).
+- Admin: no habilitado en esta versión (arquitectura preparada para agregarlo después sin refactor).
+
+**Respuesta:**
+- Éxito: archivo binario con headers `Content-Type` (`application/pdf` o `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`) y `Content-Disposition: attachment; filename="..."`.
+- Error: JSON estándar `{success:false, error, code}` (400 formato/materia inválidos, 403 sin permiso, 404 materia o matrícula inexistente).
+
+**Dependencias nuevas (Composer):**
+- `dompdf/dompdf` — generación de PDF
+- `phpoffice/phpspreadsheet` — generación de Excel (requiere extensión PHP `gd` activa)
+
+**Arquitectura interna:**
+api/helpers/reporte_data.php → cálculo de datos (reutiliza lógica de /notas/ modo resumen)
+api/helpers/pdf_reporte.php → renderizado a PDF
+api/helpers/excel_reporte.php → renderizado a Excel
+api/notas/exportar.php → endpoint: permisos + orquestación
+
+Separación deliberada: cambiar el formato de salida o agregar uno nuevo (ej. CSV) no requiere tocar el cálculo de notas.
 
 ### Comentarios
 | Método | Endpoint | Rol | Descripción |
