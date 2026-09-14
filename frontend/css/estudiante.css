@@ -1119,3 +1119,42 @@ body {
 .modal-content .close:hover {
     color: var(--crimson);
 }
+
+/* ========== BOTÓN EXPORTAR BOLETÍN (por trimestre) ========== */
+.trimestre-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.btn-exportar-boletin {
+    background: linear-gradient(135deg, var(--crimson-deep), var(--crimson));
+    border: 1px solid rgba(201,168,76,0.4);
+    padding: 6px 14px;
+    border-radius: 2px;
+    color: var(--gold-pale);
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(92,0,0,0.2);
+    white-space: nowrap;
+}
+
+.btn-exportar-boletin:hover {
+    background: linear-gradient(135deg, var(--crimson), var(--crimson-light));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(92,0,0,0.3);
+}
+
+.btn-exportar-boletin i { margin-right: 5px; }
+
+.btn-exportar-boletin:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}

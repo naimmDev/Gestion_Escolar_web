@@ -236,11 +236,18 @@ function renderTrimestreSection(trimestre) {
         <div class="trimestre-container">
             <div class="trimestre-header">
                 <div class="trimestre-title"><i class="fas fa-calendar-alt"></i> ${trimestre}</div>
-                <div class="trimestre-average">
-                    ${trimestreAvg !== null
-                        ? `<span class="value">Promedio: ${trimestreAvg}</span>`
-                        : `<span class="empty"><i class="fas fa-chart-simple"></i> ${hasAnyGrade ? 'Notas registradas' : 'Sin notas registradas'}</span>`
-                    }
+                <div class="trimestre-header-actions">
+                    <div class="trimestre-average">
+                        ${trimestreAvg !== null
+                            ? `<span class="value">Promedio: ${trimestreAvg}</span>`
+                            : `<span class="empty"><i class="fas fa-chart-simple"></i> ${hasAnyGrade ? 'Notas registradas' : 'Sin notas registradas'}</span>`
+                        }
+                    </div>
+                    <button class="btn-exportar-boletin"
+                            onclick="event.stopPropagation(); exportarBoletinTrimestre('${trimestre}')"
+                            ${mySubjects.length === 0 ? 'disabled title="No hay materias matriculadas"' : ''}>
+                        <i class="fas fa-file-pdf"></i> Exportar Notas
+                    </button>
                 </div>
             </div>
             <div class="trimestre-content">
@@ -266,7 +273,6 @@ function renderTrimestreSection(trimestre) {
         </div>
     `;
 }
-
 function renderSubjectRow(subject, grades, notaTrim, trimestre) {
     const notasBtn = grades.length > 0
         ? `<button class="btn-ver-notas" onclick="openGradesDetailModal(${subject.id}, '${escapeHtml(subject.name)}', '${trimestre}')">
@@ -386,6 +392,69 @@ function openGradesDetailModal(subjectId, subjectName, trimestre) {
     requestAnimationFrame(() => {
         document.getElementById('gradesDetailOverlay').classList.add('visible');
     });
+}
+
+// ==================== EXPORTAR BOLETÍN PDF (cliente, sin backend) ====================
+function exportarBoletinTrimestre(trimestre) {
+    if (!mySubjects.length) {
+        Swal.fire('Sin materias', 'No tienes materias matriculadas para exportar', 'info');
+        return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    const fmt = (valor) => (valor !== null && valor !== undefined) ? valor.toFixed(1) : 'S/N';
+
+    // Encabezado del boletín
+    doc.setFontSize(16);
+    doc.setTextColor(92, 0, 0);
+    doc.text('Boletín de Notas', 105, 18, { align: 'center' });
+
+    doc.setFontSize(10);
+    doc.setTextColor(60, 60, 60);
+    doc.text(`Estudiante: ${currentStudent.nombre || ''}`, 14, 28);
+    doc.text(`Trimestre: ${trimestre}`, 14, 34);
+    doc.text(`Fecha de emisión: ${new Date().toLocaleDateString()}`, 14, 40);
+
+    // Una fila por cada materia matriculada, usando la misma fórmula del sistema
+    const filas = mySubjects.map(subject => {
+        const resumen = generarResumenTrimestre(subject.id, trimestre);
+        return [
+            subject.name,
+            fmt(resumen.promParciales),
+            fmt(resumen.promApreciacion),
+            fmt(resumen.examen),
+            fmt(resumen.notaTrimestral)
+        ];
+    });
+
+    doc.autoTable({
+        startY: 46,
+        head: [['Materia', 'Total Parciales', 'Total Apreciación', 'Examen Trimestral', 'Nota Trimestral']],
+        body: filas,
+        headStyles: { fillColor: [139, 0, 0], textColor: [245, 230, 184], halign: 'center' },
+        alternateRowStyles: { fillColor: [250, 246, 238] },
+        styles: { fontSize: 9, halign: 'center', cellPadding: 4 },
+        columnStyles: { 0: { halign: 'left', fontStyle: 'bold' } }
+    });
+
+    const finalY = doc.lastAutoTable.finalY + 10;
+    const promedioGeneral = filas
+        .map(f => f[4])
+        .filter(v => v !== 'S/N')
+        .map(Number);
+    const promedioTxt = promedioGeneral.length
+        ? (promedioGeneral.reduce((a, b) => a + b, 0) / promedioGeneral.length).toFixed(1)
+        : 'S/N';
+
+    doc.setFontSize(11);
+    doc.setTextColor(92, 0, 0);
+    doc.text(`Promedio general del trimestre: ${promedioTxt}`, 14, finalY);
+
+    const nombreLimpio = (currentStudent.nombre || 'estudiante').replace(/\s+/g, '_');
+    const trimestreLimpio = trimestre.replace(/\s+/g, '_');
+    doc.save(`boletin_${nombreLimpio}_${trimestreLimpio}.pdf`);
 }
 
 function renderGradeGroup(title, items, promedio, color) {

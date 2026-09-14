@@ -284,6 +284,35 @@ en las que el estudiante está matriculado.
   registradas por materia (no el promedio trimestral ponderado); es una métrica informativa
   distinta de la "nota trimestral" oficial.
 
+  ### Exportación de boletín en PDF (nuevo)
+
+Cada acordeón de trimestre (I, II, III) incluye un botón **"Exportar Notas"** ubicado junto
+al badge que indica si hay o no notas registradas en ese período.
+
+- **Librerías:** jsPDF 2.5.1 + jspdf-autotable 3.8.2, cargadas por CDN en `estudiante.html`.
+  No requiere backend: el PDF se genera enteramente en el navegador con los datos ya cargados
+  en memoria (`mySubjects`, `myGrades`).
+- **Función:** `exportarBoletinTrimestre(trimestre)` en `estudiante.js`.
+- **Formato del boletín:** una fila horizontal por cada materia en la que el estudiante está
+  matriculado (`mySubjects`), con columnas: Materia, Total Parciales, Total Apreciación,
+  Examen Trimestral, Nota Trimestral. Reutiliza `generarResumenTrimestre(subjectId, trimestre)`,
+  la misma función que alimenta el modal de detalle en pantalla, garantizando que el PDF y la
+  vista web nunca muestren cifras distintas.
+- **Regla de "S/N":** si una materia no tiene ninguna nota del componente correspondiente
+  (parcial, apreciación o examen) en ese trimestre, la celda muestra `S/N` en lugar de `0`.
+  Si el componente tiene una sola nota, se muestra ese puntaje; si tiene varias, se muestra
+  el promedio, igual que en la fórmula oficial de nota trimestral.
+- **Pie del documento:** promedio general del trimestre, calculado como el promedio de las
+  notas trimestrales de las materias que sí tienen los tres componentes completos (ignora
+  las `S/N` en ese cálculo, no las trata como 0).
+- **Nombre del archivo:** `boletin_<estudiante>_<trimestre>.pdf`.
+- **Diferencia con el endpoint de backend (`GET /api/notas/exportar.php`, ver
+  `contrato_exportacion_frontend.md`):** ese endpoint exporta una sola materia por llamada
+  (o el grupal de una materia, en el panel de profesor) y requiere `materia_id` obligatorio.
+  Esta nueva función resuelve un caso distinto: un boletín consolidado con **todas** las
+  materias matriculadas del estudiante en un solo PDF, por lo que se optó por generarlo
+  100% en cliente en vez de extender el endpoint existente.
+
 ### Comentarios
 El estudiante puede enviar un comentario sobre una materia en la que esté matriculado
 (`POST /comentarios/`, valida en backend que exista la matrícula) y ver el historial de sus
@@ -410,7 +439,7 @@ estable, puede dejarse el número como está.
 | **Uso inconsistente de `apiGet`** | `admin.js`, `profesor.js` y `estudiante.js` repiten manualmente `json.data ?? json` en vez de usar la función `apiGet` ya disponible en `api.js`. |
 | **Versionado de caché** | Falta parámetro `?v=` en la mayoría de páginas fuera de `ayuda.html` (ver sección 11). |
 | **Panel de períodos (referencia backend)** | Cuando se implemente la tabla `periodo` y el bloqueo de trimestres cerrados (pendiente documentado en el backend), el frontend de profesor deberá deshabilitar el formulario de alta de notas fuera del período activo. |
-
+| **Boletín consolidado (estudiante)** | Implementado en frontend (jsPDF, cliente). Pendiente: extender el mismo patrón de boletín horizontal al panel de profesor (exportar boletín de un estudiante en todas sus materias, o de un grupo completo por materia usando el endpoint ya existente `/api/notas/exportar.php`). |
 ---
 
 *Documentación de frontend generada para uso interno del equipo de desarrollo, como
