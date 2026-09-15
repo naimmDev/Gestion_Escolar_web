@@ -970,3 +970,56 @@ body {
 .btn-cambiar-pass:hover i {
     opacity: 1;
 }
+
+/* ========== EXPORTAR — GRUPAL (junto al header de grado) ========== */
+.btn-exportar-grupo {
+    background: linear-gradient(135deg, var(--crimson-deep), var(--crimson));
+    border: 1px solid rgba(201,168,76,0.4);
+    padding: 6px 14px;
+    border-radius: 2px;
+    color: var(--gold-pale);
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(92,0,0,0.2);
+    white-space: nowrap;
+}
+
+.btn-exportar-grupo:hover {
+    background: linear-gradient(135deg, var(--crimson), var(--crimson-light));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(92,0,0,0.3);
+}
+
+.btn-exportar-grupo i { margin-right: 5px; }
+
+/* ========== EXPORTAR — INDIVIDUAL (junto a las pestañas de trimestre) ========== */
+.btn-exportar-individual {
+    background: linear-gradient(135deg, var(--crimson-deep), var(--crimson));
+    border: 1px solid var(--gold);
+    padding: 10px 20px;
+    border-radius: 2px;
+    color: var(--gold-pale);
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 3px 10px rgba(92,0,0,0.25);
+    white-space: nowrap;
+    margin-left: auto;
+}
+
+.btn-exportar-individual:hover {
+    background: linear-gradient(135deg, var(--crimson), var(--crimson-light));
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(92,0,0,0.3);
+}
+
+.btn-exportar-individual i { margin-right: 6px; }

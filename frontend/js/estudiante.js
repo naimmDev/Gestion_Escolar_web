@@ -244,7 +244,7 @@ function renderTrimestreSection(trimestre) {
                         }
                     </div>
                     <button class="btn-exportar-boletin"
-                            onclick="event.stopPropagation(); exportarBoletinTrimestre('${trimestre}')"
+                            onclick="event.stopPropagation(); exportarBoletin('${trimestre}')"
                             ${mySubjects.length === 0 ? 'disabled title="No hay materias matriculadas"' : ''}>
                         <i class="fas fa-file-pdf"></i> Exportar Notas
                     </button>
@@ -394,19 +394,64 @@ function openGradesDetailModal(subjectId, subjectName, trimestre) {
     });
 }
 
-// ==================== EXPORTAR BOLETÍN PDF (cliente, sin backend) ====================
-function exportarBoletinTrimestre(trimestre) {
+/// ==================== EXPORTAR BOLETÍN (PDF / Excel) ====================
+function elegirFormatoExportacion() {
+    return Swal.fire({
+        title: 'Exportar boletín',
+        text: '¿En qué formato deseas descargar el reporte?',
+        icon: 'question',
+        showDenyButton: true,
+        showCancelButton: true,
+        confirmButtonText: '<i class="fas fa-file-pdf"></i> PDF',
+        denyButtonText: '<i class="fas fa-file-excel"></i> Excel',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#8B0000',
+        denyButtonColor: '#2a5c2a'
+    }).then(result => {
+        if (result.isConfirmed) return 'pdf';
+        if (result.isDenied) return 'excel';
+        return null;
+    });
+}
+
+function construirFilasBoletinEstudiante(trimestre) {
+    const fmt = (v) => (v !== null && v !== undefined) ? v.toFixed(1) : 'S/N';
+    return mySubjects.map(subject => {
+        const resumen = generarResumenTrimestre(subject.id, trimestre);
+        return [
+            subject.name,
+            fmt(resumen.promParciales),
+            fmt(resumen.promApreciacion),
+            fmt(resumen.examen),
+            fmt(resumen.notaTrimestral)
+        ];
+    });
+}
+
+async function exportarBoletin(trimestre) {
     if (!mySubjects.length) {
         Swal.fire('Sin materias', 'No tienes materias matriculadas para exportar', 'info');
         return;
     }
 
+    const formato = await elegirFormatoExportacion();
+    if (!formato) return;
+
+    const filas = construirFilasBoletinEstudiante(trimestre);
+    const nombreLimpio = (currentStudent.nombre || 'estudiante').replace(/\s+/g, '_');
+    const trimestreLimpio = trimestre.replace(/\s+/g, '_');
+
+    if (formato === 'pdf') {
+        generarPdfBoletinEstudiante(trimestre, filas, nombreLimpio, trimestreLimpio);
+    } else {
+        generarExcelBoletinEstudiante(trimestre, filas, nombreLimpio, trimestreLimpio);
+    }
+}
+
+function generarPdfBoletinEstudiante(trimestre, filas, nombreLimpio, trimestreLimpio) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
 
-    const fmt = (valor) => (valor !== null && valor !== undefined) ? valor.toFixed(1) : 'S/N';
-
-    // Encabezado del boletín
     doc.setFontSize(16);
     doc.setTextColor(92, 0, 0);
     doc.text('Boletín de Notas', 105, 18, { align: 'center' });
@@ -417,21 +462,9 @@ function exportarBoletinTrimestre(trimestre) {
     doc.text(`Trimestre: ${trimestre}`, 14, 34);
     doc.text(`Fecha de emisión: ${new Date().toLocaleDateString()}`, 14, 40);
 
-    // Una fila por cada materia matriculada, usando la misma fórmula del sistema
-    const filas = mySubjects.map(subject => {
-        const resumen = generarResumenTrimestre(subject.id, trimestre);
-        return [
-            subject.name,
-            fmt(resumen.promParciales),
-            fmt(resumen.promApreciacion),
-            fmt(resumen.examen),
-            fmt(resumen.notaTrimestral)
-        ];
-    });
-
     doc.autoTable({
         startY: 46,
-        head: [['Materia', 'Total Parciales', 'Total Apreciación', 'Examen Trimestral', 'Nota Trimestral']],
+        head: [['Materia', 'Total Parciales', 'Total Apreciación', 'Examen Trimestral', 'Nota Final']],
         body: filas,
         headStyles: { fillColor: [139, 0, 0], textColor: [245, 230, 184], halign: 'center' },
         alternateRowStyles: { fillColor: [250, 246, 238] },
@@ -440,23 +473,33 @@ function exportarBoletinTrimestre(trimestre) {
     });
 
     const finalY = doc.lastAutoTable.finalY + 10;
-    const promedioGeneral = filas
-        .map(f => f[4])
-        .filter(v => v !== 'S/N')
-        .map(Number);
-    const promedioTxt = promedioGeneral.length
-        ? (promedioGeneral.reduce((a, b) => a + b, 0) / promedioGeneral.length).toFixed(1)
-        : 'S/N';
+    const validos = filas.map(f => f[4]).filter(v => v !== 'S/N').map(Number);
+    const promedioTxt = validos.length ? (validos.reduce((a, b) => a + b, 0) / validos.length).toFixed(1) : 'S/N';
 
     doc.setFontSize(11);
     doc.setTextColor(92, 0, 0);
     doc.text(`Promedio general del trimestre: ${promedioTxt}`, 14, finalY);
 
-    const nombreLimpio = (currentStudent.nombre || 'estudiante').replace(/\s+/g, '_');
-    const trimestreLimpio = trimestre.replace(/\s+/g, '_');
     doc.save(`boletin_${nombreLimpio}_${trimestreLimpio}.pdf`);
 }
 
+function generarExcelBoletinEstudiante(trimestre, filas, nombreLimpio, trimestreLimpio) {
+    const encabezado = [
+        ['Boletín de Notas'],
+        [`Estudiante: ${currentStudent.nombre || ''}`],
+        [`Trimestre: ${trimestre}`],
+        [`Fecha de emisión: ${new Date().toLocaleDateString()}`],
+        [],
+        ['Materia', 'Total Parciales', 'Total Apreciación', 'Examen Trimestral', 'Nota Final']
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(encabezado.concat(filas));
+    ws['!cols'] = [{ wch: 22 }, { wch: 16 }, { wch: 18 }, { wch: 18 }, { wch: 12 }];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Boletin');
+    XLSX.writeFile(wb, `boletin_${nombreLimpio}_${trimestreLimpio}.xlsx`);
+}
 function renderGradeGroup(title, items, promedio, color) {
     return `
         <div class="gd-group">

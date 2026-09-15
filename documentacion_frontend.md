@@ -259,6 +259,56 @@ filtra en el cliente:
 - Tras cualquier alta/baja, `reloadGradesAndRefresh()` vuelve a pedir `/notas/` completo y
   recalcula estadísticas y vistas dependientes.
 
+  ### Exportación de boletines en PDF / Excel (nuevo)
+
+Se agregaron tres puntos de exportación, todos generados 100% en el navegador (sin
+depender del endpoint de backend `/api/notas/exportar.php`, reservado para exportación
+por materia individual desde otro flujo):
+
+**Librerías añadidas (CDN):** jsPDF 2.5.1, jspdf-autotable 3.8.2, SheetJS (xlsx) 0.18.5.
+Cargadas en `estudiante.html` y `profesor.html`.
+
+**Selector de formato:** al presionar cualquier botón "Exportar Notas", se muestra un
+`Swal.fire` con tres opciones (PDF, Excel, Cancelar) mediante la función
+`elegirFormatoExportacion()`, duplicada en `estudiante.js` y `profesor.js` por ser
+scripts independientes.
+
+**1. Boletín del estudiante (`estudiante.js` — `exportarBoletin(trimestre)`):**
+Botón junto al badge de cada trimestre en el Reporte Académico. Genera una tabla
+horizontal con una fila por materia matriculada: Total Parciales, Total Apreciación,
+Examen Trimestral y Nota Final (resultado de ese trimestre específico, vía
+`generarResumenTrimestre`). Cualquier componente sin registros se muestra como `S/N`
+en vez de `0`. Incluye un renglón de promedio general del trimestre al pie, calculado
+sobre la columna Nota Final. No se incluye el promedio final anual del curso en este
+boletín (por trimestre) para evitar ambigüedad entre "nota del trimestre" y "nota final
+del año" bajo el mismo nombre de columna; ese dato solo aparece en el boletín individual
+generado desde el panel de profesor, donde ambos valores tienen sentido en el mismo
+documento (una fila por trimestre + una fila final aparte).
+**2. Reporte grupal por grado (`profesor.js` — `exportarBoletinGrupo(grado)`):**
+Botón junto al encabezado de cada grupo de grado en "Gestionar Notas" (ej. "Grado 10°").
+Exporta una fila por estudiante de ese grado matriculado en la materia seleccionada, con
+columnas: Total Parciales, Total Apreciación, Examen Trimestral y Nota Final. Los
+promedios se calculan sobre **todas** las notas de ese tipo registradas en la materia,
+sin filtrar por trimestre (puede haber hasta 3 exámenes, uno por trimestre). Si el
+estudiante no tiene ningún registro de un tipo, se muestra `S/N`.
+
+**3. Boletín individual del estudiante (`profesor.js` — `exportarBoletinIndividual()`):**
+Botón junto a las pestañas de trimestre dentro del modal de detalle de un estudiante.
+Exporta una fila por cada uno de los 3 trimestres (Total Parciales, Total Apreciación,
+Examen Trimestral, Nota Trimestral) más una línea final con la **Nota Final** del curso
+(`calcularPromedioFinal(estudianteId, materiaId)`), independientemente de qué pestaña de
+trimestre esté activa en el modal al momento de exportar.
+
+**Consistencia de cálculos:** las tres exportaciones reutilizan las mismas funciones que
+ya alimentan las vistas en pantalla (`generarResumenTrimestre`, `calcularPromedioFinal`),
+por lo que los valores del PDF/Excel nunca pueden divergir de lo que el usuario ve en la
+interfaz.
+
+**Nombres de archivo generados:**
+- Estudiante: `boletin_<estudiante>_<trimestre>.pdf` / `.xlsx`
+- Grupal: `reporte_grupal_<materia>_<grado>.pdf` / `.xlsx`
+- Individual (profesor): `boletin_<estudiante>_<materia>.pdf` / `.xlsx`
+
 ### Comentarios
 Vista de solo lectura con los comentarios enviados por estudiantes en las materias del
 profesor (`GET /comentarios/`, ya filtrado por rol en backend).
@@ -440,6 +490,8 @@ estable, puede dejarse el número como está.
 | **Versionado de caché** | Falta parámetro `?v=` en la mayoría de páginas fuera de `ayuda.html` (ver sección 11). |
 | **Panel de períodos (referencia backend)** | Cuando se implemente la tabla `periodo` y el bloqueo de trimestres cerrados (pendiente documentado en el backend), el frontend de profesor deberá deshabilitar el formulario de alta de notas fuera del período activo. |
 | **Boletín consolidado (estudiante)** | Implementado en frontend (jsPDF, cliente). Pendiente: extender el mismo patrón de boletín horizontal al panel de profesor (exportar boletín de un estudiante en todas sus materias, o de un grupo completo por materia usando el endpoint ya existente `/api/notas/exportar.php`). |
+
+| **Filtro de trimestre en reporte grupal** | El reporte grupal por grado actualmente agrega notas de todos los trimestres sin distinción. Si se requiere exportar solo un trimestre específico a nivel grupal, hay que agregar un selector de trimestre en la vista "Gestionar Notas" (fuera del modal de estudiante). |
 ---
 
 *Documentación de frontend generada para uso interno del equipo de desarrollo, como
