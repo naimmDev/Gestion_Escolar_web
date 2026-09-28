@@ -613,8 +613,11 @@ async function addNewGrade() {
     const nombre = document.getElementById('newGradeNombre').value.trim();
     const score = parseFloat(document.getElementById('newGradeScore').value);
     const comment = document.getElementById('newGradeComment').value.trim();
-    const trimestre = currentTrimestre === 'Todas' ? 'I Trimestre' : currentTrimestre;
-
+        if (currentTrimestre === 'Todas') {
+        Swal.fire('Selecciona un trimestre', 'Para registrar una nota elige primero I, II o III Trimestre.', 'info');
+        return;
+    }
+    const trimestre = currentTrimestre;
     if (isNaN(score) || score < 1 || score > 5) {
         Swal.fire('Error', 'La nota debe ser un número entre 1.0 y 5.0', 'error');
         return;
@@ -658,19 +661,16 @@ async function addNewGrade() {
         if (res.ok) {
             Swal.fire({ title: '¡Nota registrada!', icon: 'success', timer: 1500, showConfirmButton: false, toast: true, position: 'top-end' });
             await reloadGradesAndRefresh();
-        } else {
-            const error = await res.json();
-            if (res.status === 409) {
-                Swal.fire({
-                    title: 'nota de examen final existente',
-                    icon: 'info',
-                    timer: 2000,
-                    showConfirmButton: false
-                });
-            } else {
-                Swal.fire('Error', error.error || 'No se pudo guardar la nota', 'error');
-            }
+
+           } else {
+            const error = await res.json().catch(() => ({}));
+            Swal.fire(
+                res.status === 409 ? 'Aviso' : 'Error',
+                error.error || 'No se pudo guardar la nota',
+                res.status === 409 ? 'info' : 'error'
+            );
         }
+        
     } catch (error) {
         Swal.fire('Error', error.message, 'error');
     }
@@ -716,10 +716,10 @@ async function reloadGradesAndRefresh() {
     updateDashboard();
 }
 
-// ==================== EXPORTAR BOLETÍN (PDF / Excel) ====================
+// ==================== EXPORTAR REPORTES (PDF / Excel) ====================
+// El archivo lo genera el backend (GET /notas/exportar.php).
 
 // ---------- GRUPAL (por grado, dentro de una materia) ----------
-
 async function exportarReporteGrupal(grado) {
     const subject = mySubjects.find(s => s.id === currentSubjectId);
     if (!subject) {
@@ -737,63 +737,10 @@ async function exportarReporteGrupal(grado) {
     const trimestre = await elegirTrimestreExportacion();
     if (!trimestre) return;
 
-    const formato = await elegirFormatoExportacion();
-    if (!formato) return;
+    const format = await elegirFormatoExportacion();
+    if (!format) return;
 
-    const filas = construirFilasReporteGrupal(grado, trimestre);
-    const nombreMateria = (subject.name || 'materia').replace(/\s+/g, '_');
-    const gradoLimpio = String(grado).replace(/[°\s]+/g, '');
-    const trimestreLimpio = trimestre.replace(/\s+/g, '_');
-
-    if (formato === 'pdf') generarPdfReporteGrupal(subject, grado, trimestre, filas, nombreMateria, gradoLimpio, trimestreLimpio);
-    else generarExcelReporteGrupal(subject, grado, trimestre, filas, nombreMateria, gradoLimpio, trimestreLimpio);
-}
-
-function construirFilasReporteGrupal(grado, trimestre) {
-    const estudiantesGrado = getStudentsForSubject(currentSubjectId)
-        .filter(s => (s.grade || 'Sin grado') === grado)
-        .sort((a, b) => a.name.localeCompare(b.name));
-
-    return estudiantesGrado.map(s => {
-        const resumen = generarResumenTrimestre(s.id, currentSubjectId, trimestre);
-        return [s.name, fmtNota(resumen.promParciales), fmtNota(resumen.promApreciacion), fmtNota(resumen.examen), fmtNota(resumen.notaTrimestral)];
-    });
-}
-
-function generarPdfReporteGrupal(subject, grado, trimestre, filas, nombreMateria, gradoLimpio, trimestreLimpio) {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-
-    const filasInfo = [
-        [{ label: 'Materia', value: `${subject.name} (${subject.code})` }, { label: 'Año Lectivo', value: new Date().getFullYear() }],
-        [{ label: 'Grupo', value: grado }, { label: 'Fecha', value: new Date().toLocaleDateString() }]
-    ];
-    const startY = dibujarEncabezadoPDF(doc, 'REPORTE GRUPAL DE NOTAS', filasInfo, trimestre.toUpperCase());
-
-    doc.autoTable({
-        startY,
-        head: [['Estudiante', 'Total Parciales', 'Total Apreciación', 'Nota Examen', 'Nota Final']],
-        body: filas,
-        ...estiloTablaInstitucional()
-    });
-
-    doc.save(`reporte_grupal_${nombreMateria}_${gradoLimpio}_${trimestreLimpio}.pdf`);
-}
-
-function generarExcelReporteGrupal(subject, grado, trimestre, filas, nombreMateria, gradoLimpio, trimestreLimpio) {
-    const filasInfo = [
-        [{ label: 'Materia', value: `${subject.name} (${subject.code})` }, { label: 'Año Lectivo', value: new Date().getFullYear() }],
-        [{ label: 'Grupo', value: grado }, { label: 'Fecha', value: new Date().toLocaleDateString() }]
-    ];
-    const encabezado = construirEncabezadoExcel('REPORTE GRUPAL DE NOTAS', filasInfo, trimestre.toUpperCase());
-    encabezado.push(['Estudiante', 'Total Parciales', 'Total Apreciación', 'Nota Examen', 'Nota Final']);
-
-    const ws = XLSX.utils.aoa_to_sheet(encabezado.concat(filas));
-    ws['!cols'] = [{ wch: 24 }, { wch: 16 }, { wch: 18 }, { wch: 14 }, { wch: 12 }];
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Reporte Grupal');
-    XLSX.writeFile(wb, `reporte_grupal_${nombreMateria}_${gradoLimpio}_${trimestreLimpio}.xlsx`);
+    await exportarReporte({ format, materia_id: currentSubjectId, grado, trimestre });
 }
 
 // ---------- INDIVIDUAL (por estudiante, dentro del modal) ----------
@@ -802,71 +749,14 @@ async function exportarReporteIndividual() {
         Swal.fire('Error', 'No se pudo identificar al estudiante o la materia', 'error');
         return;
     }
-    const formato = await elegirFormatoExportacion();
-    if (!formato) return;
+    const format = await elegirFormatoExportacion();
+    if (!format) return;
 
-    const subject = mySubjects.find(s => s.id === currentSubjectId);
-    const trimestres = ['I Trimestre', 'II Trimestre', 'III Trimestre'];
-    const filas = trimestres.map(tri => {
-        const resumen = generarResumenTrimestre(currentStudentForModal.id, currentSubjectId, tri);
-        return [tri, fmtNota(resumen.promParciales), fmtNota(resumen.promApreciacion), fmtNota(resumen.examen), fmtNota(resumen.notaTrimestral)];
+    await exportarReporte({
+        format,
+        materia_id: currentSubjectId,
+        estudiante_id: currentStudentForModal.id
     });
-    const notaFinal = calcularPromedioFinal(currentStudentForModal.id, currentSubjectId);
-    const notaFinalTxt = fmtNota(notaFinal);
-
-    const nombreLimpio = (currentStudentForModal.name || 'estudiante').replace(/\s+/g, '_');
-    const nombreMateria = (subject?.name || 'materia').replace(/\s+/g, '_');
-
-    if (formato === 'pdf') generarPdfReporteIndividual(subject, filas, notaFinalTxt, nombreLimpio, nombreMateria);
-    else generarExcelReporteIndividual(subject, filas, notaFinalTxt, nombreLimpio, nombreMateria);
-}
-
-function generarPdfReporteIndividual(subject, filas, notaFinalTxt, nombreLimpio, nombreMateria) {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-
-    const filasInfo = [
-        [{ label: 'Nombre', value: currentStudentForModal.name }, { label: 'Año Lectivo', value: new Date().getFullYear() }],
-        [{ label: 'Identificación', value: 'N/D' }, { label: 'Fecha', value: new Date().toLocaleDateString() }],
-        [{ label: 'Grupo', value: `${currentStudentForModal.grade || ''}${currentStudentForModal.seccion ? ' - Sección ' + currentStudentForModal.seccion : ''}` }, { label: 'Materia', value: `${subject?.name || ''} (${subject?.code || ''})` }]
-    ];
-    const startY = dibujarEncabezadoPDF(doc, 'REPORTE INDIVIDUAL DE NOTAS', filasInfo, 'TRIMESTRES');
-
-    doc.autoTable({
-        startY,
-        head: [['Trimestre', 'Total Parciales', 'Total Apreciación', 'Nota Examen', 'Nota Final']],
-        body: filas,
-        ...estiloTablaInstitucional()
-    });
-
-    const finalY = doc.lastAutoTable.finalY + 10;
-    doc.setFontSize(11);
-    doc.setTextColor(0, 0, 0);
-    doc.setFont(undefined, 'bold');
-    doc.text(`Nota Final del Curso: ${notaFinalTxt}`, 14, finalY);
-
-    doc.save(`reporte_${nombreLimpio}_${nombreMateria}.pdf`);
-}
-
-function generarExcelReporteIndividual(subject, filas, notaFinalTxt, nombreLimpio, nombreMateria) {
-    const filasInfo = [
-        [{ label: 'Nombre', value: currentStudentForModal.name }, { label: 'Año Lectivo', value: new Date().getFullYear() }],
-        [{ label: 'Identificación', value: 'N/D' }, { label: 'Fecha', value: new Date().toLocaleDateString() }],
-        [{ label: 'Grupo', value: `${currentStudentForModal.grade || ''}${currentStudentForModal.seccion ? ' - Sección ' + currentStudentForModal.seccion : ''}` }, { label: 'Materia', value: `${subject?.name || ''} (${subject?.code || ''})` }]
-    ];
-    const encabezado = construirEncabezadoExcel('REPORTE INDIVIDUAL DE NOTAS', filasInfo, 'TRIMESTRES');
-    encabezado.push(['Trimestre', 'Total Parciales', 'Total Apreciación', 'Nota Examen', 'Nota Final']);
-
-    const datos = encabezado.concat(filas);
-    datos.push([]);
-    datos.push(['Nota Final del Curso', notaFinalTxt]);
-
-    const ws = XLSX.utils.aoa_to_sheet(datos);
-    ws['!cols'] = [{ wch: 16 }, { wch: 16 }, { wch: 18 }, { wch: 14 }, { wch: 16 }];
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Reporte Individual');
-    XLSX.writeFile(wb, `reporte_${nombreLimpio}_${nombreMateria}.xlsx`);
 }
 // ==================== COMENTARIOS ====================
 function renderComments() {

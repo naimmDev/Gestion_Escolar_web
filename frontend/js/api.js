@@ -16,10 +16,15 @@ async function apiFetch(endpoint, options = {}) {
 
     const response = await fetch(`${API_URL}${endpoint}`, { ...options, headers });
 
+    // Solo se considera sesión expirada si el 401 es por el token.
+    // Otros 401 (ej. "La contraseña actual es incorrecta") se devuelven al llamador.
     if (response.status === 401) {
-        localStorage.removeItem('currentUser');
-        window.location.href = 'index.html';
-        return;
+        const err = await response.clone().json().catch(() => ({}));
+        if (/token/i.test(err.error || '')) {
+            localStorage.removeItem('currentUser');
+            window.location.href = 'index.html';
+            return new Promise(() => {}); // detiene al llamador sin errores mientras redirige
+        }
     }
 
     if (response.status === 403) {

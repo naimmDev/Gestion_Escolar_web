@@ -82,6 +82,8 @@ let teachers = [];
 let subjects = [];
 let enrollments = [];
 let activities = [];
+let originalStudentPassword = '';
+let originalTeacherPassword = '';
 
 let currentStudentPage = 1;
 let currentProfessorPage = 1;
@@ -383,6 +385,7 @@ function openStudentModal() {
     document.getElementById('studentForm').reset();
     document.getElementById('studentId').value = '';
     document.getElementById('studentPassword').value = generatePassword();
+        originalStudentPassword = '';
     document.getElementById('studentPassword').readOnly = true;
     document.getElementById('studentPassword').classList.remove('password-editable');
     openModal('studentModal');
@@ -393,7 +396,8 @@ function editStudent(id) {
     if (!s) return;
     document.getElementById('studentId').value = s.id;
     document.getElementById('studentIdentificacion').value = s.identificacion || '';
-    document.getElementById('studentPassword').value = s.initialPassword || generatePassword();
+        originalStudentPassword = s.initialPassword || generatePassword();
+    document.getElementById('studentPassword').value = originalStudentPassword;
     document.getElementById('studentPassword').readOnly = true;
     document.getElementById('studentPassword').classList.remove('password-editable');
     document.getElementById('studentName').value = s.name;
@@ -474,8 +478,10 @@ document.getElementById('studentForm')?.addEventListener('submit', async functio
         email: document.getElementById('studentEmail').value,
         identificacion: document.getElementById('studentIdentificacion').value.trim(),
         grade: document.getElementById('studentGrade').value,
-        seccion: document.getElementById('studentSeccion').value.trim(),
-        initialPassword: password
+              seccion: document.getElementById('studentSeccion').value.trim(),
+        // Solo se envía si es alumno nuevo o el admin cambió la contraseña
+        // (el backend resetea el acceso cuando recibe initialPassword)
+        ...((!id || password !== originalStudentPassword) ? { initialPassword: password } : {})
     };
     try {
         const res = await apiFetch('/estudiantes/', { method: id ? 'PUT' : 'POST', body: JSON.stringify(student) });
@@ -528,6 +534,7 @@ function openProfessorModal() {
     document.getElementById('professorForm').reset();
     document.getElementById('professorId').value = '';
     document.getElementById('professorPassword').value = generatePassword();
+        originalTeacherPassword = '';
     document.getElementById('professorPassword').readOnly = true;
     document.getElementById('professorPassword').classList.remove('password-editable');
     openModal('professorModal');
@@ -541,7 +548,8 @@ function editTeacher(id) {
     ).join('');
     document.getElementById('professorId').value = t.id;
     document.getElementById('professorIdentificacion').value = t.identificacion || '';
-    document.getElementById('professorPassword').value = t.initialPassword || generatePassword();
+        originalTeacherPassword = t.initialPassword || generatePassword();
+    document.getElementById('professorPassword').value = originalTeacherPassword;
     document.getElementById('professorPassword').readOnly = true;
     document.getElementById('professorPassword').classList.remove('password-editable');
     document.getElementById('professorName').value = t.name;
@@ -620,9 +628,8 @@ document.getElementById('professorForm')?.addEventListener('submit', async funct
         name: document.getElementById('professorName').value,
         email: document.getElementById('professorEmail').value,
         identificacion: document.getElementById('professorIdentificacion').value.trim(),
-        specialty: document.getElementById('professorSpecialty').value,
-        initialPassword: password,
-        subjectIds: []
+                specialty: document.getElementById('professorSpecialty').value,
+        ...((!id || password !== originalTeacherPassword) ? { initialPassword: password } : {})
     };
     try {
         const res = await apiFetch('/profesores/', { method: id ? 'PUT' : 'POST', body: JSON.stringify(teacher) });

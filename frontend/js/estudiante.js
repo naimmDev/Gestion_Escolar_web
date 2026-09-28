@@ -413,133 +413,31 @@ function openGradesDetailModal(subjectId, subjectName, trimestre) {
         document.getElementById('gradesDetailOverlay').classList.add('visible');
     });
 }
-
-/// ==================== EXPORTAR BOLETÍN (PDF / Excel) ====================
-
-function obtenerGradoSeccionEstudiante() {
-    if (myEnrollments.length > 0) {
-        const e = myEnrollments[0];
-        return `${e.studentGrade || 'N/D'}${e.studentSeccion ? ' - Sección ' + e.studentSeccion : ''}`;
-    }
-    return 'N/D';
-}
+// ==================== EXPORTAR BOLETÍN (PDF / Excel) ====================
+// El archivo lo genera el backend (GET /notas/exportar.php).
 
 async function exportarBoletin(trimestre) {
     if (!mySubjects.length) {
         Swal.fire('Sin materias', 'No tienes materias matriculadas para exportar', 'info');
         return;
     }
-    const formato = await elegirFormatoExportacion();
-    if (!formato) return;
+    const format = await elegirFormatoExportacion();
+    if (!format) return;
 
-    const filas = mySubjects.map(subject => {
-        const resumen = generarResumenTrimestre(subject.id, trimestre);
-        return [subject.name, fmtNota(resumen.promParciales), fmtNota(resumen.promApreciacion), fmtNota(resumen.examen), fmtNota(resumen.notaTrimestral)];
-    });
-
-    const nombreLimpio = (currentStudent.nombre || 'estudiante').replace(/\s+/g, '_');
-    const trimestreLimpio = trimestre.replace(/\s+/g, '_');
-
-    if (formato === 'pdf') generarPdfReporteTrimestre(trimestre, filas, nombreLimpio, trimestreLimpio);
-    else generarExcelReporteTrimestre(trimestre, filas, nombreLimpio, trimestreLimpio);
+    await exportarReporte({ format, trimestre });
 }
 
-function generarPdfReporteTrimestre(trimestre, filas, nombreLimpio, trimestreLimpio) {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-
-    const filasInfo = [
-        [{ label: 'Nombre', value: currentStudent.nombre || '' }, { label: 'Año Lectivo', value: new Date().getFullYear() }],
-        [{ label: 'Identificación', value: 'N/D' }, { label: 'Fecha', value: new Date().toLocaleDateString() }],
-        [{ label: 'Grupo', value: obtenerGradoSeccionEstudiante() }]
-    ];
-    const startY = dibujarEncabezadoPDF(doc, 'REPORTE DE NOTAS', filasInfo, trimestre.toUpperCase());
-
-    doc.autoTable({
-        startY,
-        head: [['Asignaturas', 'Total Parciales', 'Total Apreciación', 'Nota Examen', 'Nota Final']],
-        body: filas,
-        ...estiloTablaInstitucional()
-    });
-
-    doc.save(`reporte_notas_${nombreLimpio}_${trimestreLimpio}.pdf`);
-}
-
-function generarExcelReporteTrimestre(trimestre, filas, nombreLimpio, trimestreLimpio) {
-    const filasInfo = [
-        [{ label: 'Nombre', value: currentStudent.nombre || '' }, { label: 'Año Lectivo', value: new Date().getFullYear() }],
-        [{ label: 'Identificación', value: 'N/D' }, { label: 'Fecha', value: new Date().toLocaleDateString() }],
-        [{ label: 'Grupo', value: obtenerGradoSeccionEstudiante() }]
-    ];
-    const encabezado = construirEncabezadoExcel('REPORTE DE NOTAS', filasInfo, trimestre.toUpperCase());
-    encabezado.push(['Asignaturas', 'Total Parciales', 'Total Apreciación', 'Nota Examen', 'Nota Final']);
-
-    const ws = XLSX.utils.aoa_to_sheet(encabezado.concat(filas));
-    ws['!cols'] = [{ wch: 22 }, { wch: 16 }, { wch: 18 }, { wch: 14 }, { wch: 12 }];
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Reporte');
-    XLSX.writeFile(wb, `reporte_notas_${nombreLimpio}_${trimestreLimpio}.xlsx`);
-}
 async function exportarBoletinCompleto() {
     if (!mySubjects.length) {
         Swal.fire('Sin materias', 'No tienes materias matriculadas para exportar', 'info');
         return;
     }
-    const formato = await elegirFormatoExportacion();
-    if (!formato) return;
+    const format = await elegirFormatoExportacion();
+    if (!format) return;
 
-    const filas = mySubjects.map(subject => {
-        const notaI = calcularNotaTrimestral(subject.id, 'I Trimestre');
-        const notaII = calcularNotaTrimestral(subject.id, 'II Trimestre');
-        const notaIII = calcularNotaTrimestral(subject.id, 'III Trimestre');
-        const notaFinal = calcularPromedioFinal(subject.id);
-        return [subject.name, fmtNota(notaI), fmtNota(notaII), fmtNota(notaIII), fmtNota(notaFinal)];
-    });
-
-    const nombreLimpio = (currentStudent.nombre || 'estudiante').replace(/\s+/g, '_');
-
-    if (formato === 'pdf') generarPdfBoletinCompleto(filas, nombreLimpio);
-    else generarExcelBoletinCompleto(filas, nombreLimpio);
+    await exportarReporte({ format });
 }
 
-function generarPdfBoletinCompleto(filas, nombreLimpio) {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-
-    const filasInfo = [
-        [{ label: 'Nombre', value: currentStudent.nombre || '' }, { label: 'Año Lectivo', value: new Date().getFullYear() }],
-        [{ label: 'Identificación', value: 'N/D' }, { label: 'Fecha', value: new Date().toLocaleDateString() }],
-        [{ label: 'Grupo', value: obtenerGradoSeccionEstudiante() }]
-    ];
-    const startY = dibujarEncabezadoPDF(doc, 'BOLETÍN DE CALIFICACIONES', filasInfo, 'TRIMESTRES');
-
-    doc.autoTable({
-        startY,
-        head: [['Asignaturas', 'I', 'II', 'III', 'Nota Final']],
-        body: filas,
-        ...estiloTablaInstitucional()
-    });
-
-    doc.save(`boletin_${nombreLimpio}.pdf`);
-}
-
-function generarExcelBoletinCompleto(filas, nombreLimpio) {
-    const filasInfo = [
-        [{ label: 'Nombre', value: currentStudent.nombre || '' }, { label: 'Año Lectivo', value: new Date().getFullYear() }],
-        [{ label: 'Identificación', value: 'N/D' }, { label: 'Fecha', value: new Date().toLocaleDateString() }],
-        [{ label: 'Grupo', value: obtenerGradoSeccionEstudiante() }]
-    ];
-    const encabezado = construirEncabezadoExcel('BOLETÍN DE CALIFICACIONES', filasInfo, 'TRIMESTRES');
-    encabezado.push(['Asignaturas', 'I', 'II', 'III', 'Nota Final']);
-
-    const ws = XLSX.utils.aoa_to_sheet(encabezado.concat(filas));
-    ws['!cols'] = [{ wch: 22 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 12 }];
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Boletin');
-    XLSX.writeFile(wb, `boletin_${nombreLimpio}.xlsx`);
-}
 function renderGradeGroup(title, items, promedio, color) {
     return `
         <div class="gd-group">
