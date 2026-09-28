@@ -1,3 +1,11 @@
+
+// Forzar recarga si la página se restaura desde bfcache (botón Atrás/Adelante)
+window.addEventListener('pageshow', function (event) {
+    if (event.persisted) {
+        window.location.reload();
+    }
+});
+
 (function() {
 const user = JSON.parse(localStorage.getItem('currentUser'));
 // Permitir acceso si cambió la contraseña O si la saltó (password_skipped)

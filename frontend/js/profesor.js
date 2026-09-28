@@ -18,6 +18,13 @@ window.closeModal = function(modalId) {
         document.body.style.overflow = '';
     }
 };
+
+//forzar recarga si la página se restaura desde bfcache (botón Atrás/Adelante)
+window.addEventListener('pageshow', function (event) {
+    if (event.persisted) {
+        window.location.reload();
+    }
+});
 window.openChangePasswordModal = function() {
     document.getElementById('changePasswordForm').reset();
     document.getElementById('changePasswordModal').style.display = 'flex';

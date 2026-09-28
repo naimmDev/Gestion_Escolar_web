@@ -20,6 +20,12 @@ if (!currentUser || currentUser.rol !== 'admin') {
     window.location.href = 'index.html';
 }
 
+// Forzar recarga si la página se restaura desde bfcache (botón Atrás/Adelante)
+window.addEventListener('pageshow', function (event) {
+    if (event.persisted) {
+        window.location.reload();
+    }
+});
 // ==================== FUNCIONES GLOBALES ====================
 window.closeModal = function (modalId) {
     const modal = document.getElementById(modalId);

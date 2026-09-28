@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 08-09-2026 a las 21:10:10
+-- Tiempo de generación: 14-09-2026 a las 01:18:03
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -67,7 +67,7 @@ CREATE TABLE `estudiante` (
 
 INSERT INTO `estudiante` (`id`, `nombre`, `email`, `identificacion`, `grado`, `seccion`, `password_inicial`) VALUES
 (2, 'Escott Pilgrim', 'escotpilgrim@gmail.com', '9021', '10°', 'B', 'asucar'),
-(3, 'Arnó Dorian', 'arnodorian@gmail.com', '8-456-321', '12°', 'C', '7BHQXC'),
+(3, 'Arnó Dorian', 'arnodorian@gmail.com', '8-456-321', '12°', 'C', 'jUDFJh'),
 (4, 'Asia', 'asia@gmail.com', '8-456-987', '10°', 'B', 'NEWuW7'),
 (5, 'Emily Flores', 'emilyflores@gmail.com', '8509987', '9°', 'D', 'WUcmfY'),
 (6, 'Rober Limerio', 'robertlime@gmail.com', '89032100', '10°', 'B', 'Ruwn0Q'),
@@ -261,9 +261,9 @@ CREATE TABLE `profesor` (
 --
 
 INSERT INTO `profesor` (`id`, `nombre`, `email`, `identificacion`, `especialidad`, `password_inicial`) VALUES
-(1, 'Jose Tobares', 'profesorTobares@gmail.com', '7070', 'Ciencias ', 'sal'),
+(1, 'Jose Tobares', 'profesorTobares@gmail.com', '7070', 'Ciencias ', 'TVJ7bs'),
 (2, 'Profe 1', 'profe1@gmail.com', '8675489', 'Física', 'EwjYG'),
-(3, 'Julio Perez', 'julioperez@gmail.com', '890904667', 'Geografia', 'VIiB6R'),
+(3, 'Julio Perez', 'julioperez@gmail.com', '890904667', 'Geografia', 'AMVbWL'),
 (4, 'Penelope Bonswit', 'penelopeb@gmail.com', '8567876', 'Comunicación oral y escrita', 'DQeoqF');
 
 -- --------------------------------------------------------
@@ -407,7 +407,26 @@ INSERT INTO `sesion` (`id`, `usuario_id`, `token`, `expires_at`, `activa`, `crea
 (119, 6, 'bc250263e4d32601bfb9b77feda455cd6fa74756db8127df217c2fb89379dc60', '2026-07-09 11:56:30', 0, '2026-07-08 20:56:30'),
 (120, 1, '5ef6edbed484c89546a5e73de33a54e2c6b4ebb61be5d7af08527a5177ec9a9c', '2026-07-09 12:34:01', 0, '2026-07-08 21:34:01'),
 (121, 5, '516e1972dfe5aff50c3678fb856ee43014008ad4c61891f59ee8b6d10b547992', '2026-07-09 12:38:34', 0, '2026-07-08 21:38:34'),
-(122, 6, '6257a0795cd80ebe4ea396e1e08ca296ceec14af45f7e867bba9c17e10522906', '2026-07-09 12:41:26', 0, '2026-07-08 21:41:26');
+(122, 6, '6257a0795cd80ebe4ea396e1e08ca296ceec14af45f7e867bba9c17e10522906', '2026-07-09 12:41:26', 0, '2026-07-08 21:41:26'),
+(123, 1, '7013bb69d4c5afc4016a541439d9591ea3b04f0eaea08505dcedb7d868ec5704', '2026-09-09 05:12:30', 0, '2026-09-08 14:12:30'),
+(124, 1, '02a9d8594f08c125290692dbc4b82a95084ae49ba6c18654d46f09120929c0f3', '2026-09-13 11:00:20', 0, '2026-09-12 20:00:20'),
+(125, 4, 'f97ec9320dea2878adcba27b2c6a12b88a2eaae95cbc2a1888bc3df0d9415709', '2026-09-13 11:01:31', 0, '2026-09-12 20:01:31'),
+(126, 4, '711b13f7e1a1c7461c1721bba960a09f4db1efcdf6ab6ac3a93ae81ad8a05dfc', '2026-09-13 11:05:12', 1, '2026-09-12 20:05:12'),
+(127, 1, '576ee640863ef9a7a960338c47b4e872264700a59cf371c5b6aeaef99bb82845', '2026-09-13 11:19:00', 0, '2026-09-12 20:19:00'),
+(128, 6, '0f4b428b9c759af6130ce9cb6b03cf6c478f1dffbea1126431065232c66496e8', '2026-09-13 11:19:19', 0, '2026-09-12 20:19:19'),
+(129, 6, '663449cc0578d765532dc34c743c99c00164718ff30ad31ca625733b91438e52', '2026-09-13 11:21:18', 0, '2026-09-12 20:21:18'),
+(130, 1, '29c1dbdf92124f3463828646524fa331aee79f3d575178d52ba6b64698166b59', '2026-09-13 11:32:01', 0, '2026-09-12 20:32:01'),
+(131, 3, 'aaacba451c19b8ac6fb56ab89f536bdc0a6a443b8a264e26fda29fb2640cacf9', '2026-09-13 11:32:38', 0, '2026-09-12 20:32:38'),
+(132, 3, '9b4a2afdfa4cfbc3cfaf14859d3a8dec63ce71d7b1beaf1b7f9474fff7db165e', '2026-09-13 11:52:59', 0, '2026-09-12 20:52:59'),
+(133, 6, '1b56f8f81cf280971d38e17638affa127aeb0b5d0a8b68a0061a793e5f37f329', '2026-09-13 12:09:50', 0, '2026-09-12 21:09:50'),
+(134, 3, 'd3c0b955ab11efd5fe5bf48e4b0df0c879c7853c7bb9b050c9c8ae7e07a91ac9', '2026-09-13 12:26:28', 0, '2026-09-12 21:26:28'),
+(135, 6, '99a333f49512c962abbafb70af270ebd52944e8e61575723a472fa4e0c2a9eae', '2026-09-13 12:28:57', 0, '2026-09-12 21:28:57'),
+(136, 6, 'f5a92ae244aff784e9742957437c1f0efac7a7b7326d938f74d7c0fb1ed1fc44', '2026-09-13 13:05:14', 1, '2026-09-12 22:05:14'),
+(137, 1, 'f6feb6dd3c6a821a5c33f22cfbf0996e7845139a49f3ec34de04ab6ceb94f10d', '2026-09-13 13:09:20', 0, '2026-09-12 22:09:20'),
+(138, 1, '617119eb30a0fa0e838541bc40603eb6fc418ebfdf6d6449fa5acbe60cd80de9', '2026-09-13 13:10:25', 0, '2026-09-12 22:10:25'),
+(139, 1, '5194784b98fce1a1ec8715111925bda09fcf535ddb16deee8d68305aa46d198c', '2026-09-13 13:11:32', 0, '2026-09-12 22:11:32'),
+(140, 10, '455e9a176cdc9c5afbe5ab5577090e0e968f1dfbe26c12aa8fb83d863ebfb76b', '2026-09-13 13:11:56', 1, '2026-09-12 22:11:56'),
+(141, 3, 'ec9f7daae2a0d92f9f27a168e1daba63d7b93bfddb0ace14f5680cee61c54128', '2026-09-13 13:19:45', 1, '2026-09-12 22:19:45');
 
 -- --------------------------------------------------------
 
@@ -433,14 +452,14 @@ CREATE TABLE `usuario` (
 INSERT INTO `usuario` (`id`, `email`, `password_hash`, `rol`, `nombre`, `id_referencia`, `password_cambiada`, `preguntas_configuradas`) VALUES
 (1, 'admin@escuela.edu', '$2y$12$kxBNnam4GaKdpVnunJzqJej6KM4DqLtt9czVJH3YcIC.tjI4U6YTy', 'admin', 'Administrador', NULL, 1, 1),
 (2, 'escotpilgrim@gmail.com', '$2y$12$zTB/newMGZwUfB2nvGTKYeA4z55MEEmkWxsWLtvQwOjXMnQ2gCEOG', 'estudiante', 'Escott Pilgrim', 2, 1, 1),
-(3, 'profesorTobares@gmail.com', '$2y$12$krM6fLObOqTBpdrpoYsUIOjJykdIJy/O2RHOxsHczHDKnyeTCZVYK', 'profesor', 'Jose Tobares', 1, 1, 1),
-(4, 'arnodorian@gmail.com', '$2y$12$o1/qaJZ9fNaS5YapSeQTB.o5D7bDdoqzPxdy/6NlDTpC.RpjufNkC', 'estudiante', 'Arnó Dorian', 3, 0, 0),
+(3, 'profesorTobares@gmail.com', '$2y$12$bplLwfa4SgcgnENQLCsL0urbK0scJvbnWWuujTmzwtTWvimYwHM9e', 'profesor', 'Jose Tobares', 1, 1, 1),
+(4, 'arnodorian@gmail.com', '$2y$12$XiUnh/IzKQshQ/ZNgmydL.2voR3yjhIZ5o30jRgc.zRQRUrsINw1K', 'estudiante', 'Arnó Dorian', 3, 1, 1),
 (5, 'profe1@gmail.com', '$2y$12$U9Mi0Qm2yp.ENQGdeoCAe.JKEvu2dmwA0SxoxPhSVYHQzqniJJa7W', 'profesor', 'Profe 1', 2, 1, 1),
 (6, 'asia@gmail.com', '$2y$12$v4CKkK9hxtS3zw5Wc10AxO5Mm2cpyhBZGLbAyi5f14EGe3FJyWMRC', 'estudiante', 'Asia', 4, 1, 1),
 (7, 'emilyflores@gmail.com', '$2y$12$gpzUEl.za4WyejUisBuYk.untHkoU/0cSJMCiSbSRtPa1.8vEQyfG', 'estudiante', 'Emily Flores', 5, 0, 0),
 (8, 'robertlime@gmail.com', '$2y$12$k8L9oiuAkzOr3sBUl3q.x.mkYSw1woUIvnrwJI1co2D/9r.t8wG4.', 'estudiante', 'Rober Limerio', 6, 0, 0),
 (9, 'soniap@gmail.com', '$2y$12$TkKENouMeUdI7TWzH3jNlupMZY.xVbkCdXi.4KWlCXa3Jriro4Mhu', 'estudiante', 'Sonia Paredes', 7, 0, 0),
-(10, 'julioperez@gmail.com', '$2y$12$zssaAG5Eoj2E0IawiDgq4u8t.L/ugstSsQS9oHgWPi.4JLn9IBe4m', 'profesor', 'Julio Perez', 3, 1, 1),
+(10, 'julioperez@gmail.com', '$2y$12$FTvE16x1Kf9/ME0lu6RXLOKQ9w9E7dwxmoVRDmhL58waWglatEwLq', 'profesor', 'Julio Perez', 3, 1, 1),
 (11, 'penelopeb@gmail.com', '$2y$12$1yw1rft4tO.W7UYNJ5kZXeuKHbnhheeixT.HeaYgl7JfpgXPZ51Ci', 'profesor', 'Penelope Bonswit', 4, 1, 1),
 (12, 'bernisan@gmail.com', '$2y$12$SJusSYd0rU19GplonQdgVur1UmMC1psllSjVvmlo0RTSGDM9m.0tS', 'estudiante', 'Berni Santero', 8, 0, 0),
 (13, 'yuli@gmail.com', '$2y$12$kKbd04c45u8lQ9X/OzrkquTB6FOaHadiXvfR1Y9PybNk7MpjkTt6G', 'estudiante', 'Yuliet Gómez', 9, 0, 0),
@@ -472,21 +491,24 @@ INSERT INTO `usuario_pregunta` (`id`, `usuario_id`, `pregunta_id`, `respuesta_ha
 (1, 2, 1, '$2y$10$MZUQmTnnaKG3f5oj0j1UO.OHB73WeqzGCAlPFPvrSnrzN.rDhGsDC'),
 (2, 2, 5, '$2y$10$1.tFrYeA9MJUCM1uTk2NkOdumq7l9MmUyesUbkgNBb4AS6GF2DO6e'),
 (3, 2, 2, '$2y$10$IcQ4jFdG/4R2wqCVdMGjS.SGE.rQwnyHWaUurEytL5pAIpfaiud5e'),
-(4, 3, 1, '$2y$10$./jyjDPmoBaiAADtFSPRGOvLLpaKhQKTUwDOlNg37rbRYm68ymkke'),
-(5, 3, 2, '$2y$10$gF3ho8RilMQ1cKMFXEnV7uH6rQ0nFv.BlQnb32zTOBUHBEqr9gu0a'),
-(6, 3, 5, '$2y$10$TAMFu1iTyVZDjYbhWL27cuvq9CQmEf2kjNzKOZLVeB.bn4ToIorEa'),
 (10, 5, 4, '$2y$10$vSUr9GYGqusKbjoQ1t7CaeIyOzfDifTpf/OKf4GWDlBUZ1fMNuATS'),
 (11, 5, 2, '$2y$10$f.r5H/M44O6GpX5W31XmCucmPk3ZEuFgQozPTzTodnWcaa9v9Ylyq'),
 (12, 5, 5, '$2y$10$I0AdRmh/KTZ2UztlxbNZYODdMkEshZ9kZ21lTOnwWWzC67L1.bzPq'),
 (13, 11, 1, '$2y$10$94MVDUZVzAZ95VYDtQovTel/8CerwG5CurMguaPs2dqMBQ2/JxI.q'),
 (14, 11, 2, '$2y$10$4oTZTD4HuA1wS8742ZpNAOxOYr4BEzowytW/n/eQGmbj.Bohc.xD2'),
 (15, 11, 3, '$2y$10$tuKSDHMaEIK2d4A9bKzD4u8ytp/WswT6HtALRy58mkDOntdfIGhTu'),
-(16, 10, 2, '$2y$10$9me3ezXa3f/KwHoa2w/7k./MtBnwaAX76MofAjPhjUEsewO2Lgr.a'),
-(17, 10, 5, '$2y$10$39xpnM9iawcF7LJBy2DYkuJi4ulWjqVgJ0qI4vTlVEHs3e8Ha/Ewa'),
-(18, 10, 4, '$2y$10$ZVT5rKVoYN3KGMHtzzlmh.91XlIqZq4UwWbjdfG.PZ68FgfGvNRpC'),
 (22, 6, 1, '$2y$10$Lg6MniIf1uEUHg1tzKsUHu8SnUcRW4/iZhcOe0SSO99gQB7AbTzFe'),
 (23, 6, 2, '$2y$10$ZWFQ5Kom5gy56qE0V2plpeUF5GFpHnI1flukT6p17FhkWZtKEx.WC'),
-(24, 6, 3, '$2y$10$f79vdRCNj56o4T1/tK2oP.tPJBb1SE0wpXk/i1V5s9kFOp8IPQ8na');
+(24, 6, 3, '$2y$10$f79vdRCNj56o4T1/tK2oP.tPJBb1SE0wpXk/i1V5s9kFOp8IPQ8na'),
+(25, 4, 1, '$2y$10$m8ynGjJkc9Rc2t0E0FUJ.eSYNnaWflRo.VQz9iLMnQOjg3bSsvbwO'),
+(26, 4, 2, '$2y$10$q5X7mtpOXvYSi5rcpowVy.ubSewNxP63XplpKtw6H4V4L9H6bAAWq'),
+(27, 4, 3, '$2y$10$stcFoKQ91icMIPNYsX8soeNO9MfcSXyddU2SNiJpqyX1HArOqg4Te'),
+(28, 3, 1, '$2y$10$n2XZ0CoCPw6BPuINXod4.OiSX/YrW1TlkVlnFdahl./z3./oW/S.K'),
+(29, 3, 2, '$2y$10$0950IQL/YtOEgHIW8eNpxuzGlVz1Zx5rfDz71vWmel7q2DaBGnbHO'),
+(30, 3, 3, '$2y$10$bR0x/LwEfapwh8GUraUAvucI9V97UZwcO6DFFWZ7nX0m3SMSA2qAq'),
+(31, 10, 1, '$2y$10$G544sGfQXDGfEm2gniojPO.nT/s.0w1pqZNSamjTSeemYtzliT4Fm'),
+(32, 10, 2, '$2y$10$8QnsZRW1CCO5Ym9.Zqjxu.gpljZd1L4fCpyLFjQUS7Tj2vuCRz7ke'),
+(33, 10, 3, '$2y$10$mj2C8dqfjINBZ3c43gKNmOM701CknEldUGNNTqo/pXiB7DC9W.kjO');
 
 --
 -- Índices para tablas volcadas
@@ -636,7 +658,7 @@ ALTER TABLE `profesor`
 -- AUTO_INCREMENT de la tabla `sesion`
 --
 ALTER TABLE `sesion`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=123;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=142;
 
 --
 -- AUTO_INCREMENT de la tabla `usuario`
@@ -648,7 +670,7 @@ ALTER TABLE `usuario`
 -- AUTO_INCREMENT de la tabla `usuario_pregunta`
 --
 ALTER TABLE `usuario_pregunta`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=34;
 
 --
 -- Restricciones para tablas volcadas
