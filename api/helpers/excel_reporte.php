@@ -3,6 +3,8 @@ require_once __DIR__ . '/../vendor/autoload.php';
 
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
@@ -13,24 +15,27 @@ const COLOR_GOLD_PALE    = 'F5E6B8';
 const COLOR_IVORY_DARK   = 'F0E8D5';
 const COLOR_PARCHMENT    = 'E8DEC6';
 
-function estilizarTitulo($sheet, string $celda, string $texto, int $tamano = 14): void {
-    $sheet->setCellValue($celda, $texto);
-    $sheet->getStyle($celda)->getFont()->setBold(true)->setSize($tamano)
-        ->getColor()->setRGB(COLOR_CRIMSON_DEEP);
+/** Escribe un valor sin permitir que se interprete como fórmula. */
+function celda($sheet, string $ref, $valor): void {
+    if (is_int($valor) || is_float($valor)) {
+        $sheet->setCellValueExplicit($ref, $valor, DataType::TYPE_NUMERIC);
+    } else {
+        $sheet->setCellValueExplicit($ref, (string)$valor, DataType::TYPE_STRING);
+    }
 }
 
-function estilizarSubtitulo($sheet, string $celda, string $texto): void {
-    $sheet->setCellValue($celda, $texto);
-    $sheet->getStyle($celda)->getFont()->setItalic(true)->setSize(11);
+function escribirFila($sheet, int $row, array $valores): void {
+    foreach (array_values($valores) as $i => $v) {
+        // Notas ya formateadas ("4.2") se guardan como número; todo lo demás, como texto.
+        if ($i > 0 && is_string($v) && preg_match('/^\d+\.\d$/', $v)) $v = (float)$v;
+        celda($sheet, Coordinate::stringFromColumnIndex($i + 1) . $row, $v);
+    }
 }
 
 function estilizarEncabezados($sheet, string $rango): void {
     $sheet->getStyle($rango)->applyFromArray([
         'font' => ['bold' => true, 'color' => ['rgb' => COLOR_GOLD_PALE]],
-        'fill' => [
-            'fillType' => Fill::FILL_SOLID,
-            'startColor' => ['rgb' => COLOR_CRIMSON]
-        ],
+        'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => COLOR_CRIMSON]],
         'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
         'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => COLOR_PARCHMENT]]]
     ]);
@@ -41,103 +46,91 @@ function estilizarCuerpo($sheet, string $rango): void {
         'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => COLOR_PARCHMENT]]],
         'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]
     ]);
+    $sheet->getStyle($rango)->getNumberFormat()->setFormatCode('0.0');
 }
 
 function estilizarFilaFinal($sheet, string $rango): void {
     $sheet->getStyle($rango)->applyFromArray([
         'font' => ['bold' => true, 'color' => ['rgb' => COLOR_CRIMSON_DEEP]],
-        'fill' => [
-            'fillType' => Fill::FILL_SOLID,
-            'startColor' => ['rgb' => COLOR_IVORY_DARK]
-        ],
+        'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => COLOR_IVORY_DARK]],
         'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => COLOR_PARCHMENT]]]
     ]);
 }
 
-function autoAjustarColumnas($sheet, int $cantidadColumnas): void {
-    $letras = range('A', chr(64 + $cantidadColumnas));
-    foreach ($letras as $letra) {
-        $sheet->getColumnDimension($letra)->setAutoSize(true);
-    }
-}
-
-function generarExcelIndividual(array $reporte): string {
+function generarExcelDocumento(array $doc): string {
     $spreadsheet = new Spreadsheet();
     $sheet = $spreadsheet->getActiveSheet();
     $sheet->setTitle('Reporte');
 
-    $est = $reporte['estudiante'];
-    $mat = $reporte['materia'];
-    $res = $reporte['resumen'];
+    $n      = count($doc['columnas']);
+    $ultima = Coordinate::stringFromColumnIndex($n);
+    $mitad  = max(1, (int)ceil($n / 2));
+    $row    = 1;
 
-    estilizarTitulo($sheet, 'A1', 'Reporte Académico');
-    estilizarSubtitulo($sheet, 'A2', "Estudiante: {$est['nombre']} — Grado {$est['grado']} {$est['seccion']}");
-    estilizarSubtitulo($sheet, 'A3', "Materia: {$mat['nombre']} ({$mat['codigo']})");
+    // Encabezado institucional
+    celda($sheet, "A$row", 'SISTEMA DE GESTIÓN ESCOLAR');
+    $sheet->mergeCells("A$row:$ultima$row");
+    $sheet->getStyle("A$row")->getFont()->setBold(true)->setSize(14)->getColor()->setRGB(COLOR_CRIMSON_DEEP);
+    $row++;
+    celda($sheet, "A$row", $doc['titulo']);
+    $sheet->mergeCells("A$row:$ultima$row");
+    $sheet->getStyle("A$row")->getFont()->setBold(true)->setSize(12);
+    $row += 2;
 
-    $headers = ['Trimestre', 'Prom. Parciales', 'Prom. Apreciación', 'Examen Trimestral', 'Nota Trimestral'];
-    $sheet->fromArray($headers, null, 'A5');
-    estilizarEncabezados($sheet, 'A5:E5');
-
-    $row = 6;
-    foreach ($res as $tri => $datos) {
-        if ($tri === 'promedio_final') continue;
-        $sheet->fromArray([
-            $tri,
-            $datos['promedio_parciales'] ?? 'Sin datos',
-            $datos['promedio_apreciacion'] ?? 'Sin datos',
-            $datos['examen_trimestral'] ?? 'Sin registrar',
-            $datos['nota_trimestral'] ?? 'En curso'
-        ], null, "A$row");
+    // Datos (celdas combinadas para que no afecten el ancho de las columnas)
+    foreach ($doc['info'] as $fila) {
+        if (count($fila) === 1) {
+            celda($sheet, "A$row", "{$fila[0]['label']}: {$fila[0]['value']}");
+            $sheet->mergeCells("A$row:$ultima$row");
+        } else {
+            $finA = Coordinate::stringFromColumnIndex($mitad);
+            $iniB = Coordinate::stringFromColumnIndex($mitad + 1);
+            celda($sheet, "A$row", "{$fila[0]['label']}: {$fila[0]['value']}");
+            $sheet->mergeCells("A$row:$finA$row");
+            celda($sheet, "$iniB$row", "{$fila[1]['label']}: {$fila[1]['value']}");
+            $sheet->mergeCells("$iniB$row:$ultima$row");
+        }
         $row++;
     }
-    estilizarCuerpo($sheet, "A6:E" . ($row - 1));
+    $row++;
 
-    $sheet->setCellValue("A$row", 'Promedio Final');
-    $sheet->mergeCells("A$row:D$row");
-    $sheet->setCellValue("E$row", $res['promedio_final'] ?? 'En curso');
-    estilizarFilaFinal($sheet, "A$row:E$row");
+    // Subtítulo
+    celda($sheet, "A$row", $doc['subtitulo']);
+    $sheet->mergeCells("A$row:$ultima$row");
+    $sheet->getStyle("A$row")->getFont()->setBold(true)->setSize(11);
+    $sheet->getStyle("A$row")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+    $row++;
 
-    autoAjustarColumnas($sheet, 5);
+    // Tabla
+    escribirFila($sheet, $row, $doc['columnas']);
+    estilizarEncabezados($sheet, "A$row:$ultima$row");
+    $row++;
 
-    return exportarSpreadsheet($spreadsheet);
-}
-
-function generarExcelGrupal(array $reporte): string {
-    $spreadsheet = new Spreadsheet();
-    $sheet = $spreadsheet->getActiveSheet();
-    $sheet->setTitle('Reporte Grupal');
-
-    $mat = $reporte['materia'];
-    $ag  = $reporte['agregados'];
-
-    estilizarTitulo($sheet, 'A1', 'Reporte Grupal');
-    estilizarSubtitulo($sheet, 'A2', "Materia: {$mat['nombre']} ({$mat['codigo']})");
-    estilizarSubtitulo($sheet, 'A3', "Total estudiantes: {$ag['total_estudiantes']}  |  Promedio de grupo: " . ($ag['promedio_grupo'] ?? 'Sin datos'));
-    estilizarSubtitulo($sheet, 'A4', "Aprobados: {$ag['aprobados']}  |  En proceso: {$ag['en_proceso']}");
-
-    $headers = ['Estudiante', 'Grado', 'Sección', 'Promedio Final', 'Estado'];
-    $sheet->fromArray($headers, null, 'A6');
-    estilizarEncabezados($sheet, 'A6:E6');
-
-    $row = 7;
-    foreach ($reporte['filas'] as $fila) {
-        $est = $fila['estudiante'];
-        $final = $fila['resumen']['promedio_final'];
-        $estado = $final === null ? '—' : ($final >= 3 ? 'Aprobado' : 'En proceso');
-        $sheet->fromArray([
-            $est['nombre'], $est['grado'], $est['seccion'],
-            $final ?? 'En curso', $estado
-        ], null, "A$row");
+    $desde = $row;
+    foreach ($doc['filas'] as $fila) {
+        escribirFila($sheet, $row, $fila);
         $row++;
     }
-    estilizarCuerpo($sheet, "A7:E" . ($row - 1));
+    if ($row > $desde) {
+        estilizarCuerpo($sheet, "A$desde:$ultima" . ($row - 1));
+        $sheet->getStyle("A$desde:A" . ($row - 1))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+    }
 
-    autoAjustarColumnas($sheet, 5);
+    // Pie
+    if (!empty($doc['pie'])) {
+        $row++;
+        foreach ($doc['pie'] as $p) {
+            celda($sheet, "A$row", "{$p['label']}: {$p['value']}");
+            $sheet->mergeCells("A$row:$ultima$row");
+            estilizarFilaFinal($sheet, "A$row:$ultima$row");
+            $row++;
+        }
+    }
 
-    return exportarSpreadsheet($spreadsheet);
-}
+    for ($i = 1; $i <= $n; $i++) {
+        $sheet->getColumnDimension(Coordinate::stringFromColumnIndex($i))->setAutoSize(true);
+    }
 
-function exportarSpreadsheet(Spreadsheet $spreadsheet): string {
     $writer = new Xlsx($spreadsheet);
     ob_start();
     $writer->save('php://output');

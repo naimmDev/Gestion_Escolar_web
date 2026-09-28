@@ -1,6 +1,7 @@
 <?php
 require '../config/db.php';
 require '../config/auth_middleware.php';
+require '../helpers/notas_calculo.php';
 //para que el analizador y editor de código reconozca la variable $authUser y su tipo, se agrega esta anotación:
 /** @var array{usuario_id: int, rol: string, id_referencia: int|null} $authUser */
 
@@ -32,51 +33,7 @@ if ($method === 'GET') {
         $stmt->execute([$estudianteId, $materiaId]);
         $notas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $resultado = [];
-        $notasTrimestrales = [];
-
-        foreach (TRIMESTRES_VALIDOS as $tri) {
-            $delTrimestre = array_values(array_filter($notas, fn($n) => $n['trimestre'] === $tri));
-
-            $parciales     = array_values(array_filter($delTrimestre, fn($n) => $n['tipo'] === 'PARCIAL'));
-            $apreciaciones = array_values(array_filter($delTrimestre, fn($n) => $n['tipo'] === 'APRECIACION'));
-
-            $examen = null;
-            foreach ($delTrimestre as $n) {
-                if ($n['tipo'] === 'EXAMEN_TRIMESTRAL') { $examen = $n; break; }
-            }
-
-            $promParciales = count($parciales) > 0
-                ? array_sum(array_map(fn($n) => (float)$n['puntaje'], $parciales)) / count($parciales)
-                : null;
-
-            $promApreciacion = count($apreciaciones) > 0
-                ? array_sum(array_map(fn($n) => (float)$n['puntaje'], $apreciaciones)) / count($apreciaciones)
-                : null;
-
-            $examenScore = $examen ? (float)$examen['puntaje'] : null;
-
-            $notaTrimestral = null;
-            if ($promParciales !== null && $promApreciacion !== null && $examenScore !== null) {
-                $notaTrimestral = round(($promParciales + $promApreciacion + $examenScore) / 3, 2);
-                $notasTrimestrales[] = $notaTrimestral;
-            }
-
-            $resultado[$tri] = [
-                "parciales"            => $parciales,
-                "promedio_parciales"   => $promParciales   !== null ? round($promParciales, 2)   : null,
-                "apreciaciones"        => $apreciaciones,
-                "promedio_apreciacion" => $promApreciacion !== null ? round($promApreciacion, 2) : null,
-                "examen_trimestral"    => $examenScore,
-                "nota_trimestral"      => $notaTrimestral
-            ];
-        }
-
-        $resultado["promedio_final"] = count($notasTrimestrales) === 3
-            ? round(array_sum($notasTrimestrales) / 3, 2)
-            : null;
-
-        sendSuccess($resultado);
+        sendSuccess(calcularResumenNotas($notas));
     }
 
     // ---------- LISTADO NORMAL ----------

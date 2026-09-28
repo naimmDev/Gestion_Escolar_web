@@ -9,3 +9,7 @@ Thumbs.db
 # Editor
 .vscode/
 .idea/
+
+# Archivos y herramientas locales
+.kilo/
+*.sql

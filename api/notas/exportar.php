@@ -1,9 +1,8 @@
 <?php
 require '../config/db.php';
 require '../config/auth_middleware.php';
-require '../helpers/reporte_data.php';
+require_once '../helpers/reporte_documento.php';
 
-//para que el analizador y editor de código reconozca la variable $authUser y su tipo, se agrega esta anotación:
 /** @var array{usuario_id: int, rol: string, id_referencia: int|null} $authUser */
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
@@ -12,75 +11,87 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 
 requireRole($pdo, ['profesor', 'estudiante']);
 
-$format     = $_GET['format']       ?? '';
-$materiaId  = isset($_GET['materia_id']) ? (int)$_GET['materia_id'] : null;
-$estudianteId = isset($_GET['estudiante_id']) ? (int)$_GET['estudiante_id'] : null;
-$trimestre  = $_GET['trimestre']    ?? null;
+function paramEntero(string $nombre): ?int {
+    if (!isset($_GET[$nombre]) || $_GET[$nombre] === '') return null;
+    if (!ctype_digit((string)$_GET[$nombre])) sendError("Parámetro '$nombre' inválido", 400);
+    return (int)$_GET[$nombre];
+}
 
-if (!in_array($format, ['pdf', 'excel'])) {
+function nombreArchivoSeguro(string $s): string {
+    $s = strtr($s, ['á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u','ü'=>'u','ñ'=>'n',
+                    'Á'=>'A','É'=>'E','Í'=>'I','Ó'=>'O','Ú'=>'U','Ü'=>'U','Ñ'=>'N']);
+    $s = preg_replace('/\s+/', '_', trim($s));
+    $s = preg_replace('/[^A-Za-z0-9_\-]/', '', $s);
+    return $s !== '' ? substr($s, 0, 80) : 'reporte';
+}
+
+$format       = $_GET['format'] ?? '';
+$materiaId    = paramEntero('materia_id');
+$estudianteId = paramEntero('estudiante_id');
+$trimestre    = isset($_GET['trimestre']) && $_GET['trimestre'] !== '' ? $_GET['trimestre'] : null;
+$grado        = isset($_GET['grado']) && trim($_GET['grado']) !== '' ? trim($_GET['grado']) : null;
+
+if (!in_array($format, ['pdf', 'excel'], true)) {
     sendError("Formato inválido, use 'pdf' o 'excel'", 400);
 }
-if (!$materiaId) {
-    sendError("materia_id requerido", 400);
+if ($trimestre !== null && !in_array($trimestre, TRIMESTRES_REPORTE, true)) {
+    sendError("Trimestre inválido", 400);
 }
 
-// ---------- Resolver permisos según rol ----------
+// ---------- Permisos y selección del tipo de reporte ----------
 if ($authUser['rol'] === 'estudiante') {
-    // El estudiante solo puede exportar su propio reporte individual
-    $estudianteId = $authUser['id_referencia'];
-    $esGrupal = false;
+    // Siempre el propio estudiante; nunca grupal.
+    $estudianteId = (int)$authUser['id_referencia'];
 
-    if (!estaMatriculado($pdo, $estudianteId, $materiaId)) {
-        sendError("No estás matriculado en esta materia", 403);
+    if ($materiaId === null) {
+        $documento = documentoBoletinEstudiante($pdo, $estudianteId, $trimestre);
+    } else {
+        if (!estaMatriculado($pdo, $estudianteId, $materiaId)) {
+            sendError("No estás matriculado en esta materia", 403);
+        }
+        $documento = documentoIndividual($pdo, $estudianteId, $materiaId, $trimestre);
     }
 } else {
-    // Profesor: debe ser dueño de la materia
+    if ($materiaId === null) {
+        sendError("materia_id requerido", 400);
+    }
     $checkMateria = $pdo->prepare("SELECT id FROM materia WHERE id = ? AND profesor_id = ?");
     $checkMateria->execute([$materiaId, $authUser['id_referencia']]);
     if (!$checkMateria->fetch()) {
         sendError("No tienes permiso sobre esta materia", 403);
     }
-    $esGrupal = empty($estudianteId);
 
-    // Si el profesor pide un estudiante específico, también debe estar matriculado
-    if (!$esGrupal && !estaMatriculado($pdo, $estudianteId, $materiaId)) {
-        sendError("El estudiante no está matriculado en esta materia", 404);
+    if ($estudianteId !== null) {
+        if (!estaMatriculado($pdo, $estudianteId, $materiaId)) {
+            sendError("El estudiante no está matriculado en esta materia", 404);
+        }
+        $documento = documentoIndividual($pdo, $estudianteId, $materiaId, $trimestre);
+    } else {
+        $documento = documentoGrupal($pdo, $materiaId, $grado, $trimestre);
     }
 }
 
-// ---------- Armar datos ----------
-if ($esGrupal) {
-    $reporte = armarReporteGrupal($pdo, $materiaId);
-} else {
-    $reporte = armarReporteIndividual($pdo, $estudianteId, $materiaId);
-}
-
-if (!$reporte) {
+if (!$documento || empty($documento['filas'])) {
     sendError("No se encontraron datos para exportar", 404);
 }
 
-// ---------- Filtrar por trimestre si se especificó (solo individual) ----------
-if ($trimestre && !$esGrupal && isset($reporte['resumen'][$trimestre])) {
-    $reporte['resumen'] = [$trimestre => $reporte['resumen'][$trimestre]];
-}
-
 // ---------- Generar archivo ----------
-$nombreBase = $esGrupal
-    ? 'reporte_' . preg_replace('/\s+/', '_', $reporte['materia']['nombre'])
-    : 'notas_' . preg_replace('/\s+/', '_', $reporte['estudiante']['nombre']);
+$nombreBase = nombreArchivoSeguro($documento['archivo']);
 
 if ($format === 'pdf') {
     require_once '../helpers/pdf_reporte.php';
-    $contenido = $esGrupal ? generarPdfGrupal($reporte) : generarPdfIndividual($reporte);
+    $contenido = generarPdfDocumento($documento);
     header('Content-Type: application/pdf');
     header('Content-Disposition: attachment; filename="' . $nombreBase . '.pdf"');
 } else {
     require_once '../helpers/excel_reporte.php';
-    $contenido = $esGrupal ? generarExcelGrupal($reporte) : generarExcelIndividual($reporte);
+    $contenido = generarExcelDocumento($documento);
     header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     header('Content-Disposition: attachment; filename="' . $nombreBase . '.xlsx"');
 }
 
+header('Access-Control-Expose-Headers: Content-Disposition');
+header('X-Content-Type-Options: nosniff');
 header('Content-Length: ' . strlen($contenido));
 echo $contenido;
 exit;
