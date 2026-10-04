@@ -9,7 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     sendError("Método no permitido", 405);
 }
 
-requireRole($pdo, ['profesor', 'estudiante']);
+requireRole($pdo, ['profesor', 'estudiante', 'admin']);
 
 function paramEntero(string $nombre): ?int {
     if (!isset($_GET[$nombre]) || $_GET[$nombre] === '') return null;
@@ -51,7 +51,25 @@ if ($authUser['rol'] === 'estudiante') {
         }
         $documento = documentoIndividual($pdo, $estudianteId, $materiaId, $trimestre);
     }
+} elseif ($authUser['rol'] === 'admin') {
+    // Sin restricción de materia propia. Puede exportar cualquier combinación válida.
+    if ($materiaId === null && $estudianteId === null) {
+        sendError("Debes indicar materia_id o estudiante_id", 400);
+    }
+
+    if ($estudianteId !== null && $materiaId === null) {
+        // Boletín completo de cualquier estudiante
+        $documento = documentoBoletinEstudiante($pdo, $estudianteId, $trimestre);
+    } elseif ($estudianteId !== null) {
+        if (!estaMatriculado($pdo, $estudianteId, $materiaId)) {
+            sendError("El estudiante no está matriculado en esta materia", 404);
+        }
+        $documento = documentoIndividual($pdo, $estudianteId, $materiaId, $trimestre);
+    } else {
+        $documento = documentoGrupal($pdo, $materiaId, $grado, $trimestre);
+    }
 } else {
+    // Profesor: solo sus propias materias
     if ($materiaId === null) {
         sendError("materia_id requerido", 400);
     }
