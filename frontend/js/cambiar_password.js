@@ -16,10 +16,10 @@ if (!user) {
 // Si ya cambió la contraseña, redirigir
 if (user.password_cambiada) {
     if (user.preguntas_configuradas) {
-        const routes = { profesor: 'profesor.html', estudiante: 'estudiante.html' };
+        const routes = { profesor: 'profesor.php', estudiante: 'estudiante.php' };
         window.location.href = routes[user.rol] || 'index.html';
     } else {
-        window.location.href = 'configurar_preguntas.html';
+        window.location.href = 'configurar_preguntas.php';
     }
     return;
 }
@@ -63,10 +63,10 @@ document.getElementById('cambiarPasswordForm').addEventListener('submit', async 
             
             setTimeout(() => {
                 if (user.preguntas_configuradas) {
-                    const routes = { profesor: 'profesor.html', estudiante: 'estudiante.html' };
+                    const routes = { profesor: 'profesor.php', estudiante: 'estudiante.php' };
                     window.location.href = routes[user.rol] || 'index.html';
                 } else {
-                    window.location.href = 'configurar_preguntas.html';
+                    window.location.href = 'configurar_preguntas.php';
                 }
             }, 2000);
         } else {
@@ -83,17 +83,17 @@ document.getElementById('cambiarPasswordForm').addEventListener('submit', async 
 window.skipPasswordChange = function() {
     const user = JSON.parse(localStorage.getItem('currentUser'));
     if (user.rol === 'admin') {
-        window.location.href = 'admin.html';
+        window.location.href = 'admin.php';
     } else {
         // Guardar que ya vio el mensaje pero no cambió contraseña
         user.password_skipped = true;
         localStorage.setItem('currentUser', JSON.stringify(user));
         
         if (user.preguntas_configuradas) {
-            const routes = { profesor: 'profesor.html', estudiante: 'estudiante.html' };
+            const routes = { profesor: 'profesor.php', estudiante: 'estudiante.php' };
             window.location.href = routes[user.rol];
         } else {
-            window.location.href = 'configurar_preguntas.html';
+            window.location.href = 'configurar_preguntas.php';
         }
     }
 };

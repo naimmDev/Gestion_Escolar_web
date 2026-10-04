@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
             try {
                 const response = await fetch(`${API_URL}/auth/login.php`, {
                     method:  'POST',
+                    credentials: 'include',
                     headers: { 'Content-Type': 'application/json' },
                     body:    JSON.stringify({ email, password })
                 });
@@ -28,7 +29,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 localStorage.setItem('currentUser', JSON.stringify({
                     email,
-                    token:         data.token,
                     rol:           data.rol,
                     nombre:        data.nombre,
                     id_referencia: data.id_referencia,
@@ -37,21 +37,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 }));
 
                 if (data.rol === 'admin') {
-                    window.location.href = 'admin.html';
+                    window.location.href = 'admin.php';
                     return;
                 }
 
                 if (!data.password_cambiada) {
-                    window.location.href = 'cambiar_password.html';
+                    window.location.href = 'cambiar_password.php';
                     return;
                 }
 
                 if (!data.preguntas_configuradas) {
-                    window.location.href = 'configurar_preguntas.html';
+                    window.location.href = 'configurar_preguntas.php';
                     return;
                 }
                 
-                const routes = { profesor: 'profesor.html', estudiante: 'estudiante.html' };
+                const routes = { profesor: 'profesor.php', estudiante: 'estudiante.php' };
                 window.location.href = routes[data.rol];
 
             } catch (err) {

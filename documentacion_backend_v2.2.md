@@ -1,5 +1,5 @@
 # Documentación Backend — Sistema de Gestión Escolar
-**Versión:** 2.1
+**Versión:** 2.2
 **Stack:** PHP 8.2 · MariaDB 10.4 · XAMPP
 **Fecha de inicio:** Junio 2026
 
@@ -16,6 +16,7 @@
 8. [Sistema de Notas](#8-sistema-de-notas)
 9. [Credenciales Iniciales](#9-credenciales-iniciales)
 10. [Pendiente](#10-pendiente)
+11. [Decisiones registradas (no se implementarán)](#11-decisiones-registradas-no-se-implementarán)
 
 ---
 
@@ -27,15 +28,16 @@ gestion_escolar/
 │   ├── config/
 │   │   ├── db.php
 │   │   ├── auth_middleware.php
+│   │   ├── verificar_sesion_pagina.php  # nuevo — gate de sesión para páginas .php del frontend
 │   │   └── response.php
 │   ├── auth/
 │   │   ├── login.php                    # POST
 │   │   ├── logout.php                   # POST
-│   │   ├── cambiar_password.php         # POST — requiere token
-│   │   ├── recuperar_password.php       # POST — sin token (recuperación por pregunta de seguridad)
+│   │   ├── cambiar_password.php         # POST — requiere sesión
+│   │   ├── recuperar_password.php       # POST — sin sesión (recuperación por pregunta de seguridad)
 │   │   ├── preguntas_seguridad.php      # GET  — lista las 8 preguntas predefinidas
-│   │   ├── preguntas_usuario.php        # GET  — sin token, por identificación
-│   │   └── configurar_preguntas.php     # POST — requiere token
+│   │   ├── preguntas_usuario.php        # GET  — sin sesión, por identificación
+│   │   └── configurar_preguntas.php     # POST — requiere sesión
 │   ├── estudiantes/
 │   │   ├── index.php                    # GET · POST · PUT
 │   │   └── delete.php                   # DELETE
@@ -48,7 +50,14 @@ gestion_escolar/
 │   ├── matriculas/
 │   │   └── index.php                    # GET · POST · DELETE
 │   ├── notas/
-│   │   └── index.php                    # GET (listado/resumen) · POST · PUT · DELETE
+│   │   ├── index.php                    # GET (listado/resumen) · POST · PUT · DELETE
+│   │   └── exportar.php                 # GET — exportación de reportes PDF/Excel
+│   ├── helpers/
+│   │   ├── notas_calculo.php            # cálculo de resumen por trimestre — única fuente de verdad
+│   │   ├── reporte_data.php             # consultas a BD para armar reportes (individual/boletín/grupal)
+│   │   ├── reporte_documento.php        # construye el documento genérico (título, info, columnas, filas, pie)
+│   │   ├── pdf_reporte.php              # renderiza el documento genérico a PDF (DomPDF, con escape HTML)
+│   │   └── excel_reporte.php            # renderiza el documento genérico a Excel (PhpSpreadsheet, sin fórmulas)
 │   └── comentarios/
 │       └── index.php                    # GET · POST
 └── frontend/
@@ -75,13 +84,17 @@ gestion_escolar/
 | id_referencia | INT NULL | FK a `estudiante.id` o `profesor.id` (NULL para admin) |
 | password_cambiada | TINYINT(1) DEFAULT 0 | 1 si ya cambió su contraseña inicial |
 | preguntas_configuradas | TINYINT(1) DEFAULT 0 | 1 si ya configuró sus 3 preguntas de seguridad |
+| intentos_fallidos | INT(11) DEFAULT 0 *(nueva)* | Contador de logins fallidos consecutivos |
+| bloqueado_hasta | DATETIME NULL *(nueva)* | Si está en el futuro, el login se rechaza (429) aunque la contraseña sea correcta |
+
+> Ver sección 3 — Protección contra fuerza bruta.
 
 #### `sesion`
 | Campo | Tipo | Descripción |
 |---|---|---|
 | id | INT PK AUTO | Identificador |
 | usuario_id | INT FK | Referencia a `usuario` |
-| token | VARCHAR(64) UNIQUE | Token Bearer (hex 32 bytes) |
+| token | VARCHAR(64) UNIQUE | Token de sesión (hex 32 bytes) — viaja en la cookie `sesion_token`, ya no en el JSON de login |
 | expires_at | DATETIME | Expiración (8 horas desde login) |
 | activa | TINYINT(1) | 1 = activa, 0 = cerrada |
 | created_at | DATETIME | Fecha de creación |
@@ -162,7 +175,7 @@ gestion_escolar/
 | comentario | TEXT | Contenido del comentario |
 | fecha | DATETIME | Fecha de envío |
 
-#### `pregunta_seguridad` *(nueva)*
+#### `pregunta_seguridad`
 | Campo | Tipo | Descripción |
 |---|---|---|
 | id | INT PK AUTO | Identificador |
@@ -170,7 +183,7 @@ gestion_escolar/
 
 > 8 preguntas predefinidas, fijas en la base de datos (mascota, ciudad natal, apellido materno, primera escuela, comida favorita, mejor amigo de infancia, primer teléfono, modelo de primer auto).
 
-#### `usuario_pregunta` *(nueva)*
+#### `usuario_pregunta`
 | Campo | Tipo | Descripción |
 |---|---|---|
 | id | INT PK AUTO | Identificador |
@@ -184,6 +197,15 @@ gestion_escolar/
 
 ## 3. Autenticación y Flujo de Primer Ingreso
 
+### Mecanismo de sesión: cookie httpOnly
+
+> **Cambio respecto a v2.1:** la sesión ya no viaja como token Bearer en el header `Authorization`, guardado en `localStorage` del frontend. Ahora viaja en una cookie `sesion_token`:
+> - `httpOnly` (no legible por JavaScript — mitiga robo de sesión por XSS)
+> - `path=/`, `samesite=Lax`
+> - Expira a las 8 horas, igual que antes
+>
+> El navegador la adjunta automáticamente en cada petición al mismo origen; el frontend solo necesita mandar `credentials: 'include'` en cada `fetch()`. `db.php` refleja el header `Origin` de la petición y manda `Access-Control-Allow-Credentials: true` (ya no usa `Access-Control-Allow-Origin: *`, incompatible con cookies).
+
 ### Login
 
 ```
@@ -192,16 +214,16 @@ Body: { "email": "...", "password": "..." }
 ```
 
 1. Busca el usuario por email.
-2. Verifica con `password_verify()` (bcrypt); si falla, intenta SHA256 (legado) y migra el hash automáticamente.
-3. Invalida sesiones previas del usuario.
-4. Genera token (`bin2hex(random_bytes(32))`), sesión válida 8 horas.
+2. Si la cuenta está bloqueada (`bloqueado_hasta` en el futuro), rechaza con **429** sin verificar la contraseña — ver "Protección contra fuerza bruta" abajo.
+3. Verifica con `password_verify()` (bcrypt); si falla, intenta SHA256 (legado) y migra el hash automáticamente.
+4. Si la contraseña es incorrecta, incrementa `intentos_fallidos` (o bloquea si llega al umbral) y devuelve 401.
+5. Si es correcta: resetea `intentos_fallidos`/`bloqueado_hasta`, invalida sesiones previas del usuario, genera token (`bin2hex(random_bytes(32))`, sesión válida 8 horas) y lo pone en la cookie `sesion_token`.
 
 **Respuesta exitosa:**
 ```json
 {
   "success": true,
   "data": {
-    "token": "abc123...",
     "rol": "admin",
     "nombre": "Administrador",
     "id_referencia": null,
@@ -210,20 +232,27 @@ Body: { "email": "...", "password": "..." }
   }
 }
 ```
+> El `token` **ya no se incluye en el JSON** (vive solo en la cookie `httpOnly`, inaccesible desde JS).
 
 > `password_cambiada` y `preguntas_configuradas` indican al frontend si debe redirigir al flujo de primer ingreso. El rol `admin` siempre tiene ambos en `true` y omite ese flujo.
+
+### Protección contra fuerza bruta (nuevo)
+
+- **Umbral:** 5 intentos fallidos consecutivos por cuenta → bloqueo de 15 minutos.
+- Al llegar al umbral, `intentos_fallidos` se resetea a 0 y `bloqueado_hasta` se fija a `NOW() + 15 min`; así, al terminar el bloqueo, la cuenta vuelve a tener 5 intentos frescos.
+- Un login exitoso limpia ambos campos sin importar cuántos intentos fallidos acumulados hubiera.
+- **Por cuenta, no por IP:** decisión deliberada — bloquear por IP protegería además contra ataques que rotan de cuenta en cuenta desde una sola IP, pero en una red compartida (laboratorio, biblioteca) castigaría a usuarios legítimos distintos tras el error de uno solo. Queda anotado como posible mejora futura si se observan patrones de ataque reales.
+- Respuesta de bloqueo: `429` con mensaje `"Cuenta bloqueada temporalmente por intentos fallidos. Intenta de nuevo en N minuto(s)."` — no revela si la cuenta existe o no más allá de lo que ya revelaba el flujo normal.
 
 ### Logout
 ```
 POST /api/auth/logout.php
-Header: Authorization: Bearer <token>
 ```
-Marca la sesión como inactiva (`activa = 0`).
+Lee el token desde la cookie `sesion_token`, marca la sesión como inactiva (`activa = 0`) y limpia la cookie.
 
 ### Cambio de contraseña (usuario autenticado)
 ```
 POST /api/auth/cambiar_password.php
-Header: Authorization: Bearer <token>
 Body: { "password_actual": "...", "password_nueva": "..." }
 ```
 - Verifica la contraseña actual con `password_verify()`.
@@ -235,13 +264,11 @@ Body: { "password_actual": "...", "password_nueva": "..." }
 **Listar las 8 preguntas predefinidas:**
 ```
 GET /api/auth/preguntas_seguridad.php
-Header: Authorization: Bearer <token>
 ```
 
 **Configurar 3 preguntas (usuario autenticado):**
 ```
 POST /api/auth/configurar_preguntas.php
-Header: Authorization: Bearer <token>
 Body: { "preguntas": [ {"pregunta_id": 1, "respuesta": "..."}, ... ] }  // exactamente 3, sin repetir
 ```
 - Borra configuraciones previas del usuario y guarda las nuevas (`respuesta_hash` con bcrypt, respuesta normalizada a minúsculas).
@@ -262,7 +289,7 @@ Body: { "identificacion": "...", "pregunta_id": 1, "respuesta": "...", "password
 ```
 - Busca el usuario (estudiante o profesor) por identificación.
 - Verifica la respuesta con `password_verify()` (case-insensitive).
-- Actualiza `password_hash` directamente (no afecta `password_cambiada`).
+- Actualiza `password_hash` directamente (no afecta `password_cambiada` ni `intentos_fallidos`).
 
 ### Protección de endpoints
 Todos los endpoints (excepto login, recuperar_password y preguntas_usuario) incluyen:
@@ -270,7 +297,11 @@ Todos los endpoints (excepto login, recuperar_password y preguntas_usuario) incl
 require '../config/db.php';
 require '../config/auth_middleware.php';
 ```
-`auth_middleware.php` valida el token Bearer contra `sesion` (activa y no expirada) y deja disponible `$authUser`.
+`auth_middleware.php` valida el token contra `sesion` (activa y no expirada) y deja disponible `$authUser`. El token se lee de `$_COOKIE['sesion_token']` (antes se leía del header `Authorization: Bearer`).
+
+### Protección de páginas del frontend (nuevo)
+
+Las páginas internas (`admin.php`, `profesor.php`, `estudiante.php`, `cambiar_password.php`, `configurar_preguntas.php`) ya no son `.html` servidos sin control — ahora son `.php` que, como primera línea, llaman a `verificarSesionPagina($rolPermitido)` (en `api/config/verificar_sesion_pagina.php`). Esa función valida la cookie `sesion_token` contra la tabla `sesion` antes de dejar pasar el resto del archivo; si no hay sesión válida o el rol no coincide, redirige a `index.html` sin servir nada del panel. Resuelve que antes se pudiera pedir esas páginas por URL directa sin sesión (la protección real de los *datos* siempre fue del lado del servidor vía `auth_middleware.php`; esto cierra la protección de la *interfaz*).
 
 ### Flujo de primer ingreso (referencia para frontend)
 `login` → si `!password_cambiada` → pantalla cambiar contraseña → si `!preguntas_configuradas` → pantalla configurar preguntas → panel según rol. El admin omite ambos pasos.
@@ -284,13 +315,15 @@ require '../config/auth_middleware.php';
 ### Autenticación
 | Método | Endpoint | Auth | Descripción |
 |---|---|---|---|
-| POST | `/auth/login.php` | No | Iniciar sesión |
+| POST | `/auth/login.php` | No | Iniciar sesión (sujeto a bloqueo por fuerza bruta) |
 | POST | `/auth/logout.php` | Sí | Cerrar sesión |
 | POST | `/auth/cambiar_password.php` | Sí | Cambiar contraseña propia |
 | GET | `/auth/preguntas_seguridad.php` | Sí | Listar las 8 preguntas predefinidas |
 | POST | `/auth/configurar_preguntas.php` | Sí | Configurar 3 preguntas de seguridad |
 | GET | `/auth/preguntas_usuario.php?identificacion=` | No | Obtener preguntas configuradas por un usuario |
 | POST | `/auth/recuperar_password.php` | No | Recuperar contraseña respondiendo pregunta de seguridad |
+
+> "Sí" en Auth significa: requiere la cookie `sesion_token` válida (ver sección 3).
 
 ### Estudiantes
 | Método | Endpoint | Rol | Descripción |
@@ -304,7 +337,7 @@ require '../config/auth_middleware.php';
 ```json
 { "id": 5, "name": "...", "email": "...", "identificacion": "...", "grade": "...", "seccion": "...", "initialPassword": "opcional" }
 ```
-> Si se envía `initialPassword`, se regenera el hash en `usuario` y se resetean `password_cambiada = 0`, `preguntas_configuradas = 0`, además de borrarse sus `usuario_pregunta` (flujo de "restablecer acceso").
+> Si se envía `initialPassword`, se regenera el hash en `usuario` y se resetean `password_cambiada = 0`, `preguntas_configuradas = 0`, además de borrarse sus `usuario_pregunta` (flujo de "restablecer acceso"). También resetea `intentos_fallidos` y `bloqueado_hasta`.
 
 ### Profesores
 Igual estructura que Estudiantes (`/profesores/`, `/profesores/delete.php`), mismo comportamiento de `initialPassword` en PUT.
@@ -338,30 +371,47 @@ Ver sección 8 (Sistema de Notas).
 | Parámetro | Obligatorio | Descripción |
 |---|---|---|
 | `format` | Sí | `pdf` o `excel` |
-| `materia_id` | Sí | Materia a exportar |
-| `estudiante_id` | No | Si se envía → reporte individual. Si se omite (solo profesor) → reporte grupal de todos los matriculados |
-| `trimestre` | No | Filtra el reporte individual a un solo trimestre; si se omite, incluye los 3 + promedio final |
+| `materia_id` | Profesor: sí. Estudiante: no | Materia a exportar |
+| `estudiante_id` | No (solo profesor) | Si se envía → reporte individual de ese alumno |
+| `trimestre` | No | `I Trimestre` / `II Trimestre` / `III Trimestre` — filtra el reporte a ese trimestre; si se omite, incluye los 3 + totales |
+| `grado` | No (solo profesor, en grupal) | Filtra el reporte grupal a un solo grado (ej. `10°`) |
+
+**Qué devuelve cada combinación:**
+
+| Rol | Parámetros | Reporte |
+|---|---|---|
+| Estudiante | `format` | Boletín completo: todas sus materias matriculadas, columnas I/II/III + Nota Final |
+| Estudiante | `format` + `trimestre` | Todas sus materias, detalle de ese trimestre |
+| Estudiante | `format` + `materia_id` | Una materia, un renglón por trimestre + Nota Final del Curso |
+| Profesor | `format` + `materia_id` + `estudiante_id` | Individual de un alumno en su materia |
+| Profesor | `format` + `materia_id` | Grupal de la materia (todos los grados) |
+| Profesor | `format` + `materia_id` + `grado` | Grupal de un grado específico |
 
 **Reglas de permisos:**
-- Estudiante: solo puede exportar su propio reporte (`estudiante_id` se ignora y se fuerza al propio); requiere estar matriculado en la materia (403 si no).
+- Estudiante: solo puede exportar su propio reporte (`estudiante_id` se ignora y se fuerza al propio); si especifica `materia_id`, debe estar matriculado en ella (403 si no).
 - Profesor: solo materias donde es `profesor_id` (403 si no es dueño); si pide un `estudiante_id` específico, debe estar matriculado en la materia (404 si no).
-- Admin: no habilitado en esta versión (arquitectura preparada para agregarlo después sin refactor).
+- Admin: no habilitado en esta versión (arquitectura preparada para agregarlo después sin refactor) — ver sección 11.
 
 **Respuesta:**
 - Éxito: archivo binario con headers `Content-Type` (`application/pdf` o `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`) y `Content-Disposition: attachment; filename="..."`.
-- Error: JSON estándar `{success:false, error, code}` (400 formato/materia inválidos, 403 sin permiso, 404 materia o matrícula inexistente).
+- Error: JSON estándar `{success:false, error, code}` (400 formato/parámetro inválido, 403 sin permiso, 404 materia/matrícula/datos inexistentes).
 
-**Dependencias nuevas (Composer):**
+**Dependencias (Composer):**
 - `dompdf/dompdf` — generación de PDF
 - `phpoffice/phpspreadsheet` — generación de Excel (requiere extensión PHP `gd` activa)
 
 **Arquitectura interna:**
-api/helpers/reporte_data.php → cálculo de datos (reutiliza lógica de /notas/ modo resumen)
-api/helpers/pdf_reporte.php → renderizado a PDF
-api/helpers/excel_reporte.php → renderizado a Excel
-api/notas/exportar.php → endpoint: permisos + orquestación
+```
+api/helpers/notas_calculo.php     → cálculo de resumen por trimestre (única fuente; también usado por /notas/ modo resumen)
+api/helpers/reporte_data.php      → consultas a BD: individual, boletín multi-materia, grupal (con filtro de grado)
+api/helpers/reporte_documento.php → construye un documento genérico (título, info, subtítulo, columnas, filas, pie)
+api/helpers/pdf_reporte.php       → renderiza el documento genérico a PDF — escapa toda salida con htmlspecialchars()
+api/helpers/excel_reporte.php     → renderiza el documento genérico a Excel — escribe celdas con setCellValueExplicit() para que ningún valor (ej. un nombre que empiece con "=") se interprete como fórmula
+api/notas/exportar.php            → endpoint: permisos + selección del tipo de reporte + orquestación
+```
+Separación deliberada: cambiar el formato de salida o agregar uno nuevo no requiere tocar el cálculo de notas, y un reporte nuevo (ej. para admin) solo necesita un constructor nuevo en `reporte_documento.php` — los renderizadores no cambian.
 
-Separación deliberada: cambiar el formato de salida o agregar uno nuevo (ej. CSV) no requiere tocar el cálculo de notas.
+> **Nota de seguridad:** la primera versión de este endpoint no escapaba la salida en PDF ni prevenía la inyección de fórmulas en Excel; ambos se corrigieron antes de la versión actual.
 
 ### Comentarios
 | Método | Endpoint | Rol | Descripción |
@@ -382,6 +432,7 @@ Separación deliberada: cambiar el formato de salida o agregar uno nuevo (ej. CS
 | Ver matrículas propias | ❌ | 👁️ | 👁️ |
 | Registrar/editar/eliminar notas | ❌ | ✅ | ❌ |
 | Ver notas propias / resumen | ❌ | 👁️ | 👁️ |
+| Exportar reportes propios/de su materia | ❌ | ✅ | ✅ |
 | Enviar comentarios | ❌ | ❌ | ✅ |
 | Ver comentarios de sus materias | ❌ | 👁️ | ❌ |
 | Ver todos los comentarios | ✅ | ❌ | ❌ |
@@ -417,11 +468,12 @@ Separación deliberada: cambiar el formato de salida o agregar uno nuevo (ej. CS
 | 200 | Éxito |
 | 201 | Creado correctamente |
 | 400 | Datos inválidos o faltantes |
-| 401 | No autenticado / token inválido / respuesta de seguridad incorrecta |
+| 401 | No autenticado / sesión inválida o expirada / respuesta de seguridad incorrecta |
 | 403 | Sin permisos para esta acción |
 | 404 | Recurso no encontrado |
 | 405 | Método HTTP no permitido |
 | 409 | Conflicto (duplicado, restricción, examen trimestral ya registrado) |
+| 429 | Cuenta bloqueada temporalmente por intentos fallidos de login *(nuevo)* |
 | 500 | Error interno del servidor |
 
 ---
@@ -467,7 +519,7 @@ Filtrado automático por rol (profesor solo ve sus notas, estudiante solo las pr
 ```
 GET /api/notas/?resumen=1&estudiante_id=X&materia_id=Y
 ```
-Por cada trimestre calcula:
+Calculado por `helpers/notas_calculo.php` (`calcularResumenNotas()`), la misma función que usa `notas/exportar.php`. Por cada trimestre calcula:
 - `promedio_parciales`: media de todas las notas `PARCIAL`
 - `promedio_apreciacion`: media de todas las notas `APRECIACION`
 - `examen_trimestral`: puntaje del único `EXAMEN_TRIMESTRAL` (si existe)
@@ -480,7 +532,7 @@ Por cada trimestre calcula:
 POST /api/notas/
 Body: { "estudiante_id", "materia_id", "tipo", "puntaje", "trimestre", "tipo_actividad"?, "nombre"?, "comentario"? }
 ```
-- `profesor_id` se extrae del token, nunca del body.
+- `profesor_id` se extrae de la sesión, nunca del body.
 - Valida que la materia pertenezca al profesor y que el estudiante esté matriculado.
 - Si `tipo = EXAMEN_TRIMESTRAL`: rechaza con 409 si ya existe uno para ese estudiante/materia/trimestre.
 
@@ -518,6 +570,19 @@ Solo el profesor propietario puede eliminar.
 | Funcionalidad | Descripción |
 |---|---|
 | **Panel de períodos** | Tabla `periodo` + endpoints para abrir/cerrar trimestres. El profesor solo podría registrar notas en el período activo. |
+
+---
+
+## 11. Decisiones registradas (no se implementarán)
+
+Para que quede constancia del porqué, sin que se reabra la discusión más adelante sin motivo nuevo:
+
+| Tema | Decisión | Razón |
+|---|---|---|
+| **Importación en lote** (estudiantes/profesores/notas desde archivo) | No se implementará | Solo beneficiaría la primera carga de datos de un período, y requeriría que cada profesor adapte sus notas locales a un formato específico del sistema. El uso ideal del SGE es empezar a usarlo desde el inicio de un período, no a mitad de uno — el beneficio no justifica la complejidad. |
+| **Exportación en formato CSV** | No se implementará | Es funcionalmente redundante con la exportación a Excel ya existente; no aporta un caso de uso distinto. |
+| **Exportación desde el panel de admin** | No habilitada | La arquitectura de `exportar.php` ya está preparada para agregar el rol `admin` sin refactor (solo añadir `'admin'` al array de `requireRole`), pero no se activa hasta que haya una necesidad real del rol admin de exportar reportes. |
+| **Registro de derechos de autor (DIGERPI)** | No se hará | Fuera del alcance del proyecto como entrega académica. |
 
 ---
 

@@ -1,15 +1,6 @@
 <?php
 function getAuthToken(): ?string {
-    $headers = getallheaders();
-    foreach ($headers as $key => $value) {
-        if (strtolower($key) === 'authorization') {
-            $parts = explode(' ', $value);
-            if (count($parts) === 2 && $parts[0] === 'Bearer') {
-                return $parts[1];
-            }
-        }
-    }
-    return null;
+    return $_COOKIE['sesion_token'] ?? null;
 }
 
 function validateToken(PDO $pdo): array {

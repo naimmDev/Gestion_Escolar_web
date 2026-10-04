@@ -1,20 +1,16 @@
 const API_URL = 'http://localhost/gestion_escolar/api';
 
-function getToken() {
-    const user = JSON.parse(localStorage.getItem('currentUser'));
-    return user?.token ?? null;
-}
-
 async function apiFetch(endpoint, options = {}) {
-    const token = getToken();
-
     const headers = {
         'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         ...(options.headers ?? {})
     };
 
-    const response = await fetch(`${API_URL}${endpoint}`, { ...options, headers });
+    const response = await fetch(`${API_URL}${endpoint}`, {
+        ...options,
+        headers,
+        credentials: 'include'
+    });
 
     // Solo se considera sesión expirada si el 401 es por el token.
     // Otros 401 (ej. "La contraseña actual es incorrecta") se devuelven al llamador.

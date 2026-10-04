@@ -130,7 +130,7 @@ document.getElementById('ayudaSearch').addEventListener('input', function (e) {
 // ==================== NAVEGACIÓN ====================
 window.volverAlPanel = function () {
     const role = getCurrentRole();
-    const routes = { admin: 'admin.html', profesor: 'profesor.html', estudiante: 'estudiante.html' };
+    const routes = { admin: 'admin.php', profesor: 'profesor.php', estudiante: 'estudiante.php' };
     window.location.href = routes[role] || 'index.html';
 };
 

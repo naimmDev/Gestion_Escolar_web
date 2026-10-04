@@ -38,7 +38,7 @@ async function loadData() {
     }
     
     if (!currentStudent.password_cambiada && !currentStudent.password_skipped) {
-        window.location.href = 'cambiar_password.html';
+        window.location.href = 'cambiar_password.php';
         return;
     }
 

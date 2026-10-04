@@ -14,7 +14,7 @@ if (!user || (!user.password_cambiada && !user.password_skipped)) {
     return;
 }
 if (user.preguntas_configuradas) {
-    const routes = { profesor: 'profesor.html', estudiante: 'estudiante.html' };
+    const routes = { profesor: 'profesor.php', estudiante: 'estudiante.php' };
     window.location.href = routes[user.rol] || 'index.html';
     return;
 }
@@ -129,7 +129,7 @@ document.getElementById('preguntasForm').addEventListener('submit', async functi
                 timer: 2000,
                 showConfirmButton: false
             });
-            const routes = { profesor: 'profesor.html', estudiante: 'estudiante.html' };
+            const routes = { profesor: 'profesor.php', estudiante: 'estudiante.php' };
             window.location.href = routes[user.rol] || 'index.html';
         } else {
             Swal.fire('Error', json.error || 'No se pudieron guardar las preguntas', 'error');

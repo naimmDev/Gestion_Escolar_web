@@ -1,3 +1,4 @@
+<?php require_once '../api/config/verificar_sesion_pagina.php'; verificarSesionPagina('estudiante'); ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
