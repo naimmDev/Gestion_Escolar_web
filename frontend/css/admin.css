@@ -805,3 +805,66 @@ body {
 .swal2-container {
     z-index: 99999 !important;
 }
+/* ========== USUARIOS: TABS INTERNOS ========== */
+.users-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.user-tab-btn {
+    background: var(--ivory-dark);
+    border: 1px solid var(--parchment);
+    padding: 10px 22px;
+    border-radius: 2px;
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.user-tab-btn i { color: var(--gold); margin-right: 6px; }
+
+.user-tab-btn:hover { background: var(--parchment); }
+
+.user-tab-btn.active {
+    background: var(--crimson);
+    color: var(--gold-pale);
+    border-color: var(--crimson);
+    box-shadow: 0 4px 12px rgba(92,0,0,0.25);
+}
+
+.user-tab-btn.active i { color: var(--gold-light); }
+
+.user-tab-panel { display: none; }
+.user-tab-panel.active { display: block; }
+
+/* ========== REPORTES ========== */
+.card {
+    background: white;
+    border-radius: 2px;
+    padding: 28px;
+    border: 1px solid var(--parchment);
+    box-shadow: 0 4px 16px rgba(26,5,5,0.05);
+}
+
+.reports-card { padding: 24px; }
+
+.reports-help {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    color: #8a7055;
+    margin-bottom: 18px;
+    font-size: 15px;
+}
+
+.report-form {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-width: 420px;
+}

@@ -1162,6 +1162,7 @@ body {
 /* ========== BOLETÍN COMPLETO (botón global, fin del reporte) ========== */
 .boletin-completo-card {
     margin-top: 24px;
+    margin-bottom: 24px; 
     padding: 22px 26px;
     background: linear-gradient(135deg, #2E0808, #1A0505);
     border: 1px solid rgba(201,168,76,0.3);

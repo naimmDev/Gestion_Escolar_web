@@ -196,7 +196,7 @@ function renderGradesReport() {
         return;
     }
 
-    let html = `
+       let html = `
         <div class="report-header">
             <h3><i class="fas fa-chart-line"></i> Reporte Académico</h3>
             <div class="general-average">
@@ -204,13 +204,7 @@ function renderGradesReport() {
                 <div class="value">${generalAvg}</div>
             </div>
         </div>
-    `;
 
-    for (const trimestre of TRIMESTRES) {
-        html += renderTrimestreSection(trimestre);
-    }
-
-    html += `
         <div class="boletin-completo-card">
             <div class="boletin-completo-text">
                 <i class="fas fa-scroll"></i>
@@ -222,6 +216,11 @@ function renderGradesReport() {
         </div>
     `;
 
+    for (const trimestre of TRIMESTRES) {
+        html += renderTrimestreSection(trimestre);
+    }
+
+    container.innerHTML = html;
     container.innerHTML = html;
 
     document.querySelectorAll('.trimestre-header').forEach(header => {

@@ -24,17 +24,13 @@
                     <span id="adminName">Admin</span>
                 </div>
             </div>
-            <nav class="nav-menu">
-                <button class="nav-btn active" data-view="dashboard"><i class="fas fa-chart-line"></i> <span>
-                        Dashboard</span></button>
-                <button class="nav-btn" data-view="students"><i class="fas fa-user-graduate"></i> <span>
-                        Estudiantes</span></button>
-                <button class="nav-btn" data-view="professors"><i class="fas fa-chalkboard-user"></i> <span>
-                        Profesores</span></button>
-                <button class="nav-btn" data-view="subjects"><i class="fas fa-book"></i> <span> Materias</span></button>
-                <button class="nav-btn" data-view="enrollments"><i class="fas fa-list-check"></i> <span>
-                        Matrículas</span></button>
-            </nav>
+        <nav class="nav-menu">
+    <button class="nav-btn active" data-view="dashboard"><i class="fas fa-chart-line"></i> <span> Dashboard</span></button>
+    <button class="nav-btn" data-view="users"><i class="fas fa-users"></i> <span> Usuarios</span></button>
+    <button class="nav-btn" data-view="subjects"><i class="fas fa-book"></i> <span> Materias</span></button>
+    <button class="nav-btn" data-view="enrollments"><i class="fas fa-list-check"></i> <span> Matrículas</span></button>
+    <button class="nav-btn" data-view="reports"><i class="fas fa-file-export"></i> <span> Reportes</span></button>
+</nav>
 
             <!-- Botón de cambiar contraseña: SIN clase nav-btn para no interferir con la navegación -->
             <button class="btn-cambiar-pass" onclick="openModal('changePasswordModal')">
@@ -85,62 +81,70 @@
                 </div>
             </div>
 
-            <!-- Students View -->
-            <div id="studentsView" class="view">
-                <div class="view-header">
-                    <h2 class="page-title"><i class="fas fa-user-graduate"></i> Estudiantes</h2><button
-                        class="btn-primary" onclick="openStudentModal()">+ Agregar</button>
-                </div>
-                <div class="search-bar"><input type="text" id="searchStudent"
-                        placeholder="Buscar por nombre, email o identificación..."></div>
-                <div class="table-container">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>N°</th>
-                                <th>Identificación</th>
-                                <th>Contraseña Inicial</th>
-                                <th>Nombre</th>
-                                <th>Email</th>
-                                <th>Grado</th>
-                                <th>Sección</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="studentsTable"></tbody>
-                    </table>
-                </div>
-                <div id="studentPagination" class="pagination"></div>
-            </div>
+  <div id="usersView" class="view">
+    <div class="users-tabs">
+        <button class="user-tab-btn active" data-usertab="students">
+            <i class="fas fa-user-graduate"></i> Estudiantes
+        </button>
+        <button class="user-tab-btn" data-usertab="professors">
+            <i class="fas fa-chalkboard-user"></i> Profesores
+        </button>
+    </div>
 
-            <!-- Professors View -->
-            <div id="professorsView" class="view">
-                <div class="view-header">
-                    <h2 class="page-title"><i class="fas fa-chalkboard-user"></i> Profesores</h2><button
-                        class="btn-primary" onclick="openProfessorModal()">+ Agregar</button>
-                </div>
-                <div class="search-bar"><input type="text" id="searchProfessor"
-                        placeholder="Buscar por nombre, email o especialidad..."></div>
-                <div class="table-container">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>N°</th>
-                                <th>Identificación</th>
-                                <th>Contraseña Inicial</th>
-                                <th>Nombre</th>
-                                <th>Email</th>
-                                <th>Especialidad</th>
-                                <th>Materias</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="professorsTable"></tbody>
-                    </table>
-                </div>
-                <div id="professorPagination" class="pagination"></div>
-            </div>
+    <div id="studentsView" class="user-tab-panel active">
+        <div class="view-header">
+            <h2 class="page-title"><i class="fas fa-user-graduate"></i> Estudiantes</h2><button
+                class="btn-primary" onclick="openStudentModal()">+ Agregar</button>
+        </div>
+        <div class="search-bar"><input type="text" id="searchStudent"
+                placeholder="Buscar por nombre, email o identificación..."></div>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>N°</th>
+                        <th>Identificación</th>
+                        <th>Contraseña Inicial</th>
+                        <th>Nombre</th>
+                        <th>Email</th>
+                        <th>Grado</th>
+                        <th>Sección</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="studentsTable"></tbody>
+            </table>
+        </div>
+        <div id="studentPagination" class="pagination"></div>
+    </div>
 
+    <div id="professorsView" class="user-tab-panel">
+        <div class="view-header">
+            <h2 class="page-title"><i class="fas fa-chalkboard-user"></i> Profesores</h2><button
+                class="btn-primary" onclick="openProfessorModal()">+ Agregar</button>
+        </div>
+        <div class="search-bar"><input type="text" id="searchProfessor"
+                placeholder="Buscar por nombre, email o especialidad..."></div>
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>N°</th>
+                        <th>Identificación</th>
+                        <th>Contraseña Inicial</th>
+                        <th>Nombre</th>
+                        <th>Email</th>
+                        <th>Especialidad</th>
+                        <th>Materias</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="professorsTable"></tbody>
+            </table>
+        </div>
+        <div id="professorPagination" class="pagination"></div>
+    </div>
+</div>
             <!-- Subjects View -->
             <div id="subjectsView" class="view">
                 <div class="view-header">
@@ -203,6 +207,52 @@
                 <div id="enrollmentPagination" class="pagination"></div>
             </div>
 
+            <!-- Reports View -->
+            <div id="reportsView" class="view">
+                <h2 class="page-title"><i class="fas fa-file-export"></i> Reportes</h2>
+
+                <div class="card reports-card">
+                    <p class="reports-help">
+                        Elige qué quieres exportar. Si solo seleccionas un estudiante, se genera su boletín completo.
+                        Si además eliges una materia, se genera el reporte de esa materia. Si solo eliges una materia
+                        (sin estudiante), se genera el reporte grupal; puedes acotarlo a un grado.
+                    </p>
+
+                    <div class="report-form">
+                        <div class="form-group">
+                            <label for="reportStudentSelect">Estudiante (opcional)</label>
+                            <select id="reportStudentSelect">
+                                <option value="">— Todos / no aplica —</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="reportSubjectSelect">Materia (opcional si eliges solo estudiante)</label>
+                            <select id="reportSubjectSelect">
+                                <option value="">— Ninguna —</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="reportGradeSelect">Grado (solo aplica con Materia sin Estudiante)</label>
+                            <select id="reportGradeSelect">
+                                <option value="">— Todos los grados —</option>
+                                <option>7°</option>
+                                <option>8°</option>
+                                <option>9°</option>
+                                <option>10°</option>
+                                <option>11°</option>
+                                <option>12°</option>
+                            </select>
+                        </div>
+
+                        <button type="button" class="btn-primary" onclick="exportarReporteAdmin()">
+                            <i class="fas fa-file-export"></i> Exportar
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Modales-->
             <div id="studentModal" class="modal">
                 <div class="modal-content"><button type="button" class="close" onclick="closeModal('studentModal')"
@@ -365,10 +415,10 @@
                     </form>
                 </div>
             </div>
-
-
-            <script src="js/api.js"></script>
-            <script src="js/admin.js"></script>
+</main>
+<script src="js/api.js"></script>
+<script src="js/reportes.js"></script>
+<script src="js/admin.js"></script>
             <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </body>
 </html>

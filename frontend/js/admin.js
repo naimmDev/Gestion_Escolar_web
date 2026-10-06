@@ -91,6 +91,7 @@ let currentSubjectPage = 1;
 let currentEnrollmentPage = 1;
 let perPage = 10;
 let currentActiveView = 'dashboard';
+let currentUserTab = 'students';   // NUEVO: pestaña activa dentro de "Usuarios"
 
 let studentSearch = '';
 let professorSearch = '';
@@ -865,21 +866,109 @@ document.getElementById('changePasswordForm')?.addEventListener('submit', async 
     }
 });
 
-// ==================== NAVEGACIÓN (CORREGIDO) ====================
+// ==================== NAVEGACIÓN ====================
 document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', function () {
-        // IMPORTANTE: Si el botón no tiene data-view, ignorar (evita error con botón "Cambiar contraseña")
+        // Si el botón no tiene data-view, ignorar (evita error con otros botones del sidebar)
         if (!this.dataset.view) return;
 
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         this.classList.add('active');
         const view = this.dataset.view;
-        currentActiveView = view;
+
+        // "users" agrupa estudiantes y profesores: la vista activa para el render
+        // es la de la pestaña interna que esté seleccionada
+        currentActiveView = (view === 'users') ? currentUserTab : view;
+
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
         document.getElementById(`${view}View`).classList.add('active');
+
         if (view === 'enrollments') loadEnrollmentsPage();
-        if (view === 'students') loadStudentsPage();
-        if (view === 'professors') loadProfessorsPage();
+        if (view === 'users') {
+            loadStudentsPage();
+            loadProfessorsPage();
+        }
         if (view === 'subjects') loadSubjectsPage();
+        if (view === 'reports') loadReportsPage();
     });
 });
+
+// Tabs internos de "Usuarios"
+document.querySelectorAll('.user-tab-btn').forEach(tab => {
+    tab.addEventListener('click', function () {
+        document.querySelectorAll('.user-tab-btn').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+
+        document.querySelectorAll('.user-tab-panel').forEach(p => p.classList.remove('active'));
+        document.getElementById(`${this.dataset.usertab}View`).classList.add('active');
+
+        // Mantener sincronizado el estado para que el render y la paginación funcionen
+        currentUserTab = this.dataset.usertab;
+        currentActiveView = currentUserTab;
+
+        // Los datos ya están cargados; solo se vuelve a pintar la tabla activa
+        if (currentUserTab === 'students') renderStudents();
+        else renderTeachers();
+    });
+});
+
+// ==================== REPORTES (ADMIN) ====================
+// Trae todas las páginas de un endpoint paginado (el backend limita per_page a 100)
+async function fetchAllPages(endpoint) {
+    let page = 1, totalPages = 1, all = [];
+    do {
+        const data = await apiGet(`${endpoint}?page=${page}&per_page=100`);
+        all = all.concat(data.items ?? data);
+        totalPages = data.total_pages ?? 1;
+        page++;
+    } while (page <= totalPages);
+    return all;
+}
+
+async function loadReportsPage() {
+    try {
+        const [estudiantes, materias] = await Promise.all([
+            fetchAllPages('/estudiantes/'),
+            fetchAllPages('/materias/')
+        ]);
+
+        document.getElementById('reportStudentSelect').innerHTML =
+            '<option value="">— Todos / no aplica —</option>' +
+            estudiantes.map(e =>
+                `<option value="${e.id}">${escapeHtml(e.name)} — ${escapeHtml(e.grade || 'Sin grado')}</option>`
+            ).join('');
+
+        document.getElementById('reportSubjectSelect').innerHTML =
+            '<option value="">— Ninguna —</option>' +
+            materias.map(m =>
+                `<option value="${m.id}">${escapeHtml(m.name)} (${escapeHtml(m.code)})</option>`
+            ).join('');
+    } catch (error) {
+        Swal.fire('Error', 'No se pudieron cargar las listas: ' + error.message, 'error');
+    }
+}
+
+async function exportarReporteAdmin() {
+    const estudianteId = document.getElementById('reportStudentSelect').value || null;
+    const materiaId    = document.getElementById('reportSubjectSelect').value || null;
+    const grado        = document.getElementById('reportGradeSelect').value || null;
+
+    if (!estudianteId && !materiaId) {
+        Swal.fire('Falta información', 'Elige al menos un estudiante o una materia.', 'warning');
+        return;
+    }
+
+    const format = await elegirFormatoExportacion();
+    if (!format) return;
+
+    const trimestre = await elegirTrimestreExportacion();
+    if (trimestre === null) return;
+
+    await exportarReporte({
+        format,
+        estudiante_id: estudianteId || undefined,
+        materia_id: materiaId || undefined,
+        grado: (!estudianteId && grado) ? grado : undefined,
+        trimestre: trimestre === 'TODOS' ? undefined : trimestre
+    });
+}
