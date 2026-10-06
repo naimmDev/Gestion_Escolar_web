@@ -121,6 +121,7 @@ body {
     flex-direction: column;
     gap: 4px;
     margin-top: 16px;
+    margin-bottom: 14px;
 }
 
 .nav-btn {
