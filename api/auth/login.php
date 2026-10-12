@@ -73,10 +73,11 @@ $pdo->prepare("UPDATE sesion SET activa = 0 WHERE usuario_id = ?")
     ->execute([$user['id']]);
 
 $token     = bin2hex(random_bytes(32));
-$expiresAt = date('Y-m-d H:i:s', strtotime('+8 hours'));
+$tokenHash   = hash('sha256', $token);
+$expiresAt   = date('Y-m-d H:i:s', strtotime('+8 hours'));
 
 $pdo->prepare("INSERT INTO sesion (usuario_id, token, expires_at, activa) VALUES (?, ?, ?, 1)")
-    ->execute([$user['id'], $token, $expiresAt]);
+    ->execute([$user['id'], $tokenHash, $expiresAt]);
 
 setcookie('sesion_token', $token, [
     'expires'  => strtotime('+8 hours'),

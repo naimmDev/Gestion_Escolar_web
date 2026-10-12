@@ -10,6 +10,8 @@ function validateToken(PDO $pdo): array {
         sendError("Token no proporcionado", 401);
     }
 
+    $tokenHash = hash('sha256', $token);
+
     $stmt = $pdo->prepare("
         SELECT s.id AS sesion_id, s.token,
                u.id AS usuario_id, u.rol, u.nombre, u.id_referencia
@@ -17,7 +19,7 @@ function validateToken(PDO $pdo): array {
         JOIN usuario u ON s.usuario_id = u.id
         WHERE s.token = ? AND s.activa = 1 AND s.expires_at > NOW()
     ");
-    $stmt->execute([$token]);
+    $stmt->execute([$tokenHash]);
     $session = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$session) {

@@ -9,7 +9,7 @@ $token = $_COOKIE['sesion_token'] ?? null;
 
 if ($token) {
     $pdo->prepare("UPDATE sesion SET activa = 0 WHERE token = ?")
-        ->execute([$token]);
+        ->execute([hash('sha256', $token)]);
 }
 
 setcookie('sesion_token', '', [

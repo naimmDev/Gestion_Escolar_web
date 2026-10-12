@@ -12,5 +12,4 @@ Thumbs.db
 
 # Archivos y herramientas locales
 .kilo/
-*.sql
 api/config/credenciales.php

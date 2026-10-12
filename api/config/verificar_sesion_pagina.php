@@ -13,6 +13,8 @@ function verificarSesionPagina($rolesPermitidos): void {
         exit;
     }
 
+    $tokenHash = hash('sha256', $token);
+
     try {
         $cred = require __DIR__ . '/credenciales.php';
         $pdo = new PDO("mysql:host={$cred['host']};dbname={$cred['db']};charset=utf8", $cred['user'], $cred['pass']);
@@ -28,7 +30,7 @@ function verificarSesionPagina($rolesPermitidos): void {
         JOIN usuario u ON s.usuario_id = u.id
         WHERE s.token = ? AND s.activa = 1 AND s.expires_at > NOW()
     ");
-    $stmt->execute([$token]);
+    $stmt->execute([$tokenHash]);
     $sesion = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$sesion || !in_array($sesion['rol'], $rolesPermitidos, true)) {

@@ -29,22 +29,22 @@ function calcularResumenNotas(array $notas): array {
 
         $notaTrimestral = null;
         if ($promParciales !== null && $promApreciacion !== null && $examenScore !== null) {
-            $notaTrimestral = round(($promParciales + $promApreciacion + $examenScore) / 3, 2);
+            $notaTrimestral = round(($promParciales + $promApreciacion + $examenScore) / 3, 1);
             $notasTrimestrales[] = $notaTrimestral;
         }
 
         $resultado[$tri] = [
             "parciales"            => $parciales,
-            "promedio_parciales"   => $promParciales   !== null ? round($promParciales, 2)   : null,
+            "promedio_parciales"   => $promParciales   !== null ? round($promParciales, 1)   : null,
             "apreciaciones"        => $apreciaciones,
-            "promedio_apreciacion" => $promApreciacion !== null ? round($promApreciacion, 2) : null,
+            "promedio_apreciacion" => $promApreciacion !== null ? round($promApreciacion, 1) : null,
             "examen_trimestral"    => $examenScore,
             "nota_trimestral"      => $notaTrimestral
         ];
     }
 
     $resultado["promedio_final"] = count($notasTrimestrales) === 3
-        ? round(array_sum($notasTrimestrales) / 3, 2)
+        ? round(array_sum($notasTrimestrales) / 3, 1)
         : null;
 
     return $resultado;
