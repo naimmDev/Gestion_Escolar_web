@@ -40,4 +40,13 @@ function validateRequired(array $data, array $fields): void {
         sendError("Campos obligatorios faltantes", 400, ["campos" => $missing]);
     }
 }
+
+
+function getJsonBody(): array {
+    $data = json_decode(file_get_contents("php://input"), true);
+    if (!is_array($data)) {
+        sendError("Cuerpo de la petición inválido", 400);
+    }
+    return $data;
+}
 ?>

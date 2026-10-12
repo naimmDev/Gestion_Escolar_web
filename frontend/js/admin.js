@@ -365,7 +365,7 @@ function renderStudents() {
                 <tr>
                     <td>${((currentStudentPage - 1) * perPage) + i + 1}</td>
                     <td>${escapeHtml(s.identificacion || '—')}</td>
-                    <td><span class="badge password-badge">${escapeHtml(s.initialPassword || '—')}</span></td>
+                    <td><span class="badge password-badge">${escapeHtml(s.initialPassword || '......')}</span></td>
                     <td>${escapeHtml(s.name)}</td>
                     <td>${escapeHtml(s.email)}</td>
                     <td>${s.grade || '—'}</td>
@@ -411,14 +411,21 @@ function editStudent(id) {
 async function deleteStudent(id) {
     if (!await confirmDelete('El estudiante perderá sus matrículas')) return;
     try {
-        const res = await apiFetch('/estudiantes/delete.php', { method: 'DELETE', body: JSON.stringify({ id }) });
+        let res = await apiFetch('/estudiantes/delete.php', { method: 'DELETE', body: JSON.stringify({ id }) });
+        let json = await res.json();
+
+        if (res.status === 409 && json.details?.requiresConfirmation === 'comentarios') {
+            if (!await confirmDelete(json.error)) return;
+            res = await apiFetch('/estudiantes/delete.php', { method: 'DELETE', body: JSON.stringify({ id, confirmar_comentarios: true }) });
+            json = await res.json();
+        }
+
         if (res.ok) {
             await loadStudentsPage();
             await loadEnrollmentsPage();
             addActivity(`Eliminó estudiante ID ${id}`);
             showToast('Estudiante eliminado');
         } else {
-            const json = await res.json();
             Swal.fire('Error', json.error || 'No se pudo eliminar', 'error');
         }
     } catch (error) { Swal.fire('Error', error.message, 'error'); }
@@ -512,7 +519,7 @@ function renderTeachers() {
                     <tr>
                         <td>${((currentProfessorPage - 1) * perPage) + i + 1}</td>
                         <td>${escapeHtml(t.identificacion || '—')}</td>
-                        <td><span class="badge password-badge">${escapeHtml(t.initialPassword || '—')}</span></td>
+                        <td><span class="badge password-badge">${escapeHtml(t.initialPassword || '......')}</span></td>
                         <td>${escapeHtml(t.name)}</td>
                         <td>${escapeHtml(t.email)}</td>
                         <td>${escapeHtml(t.specialty)}</td>
@@ -699,14 +706,21 @@ function editSubject(id) {
 async function deleteSubject(id) {
     if (!await confirmDelete('Se eliminarán las matrículas asociadas')) return;
     try {
-        const res = await apiFetch('/materias/delete.php', { method: 'DELETE', body: JSON.stringify({ id }) });
+        let res = await apiFetch('/materias/delete.php', { method: 'DELETE', body: JSON.stringify({ id }) });
+        let json = await res.json();
+
+        if (res.status === 409 && json.details?.requiresConfirmation === 'comentarios') {
+            if (!await confirmDelete(json.error)) return;
+            res = await apiFetch('/materias/delete.php', { method: 'DELETE', body: JSON.stringify({ id, confirmar_comentarios: true }) });
+            json = await res.json();
+        }
+
         if (res.ok) {
             await loadSubjectsPage();
             await loadEnrollmentsPage();
             addActivity(`Eliminó materia ID ${id}`);
             showToast('Materia eliminada');
         } else {
-            const json = await res.json();
             Swal.fire('Error', json.error || 'No se pudo eliminar', 'error');
         }
     } catch (error) { Swal.fire('Error', error.message, 'error'); }

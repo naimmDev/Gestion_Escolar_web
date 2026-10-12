@@ -1,12 +1,15 @@
 <?php
+require_once __DIR__ . '/../config/cors.php';
+aplicarCORS($origenesPermitidos);
+
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    header("Access-Control-Allow-Origin: " . ($_SERVER['HTTP_ORIGIN'] ?? 'http://localhost'));
-    header("Access-Control-Allow-Credentials: true");
     header("Access-Control-Allow-Methods: POST, OPTIONS");
     header("Access-Control-Allow-Headers: Content-Type, Authorization");
     http_response_code(200);
     exit;
 }
+
+
 require '../config/db.php';
 
 const MAX_INTENTOS = 5;
@@ -16,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     sendError("Método no permitido", 405);
 }
 
-$data     = json_decode(file_get_contents("php://input"), true);
+$data     = getJsonBody();
 $email    = trim($data['email']    ?? '');
 $password = trim($data['password'] ?? '');
 

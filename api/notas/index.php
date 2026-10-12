@@ -71,7 +71,7 @@ if ($method === 'GET') {
 
 elseif ($method === 'POST') {
     requireRole($pdo, 'profesor');
-    $data = json_decode(file_get_contents("php://input"), true);
+    $data = getJsonBody();
     validateRequired($data, ['estudiante_id', 'materia_id', 'tipo', 'puntaje', 'trimestre']);
 
     $puntaje = floatval($data['puntaje']);
@@ -113,7 +113,7 @@ elseif ($method === 'POST') {
 
 elseif ($method === 'PUT') {
     requireRole($pdo, 'profesor');
-    $data = json_decode(file_get_contents("php://input"), true);
+    $data = getJsonBody();
     validateRequired($data, ['id', 'puntaje']);
 
     $puntaje = floatval($data['puntaje']);
@@ -133,30 +133,40 @@ elseif ($method === 'PUT') {
     }
 
     $trimestre = $data['trimestre'] ?? $anterior['trimestre'];
-
-    if ($tipo === 'EXAMEN_TRIMESTRAL') {
+        if (!in_array($trimestre, TRIMESTRES_VALIDOS)) sendError("Trimestre no válido", 400);
+        
+        if ($tipo === 'EXAMEN_TRIMESTRAL') {//fix (11/10/26): sentencia de apuntado correcto para auditoria y validación de unicidad
         $checkUnico = $pdo->prepare("SELECT id FROM nota WHERE estudiante_id = ? AND materia_id = ? AND trimestre = ? AND tipo = 'EXAMEN_TRIMESTRAL' AND id != ?");
         $checkUnico->execute([$anterior['estudiante_id'], $anterior['materia_id'], $trimestre, $data['id']]);
         if ($checkUnico->fetch()) sendError("Ya existe un Examen Trimestral registrado para este estudiante en este trimestre", 409);
     }
 
-    $pdo->prepare("UPDATE nota SET puntaje=?, tipo=?, tipo_actividad=?, nombre=?, comentario=?, trimestre=? WHERE id=?")
-        ->execute([
-            $puntaje, $tipo, $tipoActividad,
-            $data['nombre'] ?? $anterior['nombre'],
-            $data['comentario'] ?? $anterior['comentario'],
-            $trimestre, $data['id']
-        ]);
+    try {
+        $pdo->beginTransaction();
 
-    $pdo->prepare("INSERT INTO nota_auditoria (nota_id, editor_id, puntaje_anterior, puntaje_nuevo, fecha_cambio) VALUES (?, ?, ?, ?, NOW())")
-        ->execute([$data['id'], $authUser['usuario_id'], $anterior['puntaje'], $puntaje]);
+        $pdo->prepare("UPDATE nota SET puntaje=?, tipo=?, tipo_actividad=?, nombre=?, comentario=?, trimestre=? WHERE id=?")
+            ->execute([
+                $puntaje, $tipo, $tipoActividad,
+                $data['nombre'] ?? $anterior['nombre'],
+                $data['comentario'] ?? $anterior['comentario'],
+                $trimestre, $data['id']
+            ]);
+
+        $pdo->prepare("INSERT INTO nota_auditoria (nota_id, editor_id, puntaje_anterior, puntaje_nuevo, fecha_cambio) VALUES (?, ?, ?, ?, NOW())")
+            ->execute([$data['id'], $authUser['id_referencia'], $anterior['puntaje'], $puntaje]);
+
+        $pdo->commit();
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        sendError("No se pudo actualizar la nota", 500);
+    }
 
     sendSuccess(["message" => "Nota actualizada"]);
 }
 
 elseif ($method === 'DELETE') {
     requireRole($pdo, 'profesor');
-    $data = json_decode(file_get_contents("php://input"), true);
+    $data = getJsonBody();
     $id   = $data['id'] ?? null;
 
     if (!$id) sendError("ID requerido", 400);

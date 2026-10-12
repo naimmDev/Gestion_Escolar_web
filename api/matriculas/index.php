@@ -78,7 +78,7 @@ if ($method === 'GET') {
 
 elseif ($method === 'POST') {
     requireRole($pdo, 'admin');
-    $data = json_decode(file_get_contents("php://input"), true);
+    $data = getJsonBody();
     validateRequired($data, ['studentId', 'subjectId']);
 
     $checkEst = $pdo->prepare("SELECT id FROM estudiante WHERE id = ?");
@@ -101,7 +101,7 @@ elseif ($method === 'POST') {
 
 elseif ($method === 'DELETE') {
     requireRole($pdo, 'admin');
-    $data = json_decode(file_get_contents("php://input"), true);
+    $data = getJsonBody();
     $id   = $data['id'] ?? null;
 
     if (!$id) sendError("ID requerido", 400);

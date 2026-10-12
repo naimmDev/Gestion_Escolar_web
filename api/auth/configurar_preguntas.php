@@ -9,7 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     sendError("Método no permitido", 405);
 }
 
-$data = json_decode(file_get_contents("php://input"), true);
+$data = getJsonBody();
 
 if (empty($data['preguntas']) || !is_array($data['preguntas']) || count($data['preguntas']) !== 3) {
     sendError("Se requieren exactamente 3 preguntas de seguridad", 400);

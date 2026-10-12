@@ -16,7 +16,7 @@ if ($method === 'GET') {
     $params = [];
 
     if ($search !== '') {
-        $where[]  = "(nombre LIKE ? OR email LIKE ? OR identificacion LIKE ?)";
+        $where[]  = "(e.nombre LIKE ? OR e.email LIKE ? OR e.identificacion LIKE ?)";
         $params[] = "%$search%";
         $params[] = "%$search%";
         $params[] = "%$search%";
@@ -24,17 +24,21 @@ if ($method === 'GET') {
 
     $whereSQL = count($where) > 0 ? "WHERE " . implode(" AND ", $where) : "";
 
-    $countStmt = $pdo->prepare("SELECT COUNT(*) FROM estudiante $whereSQL");
+    $countStmt = $pdo->prepare("SELECT COUNT(*) FROM estudiante e $whereSQL");
     $countStmt->execute($params);
     $total = (int) $countStmt->fetchColumn();
 
     $stmt = $pdo->prepare("
-        SELECT id, nombre AS name, email, identificacion, grado AS grade,
-               seccion, password_inicial AS initialPassword
-        FROM estudiante
-        $whereSQL
-        ORDER BY nombre ASC
-        LIMIT $perPage OFFSET $offset
+       
+    SELECT e.id, e.nombre AS name, e.email, e.identificacion, e.grado AS grade,
+           e.seccion,
+           CASE WHEN u.password_cambiada = 1 THEN NULL ELSE e.password_inicial END AS initialPassword
+    FROM estudiante e
+    LEFT JOIN usuario u ON u.id_referencia = e.id AND u.rol = 'estudiante'
+    $whereSQL
+    ORDER BY e.nombre ASC
+    LIMIT $perPage OFFSET $offset
+
     ");
     $stmt->execute($params);
 
@@ -50,13 +54,27 @@ if ($method === 'GET') {
 
 elseif ($method === 'POST') {
     requireRole($pdo, 'admin');
-    $data = json_decode(file_get_contents("php://input"), true);
+    $data = getJsonBody();
     validateRequired($data, ['name', 'email', 'identificacion']);
 
-    $check = $pdo->prepare("SELECT id FROM estudiante WHERE identificacion = ? OR email = ?");
+     if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+        sendError("Email no válido", 400);
+    }
+
+    if (!empty($data['initialPassword']) && strlen($data['initialPassword']) < 6) {
+        sendError("La contraseña inicial debe tener al menos 6 caracteres", 400);
+    }
+
+        $check = $pdo->prepare("SELECT id FROM estudiante WHERE identificacion = ? OR email = ?");
     $check->execute([$data['identificacion'], $data['email']]);
     if ($check->fetch()) {
         sendError("Ya existe un estudiante con ese email o identificación", 409);
+    }
+
+    $checkEmailUsuario = $pdo->prepare("SELECT id FROM usuario WHERE email = ?");
+    $checkEmailUsuario->execute([$data['email']]);
+    if ($checkEmailUsuario->fetch()) {
+        sendError("Ya existe una cuenta con ese email", 409);
     }
 
     // Contraseña: usar la personalizada si viene, si no usar la identificación
@@ -91,13 +109,27 @@ elseif ($method === 'POST') {
 
 elseif ($method === 'PUT') {
     requireRole($pdo, 'admin');
-    $data = json_decode(file_get_contents("php://input"), true);
+    $data = getJsonBody();
     validateRequired($data, ['id', 'name', 'email', 'identificacion']);
 
-    $check = $pdo->prepare("SELECT id FROM estudiante WHERE (identificacion = ? OR email = ?) AND id != ?");
+    if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+        sendError("Email no válido", 400);
+    }
+
+    if (!empty($data['initialPassword']) && strlen($data['initialPassword']) < 6) {
+        sendError("La contraseña inicial debe tener al menos 6 caracteres", 400);
+    }
+
+        $check = $pdo->prepare("SELECT id FROM estudiante WHERE (identificacion = ? OR email = ?) AND id != ?");
     $check->execute([$data['identificacion'], $data['email'], $data['id']]);
     if ($check->fetch()) {
         sendError("Ese email o identificación ya está en uso", 409);
+    }
+
+    $checkEmailUsuario = $pdo->prepare("SELECT id FROM usuario WHERE email = ? AND NOT (id_referencia = ? AND rol = 'estudiante')");
+    $checkEmailUsuario->execute([$data['email'], $data['id']]);
+    if ($checkEmailUsuario->fetch()) {
+        sendError("Ya existe una cuenta con ese email", 409);
     }
 
     // Si viene nueva contraseña, actualizar hash en usuario también

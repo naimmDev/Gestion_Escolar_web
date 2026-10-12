@@ -59,7 +59,7 @@ if ($method === 'GET') {
 
 elseif ($method === 'POST') {
     requireRole($pdo, 'admin');
-    $data = json_decode(file_get_contents("php://input"), true);
+    $data = getJsonBody();
     validateRequired($data, ['name', 'code']);
 
     $check = $pdo->prepare("SELECT id FROM materia WHERE codigo = ?");
@@ -76,7 +76,7 @@ elseif ($method === 'POST') {
 
 elseif ($method === 'PUT') {
     requireRole($pdo, 'admin');
-    $data = json_decode(file_get_contents("php://input"), true);
+    $data = getJsonBody();
     validateRequired($data, ['id', 'name', 'code']);
 
     $check = $pdo->prepare("SELECT id FROM materia WHERE codigo = ? AND id != ?");

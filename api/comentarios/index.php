@@ -35,7 +35,10 @@ if ($method === 'GET') {
 
 elseif ($method === 'POST') {
     requireRole($pdo, 'estudiante');
-    $data = json_decode(file_get_contents("php://input"), true);
+    $data = getJsonBody();
+    if (isset($data['comentario'])) {
+        $data['comentario'] = trim($data['comentario']);
+    }
     validateRequired($data, ['materia_id', 'comentario']);
 
     $check = $pdo->prepare("SELECT id FROM matricula WHERE estudiante_id = ? AND materia_id = ?");
@@ -43,7 +46,7 @@ elseif ($method === 'POST') {
     if (!$check->fetch()) sendError("No estás matriculado en esta materia", 403);
 
     $pdo->prepare("INSERT INTO comentario (estudiante_id, materia_id, comentario, fecha) VALUES (?, ?, ?, NOW())")
-        ->execute([$authUser['id_referencia'], $data['materia_id'], trim($data['comentario'])]);
+        ->execute([$authUser['id_referencia'], $data['materia_id'], $data['comentario']]);
 
     sendCreated(["id" => $pdo->lastInsertId()]);
 }

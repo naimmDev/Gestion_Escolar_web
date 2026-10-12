@@ -14,7 +14,8 @@ function verificarSesionPagina($rolesPermitidos): void {
     }
 
     try {
-        $pdo = new PDO("mysql:host=localhost;dbname=gestion_escolar;charset=utf8", "root", "");
+        $cred = require __DIR__ . '/credenciales.php';
+        $pdo = new PDO("mysql:host={$cred['host']};dbname={$cred['db']};charset=utf8", $cred['user'], $cred['pass']);
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     } catch (PDOException $e) {
         header('Location: index.html');
