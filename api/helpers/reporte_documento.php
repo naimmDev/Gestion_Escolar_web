@@ -93,9 +93,8 @@ function documentoBoletinEstudiante(PDO $pdo, int $estudianteId, ?string $trimes
     ];
 }
 
-/** Grupal de una materia (opcional: un grado y/o un trimestre) con resumen del grupo. */
-function documentoGrupal(PDO $pdo, int $materiaId, ?string $grado, ?string $trimestre): ?array {
-    $rep = armarReporteGrupal($pdo, $materiaId, $grado);
+function documentoGrupal(PDO $pdo, int $materiaId, ?string $grado, ?string $trimestre, ?string $seccion = null): ?array {
+    $rep = armarReporteGrupal($pdo, $materiaId, $grado, $seccion);
     if (!$rep) return null;
     $mat = $rep['materia'];
 
@@ -121,11 +120,14 @@ function documentoGrupal(PDO $pdo, int $materiaId, ?string $grado, ?string $trim
     $aprobados = count(array_filter($valores, fn($v) => $v >= 3));
     $promedio  = count($valores) > 0 ? array_sum($valores) / count($valores) : null;
 
+    $grupoTexto = $grado ?? 'Todos los grados';
+    if ($seccion !== null) $grupoTexto .= ' - Sección ' . $seccion;
+
     return [
         'titulo'    => 'REPORTE GRUPAL DE NOTAS',
         'info'      => [
             [['label' => 'Materia', 'value' => "{$mat['nombre']} ({$mat['codigo']})"], ['label' => 'Año Lectivo', 'value' => ahoraPanama()->format('Y')]],
-            [['label' => 'Grupo', 'value' => $grado ?? 'Todos los grados'], ['label' => 'Fecha', 'value' => ahoraPanama()->format('d/m/Y')]],
+            [['label' => 'Grupo', 'value' => $grupoTexto], ['label' => 'Fecha', 'value' => ahoraPanama()->format('d/m/Y')]],
         ],
         'subtitulo' => $trimestre !== null ? strtoupper($trimestre) : 'TRIMESTRES',
         'columnas'  => $trimestre !== null
@@ -138,6 +140,10 @@ function documentoGrupal(PDO $pdo, int $materiaId, ?string $grado, ?string $trim
             ['label' => 'Aprobados',            'value' => (string)$aprobados],
             ['label' => 'En proceso',           'value' => (string)($total - $aprobados)],
         ],
-        'archivo'   => implode('_', array_filter(['reporte_grupal', $mat['nombre'], $grado, $trimestre]))
+        'archivo'   => implode('_', array_filter([
+            'reporte_grupal', $mat['nombre'], $grado,
+            $seccion !== null ? 'Seccion_' . $seccion : null,
+            $trimestre
+        ]))
     ];
 }

@@ -9,26 +9,32 @@ const AYUDA_COMUN = [
 ];
 
 const AYUDA_ADMIN = [
-    { q: '¿Qué muestra el Dashboard?', a: 'Un resumen general: total de estudiantes, profesores, materias y matrículas registradas, además de la actividad reciente del sistema.' },
-    { q: '¿Cómo registro un nuevo estudiante?', a: 'En el menú lateral seleccione <strong>"Estudiantes"</strong> → <strong>"+ Agregar"</strong>. Complete identificación, nombre, correo, grado y sección. La contraseña inicial se genera automáticamente (puede regenerarla o editarla) y presione <strong>"Guardar"</strong>.' },
-    { q: '¿Cómo busco, edito o elimino un estudiante?', a: 'Use el campo de búsqueda para filtrar por nombre, correo o identificación. El ícono de lápiz edita los datos; el ícono de papelera elimina (no se permite si el estudiante tiene notas registradas).' },
-    { q: '¿Cómo gestiono profesores?', a: 'El proceso es igual al de estudiantes: agregar, buscar, editar y eliminar, indicando nombre, identificación, correo y especialidad.' },
+    { q: '¿Qué muestra el Dashboard?', a: 'Un resumen general: total de estudiantes, profesores, materias y matrículas registradas, además de la actividad reciente de su sesión actual (se reinicia al recargar la página).' },
+    { q: '¿Qué es la sección "Usuarios"?', a: 'Agrupa la gestión de estudiantes y profesores en un solo lugar. Al entrar en <strong>"Usuarios"</strong> verá dos pestañas: <strong>"Estudiantes"</strong> y <strong>"Profesores"</strong>. Cambie entre ellas para administrar cada tipo de usuario; cada pestaña tiene su propio buscador y paginación.' },
+    { q: '¿Cómo registro un nuevo estudiante?', a: 'En el menú lateral seleccione <strong>"Usuarios"</strong>, abra la pestaña <strong>"Estudiantes"</strong> y presione <strong>"+ Agregar"</strong>. Complete identificación, nombre, correo, grado y sección. La contraseña inicial se genera automáticamente (puede regenerarla o editarla) y presione <strong>"Guardar"</strong>.' },
+    { q: '¿Cómo busco, edito o elimino un estudiante?', a: 'En <strong>"Usuarios"</strong> → pestaña <strong>"Estudiantes"</strong>, use el campo de búsqueda para filtrar por nombre, correo o identificación. El ícono de lápiz edita los datos; el ícono de papelera elimina (no se permite si el estudiante tiene notas registradas, y si tiene comentarios se le pedirá confirmación).' },
+    { q: '¿Cómo gestiono profesores?', a: 'En <strong>"Usuarios"</strong> → pestaña <strong>"Profesores"</strong>. El proceso es igual al de estudiantes: agregar, buscar, editar y eliminar, indicando nombre, identificación, correo y especialidad.' },
     { q: '¿Cómo creo o edito una materia?', a: 'Seleccione <strong>"Materias"</strong> → <strong>"+ Agregar"</strong> (código, nombre, créditos y profesor asignado). No se puede eliminar una materia con calificaciones registradas.' },
     { q: '¿Cómo asigno una materia a un estudiante?', a: 'Seleccione <strong>"Matrículas"</strong> → <strong>"Asignar Materia"</strong>, elija el estudiante y la materia, y presione <strong>"Asignar"</strong>.' },
-    { q: '¿Cómo restablezco el acceso de un usuario que olvidó su contraseña y sus preguntas de seguridad?', a: 'En la tabla de Estudiantes o Profesores, presione el botón <strong>"Restablecer acceso"</strong> (ícono de llave) junto al usuario. Se generará una nueva contraseña inicial y el usuario deberá repetir el cambio de contraseña y la configuración de preguntas de seguridad en su próximo ingreso, como si fuera un usuario nuevo.' }
+    { q: '¿Qué es la sección "Reportes" y cómo exporto un reporte?', a: 'En <strong>"Reportes"</strong> puede descargar reportes de notas en PDF o Excel de cualquier estudiante o materia. Elija las opciones y presione <strong>"Exportar"</strong>; luego seleccione el formato (PDF o Excel) y el trimestre (uno en particular o todos). Debe elegir al menos un estudiante o una materia.' },
+    { q: '¿Qué reporte se genera según lo que elija en "Reportes"?', a: '<strong>Solo estudiante:</strong> boletín completo con todas sus materias. <strong>Estudiante y materia:</strong> reporte individual de ese estudiante en esa materia. <strong>Solo materia:</strong> reporte grupal de todos los matriculados; opcionalmente puede acotarlo a un grado (el grado solo aplica cuando no se elige estudiante).' },
+    { q: '¿Cómo restablezco el acceso de un usuario que olvidó su contraseña y sus preguntas de seguridad?', a: 'En <strong>"Usuarios"</strong>, en la tabla de Estudiantes o Profesores, presione el botón <strong>"Restablecer acceso"</strong> (ícono de llave) junto al usuario. Se generará una nueva contraseña inicial y el usuario deberá repetir el cambio de contraseña y la configuración de preguntas de seguridad en su próximo ingreso, como si fuera un usuario nuevo.' }
 ];
 
 const AYUDA_PROFESOR = [
     { q: '¿Qué muestra mi Dashboard?', a: 'Un resumen de sus materias asignadas, el total de estudiantes a su cargo y la cantidad de notas registradas.' },
     { q: '¿Cómo veo mis materias?', a: 'En <strong>"Mis Materias"</strong> se listan las materias asignadas con la cantidad de estudiantes matriculados en cada una. Al seleccionar una, se accede directamente a la gestión de notas.' },
-    { q: '¿Cómo registro una nota?', a: 'En <strong>"Gestionar Notas"</strong>, elija la materia y el estudiante. Dentro del detalle, seleccione el trimestre, el tipo de evaluación, ingrese la nota y, opcionalmente, un comentario. Presione <strong>"Guardar"</strong>.' },
-    { q: '¿Cómo edito o elimino una nota?', a: 'Las notas registradas aparecen en el historial del trimestre seleccionado. Presione <strong>"Eliminar"</strong> para borrar una nota (requiere confirmación).' },
+    { q: '¿Cómo registro una nota?', a: 'En <strong>"Gestionar Notas"</strong>, elija la materia y el estudiante. Dentro del detalle, seleccione el trimestre (I, II o III), el tipo de evaluación, ingrese la nota y, opcionalmente, un comentario. Presione <strong>"Guardar"</strong>. Solo puede existir un Examen Trimestral por estudiante en cada trimestre.' },
+    { q: '¿Cómo elimino una nota?', a: 'Las notas registradas aparecen en el historial del trimestre seleccionado. Presione <strong>"Eliminar"</strong> para borrar una nota (requiere confirmación).' },
+    { q: '¿Cómo exporto las notas de un grado completo?', a: 'En <strong>"Gestionar Notas"</strong>, seleccione la materia y presione <strong>"Exportar Notas"</strong> junto al encabezado del grado. Elija el trimestre (o todos) y el formato (PDF o Excel).' },
+    { q: '¿Cómo exporto el reporte de un estudiante?', a: 'Abra el detalle del estudiante y presione <strong>"Exportar Notas"</strong>, junto a las pestañas de trimestre. Elija PDF o Excel; el reporte incluye los tres trimestres y la nota final del curso.' },
     { q: '¿Dónde veo los comentarios de mis estudiantes?', a: 'En la sección <strong>"Comentarios"</strong> se muestran los comentarios enviados por los estudiantes sobre las materias que usted tiene asignadas.' }
 ];
 
 const AYUDA_ESTUDIANTE = [
     { q: '¿Qué muestra mi Dashboard?', a: 'Un resumen con el número de materias matriculadas, su promedio general y la cantidad de materias aprobadas.' },
     { q: '¿Cómo consulto mis notas?', a: 'En <strong>"Mis Notas"</strong>, el reporte se organiza por trimestre. Presione sobre un trimestre para expandirlo y luego sobre <strong>"Ver notas"</strong> junto a una materia para ver el detalle de cada evaluación.' },
+    { q: '¿Cómo descargo mis notas?', a: 'Para un trimestre, presione <strong>"Exportar Notas"</strong> en el encabezado de ese trimestre. Para el boletín con los tres trimestres y la nota final por materia, presione <strong>"Exportar Boletín"</strong> al inicio del reporte. En ambos casos elija PDF o Excel.' },
     { q: '¿Cómo envío un comentario sobre una materia?', a: 'En <strong>"Comentarios"</strong>, elija la materia, escriba su comentario y presione <strong>"Enviar Comentario"</strong>. Sus comentarios enviados se listan debajo del formulario.' },
     { q: '¿Por qué mi nota trimestral aparece como "En curso"?', a: 'Esto ocurre cuando aún falta registrar alguno de los componentes de evaluación del trimestre (Parciales, Apreciación o Examen Trimestral).' }
 ];
@@ -103,8 +109,10 @@ window.toggleAyudaItem = function (questionEl) {
 };
 
 function escapeHtmlAyuda(str) {
-    if (!str) return '';
-    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[m]));
 }
 
 // ==================== BÚSQUEDA ====================

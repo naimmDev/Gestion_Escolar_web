@@ -1210,3 +1210,7 @@ body {
 }
 
 .btn-exportar-boletin-completo i { margin-right: 6px; }
+/* SweetAlert siempre por encima de los modales (z-index 9999) */
+.swal2-container {
+    z-index: 99999 !important;
+}

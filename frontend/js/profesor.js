@@ -19,7 +19,7 @@ window.closeModal = function(modalId) {
     }
 };
 
-//forzar recarga si la página se restaura desde bfcache (botón Atrás/Adelante)
+// Forzar recarga si la página se restaura desde bfcache (botón Atrás/Adelante)
 window.addEventListener('pageshow', function (event) {
     if (event.persisted) {
         window.location.reload();
@@ -69,7 +69,7 @@ async function loadData() {
         window.location.href = 'index.html';
         return;
     }
-    
+
     if (!currentTeacher.password_cambiada && !currentTeacher.password_skipped) {
         window.location.href = 'cambiar_password.php';
         return;
@@ -163,9 +163,9 @@ function getGradesForStudent(studentId, subjectId = null, trimestre = null) {
 
 // ==================== FUNCIONES DE CÁLCULO ====================
 function calcularNotaTrimestral(studentId, subjectId, trimestre) {
-    const grades = myGrades.filter(g => 
-        g.studentId === studentId && 
-        g.subjectId === subjectId && 
+    const grades = myGrades.filter(g =>
+        g.studentId === studentId &&
+        g.subjectId === subjectId &&
         g.trimestre === trimestre
     );
 
@@ -229,8 +229,8 @@ function renderSubjects() {
         return `
             <div class="subject-card" onclick="selectSubjectForGrades(${s.id})">
                 <h4><i class="fas fa-book"></i> ${escapeHtml(s.name)}</h4>
-                <p><i class="fas fa-code"></i> Código: ${s.code}</p>
-                <p><i class="fas fa-star"></i> Créditos: ${s.credits}</p>
+                <p><i class="fas fa-code"></i> Código: ${escapeHtml(s.code)}</p>
+                <p><i class="fas fa-star"></i> Créditos: ${escapeHtml(s.credits)}</p>
                 <p><i class="fas fa-users"></i> Estudiantes: ${students.length}</p>
             </div>
         `;
@@ -240,7 +240,7 @@ function renderSubjects() {
 function loadSubjectSelect() {
     const select = document.getElementById('gradeSubject');
     select.innerHTML = '<option value="">-- Seleccionar una materia --</option>' +
-        mySubjects.map(s => `<option value="${s.id}">${escapeHtml(s.name)} (${s.code})</option>`).join('');
+        mySubjects.map(s => `<option value="${s.id}">${escapeHtml(s.name)} (${escapeHtml(s.code)})</option>`).join('');
 }
 
 function selectSubjectForGrades(subjectId) {
@@ -279,9 +279,9 @@ function updateQuickStats() {
     let approved = 0, inProgress = 0;
 
     students.forEach(s => {
-        const hasExam = myGrades.some(g => 
-            g.studentId === s.id && 
-            g.subjectId === currentSubjectId && 
+        const hasExam = myGrades.some(g =>
+            g.studentId === s.id &&
+            g.subjectId === currentSubjectId &&
             g.type === 'EXAMEN_TRIMESTRAL'
         );
         const hasAnyNote = myGrades.some(g => g.studentId === s.id && g.subjectId === currentSubjectId);
@@ -316,7 +316,6 @@ function renderStudentsByGrade() {
     const students    = getStudentsForSubject(currentSubjectId).filter(filterStudentSearch);
     const container   = document.getElementById('studentsByGrade');
     const gradesOrder = ['7°', '8°', '9°', '10°', '11°', '12°'];
-    const grouped     = {};
 
     if (students.length === 0) {
         container.innerHTML = `<div class="card" style="text-align:center; padding:40px;"><i class="fas fa-user-graduate"></i> ${studentGradeSearch ? 'No se encontraron estudiantes con ese criterio' : 'No hay estudiantes matriculados en esta materia'}</div>`;
@@ -324,10 +323,15 @@ function renderStudentsByGrade() {
     }
 
     students.sort((a, b) => a.name.localeCompare(b.name));
+
+    // Agrupar grado → sección
+    const grouped = {};
     students.forEach(s => {
-        const g = s.grade || 'Sin grado';
-        if (!grouped[g]) grouped[g] = [];
-        grouped[g].push(s);
+        const g   = s.grade || 'Sin grado';
+        const sec = (s.seccion || '').trim().toUpperCase() || 'Sin sección';
+        if (!grouped[g]) grouped[g] = {};
+        if (!grouped[g][sec]) grouped[g][sec] = [];
+        grouped[g][sec].push(s);
     });
 
     const sortedGrades = Object.keys(grouped).sort((a, b) => {
@@ -337,22 +341,58 @@ function renderStudentsByGrade() {
         return ia - ib;
     });
 
- container.innerHTML = sortedGrades.map(grade => `
-    <div class="grade-section">
-        <div class="grade-header" onclick="toggleGradeSection(this)">
-            <span><i class="fas fa-graduation-cap"></i> Grado ${grade} (${grouped[grade].length} estudiantes)</span>
-            <div style="display:flex; align-items:center; gap:14px;">
-                <button class="btn-exportar-grupo" onclick="event.stopPropagation(); exportarReporteGrupal('${grade}')">
-    <i class="fas fa-file-export"></i> Exportar Notas
-</button>
-                <i class="fas fa-chevron-down"></i>
+    container.innerHTML = sortedGrades.map(grade => {
+        const secciones = grouped[grade];
+        const totalGrado = Object.values(secciones).reduce((sum, arr) => sum + arr.length, 0);
+
+        // Ordenar secciones A, B, C, D..., "Sin sección" al final
+        const seccionesOrdenadas = Object.keys(secciones).sort((a, b) => {
+            if (a === 'Sin sección') return 1;
+            if (b === 'Sin sección') return -1;
+            return a.localeCompare(b);
+        });
+
+        const soloSinSeccion = seccionesOrdenadas.length === 1 && seccionesOrdenadas[0] === 'Sin sección';
+
+        const contenido = soloSinSeccion
+            ? secciones['Sin sección'].map(s => renderStudentCard(s)).join('')
+            : seccionesOrdenadas.map(sec => `
+                <div class="section-block">
+                    <div class="section-header" onclick="toggleSection(this)">
+                        <span><i class="fas fa-layer-group"></i> Sección ${escapeHtml(sec)} (${secciones[sec].length} estudiantes)</span>
+                        <div class="section-header-actions">
+                            <button class="btn-exportar-seccion"
+                                    data-grado="${escapeHtml(grade)}"
+                                    data-seccion="${escapeHtml(sec)}"
+                                    onclick="event.stopPropagation(); exportarReporteGrupal(this.dataset.grado, this.dataset.seccion)">
+                                <i class="fas fa-file-export"></i> Exportar ${escapeHtml(grade)} ${escapeHtml(sec)}
+                            </button>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                    </div>
+                    <div class="section-students">
+                        ${secciones[sec].map(s => renderStudentCard(s)).join('')}
+                    </div>
+                </div>
+            `).join('');
+
+        return `
+            <div class="grade-section">
+                <div class="grade-header" onclick="toggleGradeSection(this)">
+                    <span><i class="fas fa-graduation-cap"></i> Grado ${escapeHtml(grade)} (${totalGrado} estudiantes)</span>
+                    <div style="display:flex; align-items:center; gap:14px;">
+                        <button class="btn-exportar-grupo" data-grado="${escapeHtml(grade)}" onclick="event.stopPropagation(); exportarReporteGrupal(this.dataset.grado)">
+                            <i class="fas fa-file-export"></i> Exportar Notas
+                        </button>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
+                <div class="grade-students">
+                    ${contenido}
+                </div>
             </div>
-        </div>
-        <div class="grade-students">
-            ${grouped[grade].map(s => renderStudentCard(s)).join('')}
-        </div>
-    </div>
-`).join('');
+        `;
+    }).join('');
 }
 
 function renderStudentCard(student) {
@@ -391,6 +431,11 @@ function toggleGradeSection(element) {
     element.nextElementSibling.classList.toggle('collapsed');
 }
 
+function toggleSection(element) {
+    element.classList.toggle('collapsed');
+    element.nextElementSibling.classList.toggle('collapsed');
+}
+
 // ==================== MODAL DE NOTAS ====================
 function openStudentGradesModal(studentId) {
     currentStudentForModal = myStudents.find(s => s.id === studentId);
@@ -414,20 +459,20 @@ function renderStudentModal() {
             <div class="student-avatar"><i class="fas fa-user-graduate"></i></div>
             <div class="student-details">
                 <h3>${escapeHtml(currentStudentForModal.name)}${currentStudentForModal.seccion ? `<span style="font-size:14px; font-weight:400; color:#8a7055; margin-left:10px;">— Sección ${escapeHtml(currentStudentForModal.seccion)}</span>` : ''}</h3>
-                <p><i class="fas fa-envelope"></i> ${escapeHtml(currentStudentForModal.email || '')} | <i class="fas fa-graduation-cap"></i> Grado ${currentStudentForModal.grade}</p>
-                <p><i class="fas fa-book"></i> ${escapeHtml(subject?.name || '')} (${subject?.code || ''})</p>
+                <p><i class="fas fa-envelope"></i> ${escapeHtml(currentStudentForModal.email || '')} | <i class="fas fa-graduation-cap"></i> Grado ${escapeHtml(currentStudentForModal.grade)}</p>
+                <p><i class="fas fa-book"></i> ${escapeHtml(subject?.name || '')} (${escapeHtml(subject?.code)})</p>
             </div>
         </div>
-       <div class="trimestre-tabs">
-    ${['I Trimestre', 'II Trimestre', 'III Trimestre', 'Todas'].map(t => `
-        <button class="trimestre-tab ${currentTrimestre === t ? 'active' : ''}" data-trimestre="${t}" onclick="changeTrimestre('${t}')">
-            <i class="fas fa-calendar-alt"></i> ${t}
-        </button>
-    `).join('')}
-<button class="btn-exportar-individual" onclick="exportarReporteIndividual()">
-    <i class="fas fa-file-export"></i> Exportar Notas
-</button>
-</div>
+        <div class="trimestre-tabs">
+            ${['I Trimestre', 'II Trimestre', 'III Trimestre', 'Todas'].map(t => `
+                <button class="trimestre-tab ${currentTrimestre === t ? 'active' : ''}" data-trimestre="${t}" onclick="changeTrimestre('${t}')">
+                    <i class="fas fa-calendar-alt"></i> ${t}
+                </button>
+            `).join('')}
+            <button class="btn-exportar-individual" onclick="exportarReporteIndividual()">
+                <i class="fas fa-file-export"></i> Exportar Notas
+            </button>
+        </div>
         <div id="modalTrimestreContent"></div>
     `;
 
@@ -444,7 +489,7 @@ function renderTrimestreContent() {
         ? calcularNotaTrimestral(currentStudentForModal.id, currentSubjectId, currentTrimestre)
         : null;
 
-    const examenExistente = currentTrimestre !== 'Todas' && myGrades.some(g => 
+    const examenExistente = currentTrimestre !== 'Todas' && myGrades.some(g =>
         g.studentId === currentStudentForModal.id &&
         g.subjectId === currentSubjectId &&
         g.trimestre === currentTrimestre &&
@@ -559,10 +604,10 @@ function renderGradeHistoryItem(grade) {
             'EXAMEN_TRIMESTRAL': 'Examen Trimestral',
             'APRECIACION': 'Apreciación'
         };
-        const mismasNotas = myGrades.filter(g => 
-            g.studentId === grade.studentId && 
-            g.subjectId === grade.subjectId && 
-            g.trimestre === grade.trimestre && 
+        const mismasNotas = myGrades.filter(g =>
+            g.studentId === grade.studentId &&
+            g.subjectId === grade.subjectId &&
+            g.trimestre === grade.trimestre &&
             g.type === grade.type &&
             g.id <= grade.id
         );
@@ -613,7 +658,7 @@ async function addNewGrade() {
     const nombre = document.getElementById('newGradeNombre').value.trim();
     const score = parseFloat(document.getElementById('newGradeScore').value);
     const comment = document.getElementById('newGradeComment').value.trim();
-        if (currentTrimestre === 'Todas') {
+    if (currentTrimestre === 'Todas') {
         Swal.fire('Selecciona un trimestre', 'Para registrar una nota elige primero I, II o III Trimestre.', 'info');
         return;
     }
@@ -624,7 +669,7 @@ async function addNewGrade() {
     }
 
     if (type === 'EXAMEN_TRIMESTRAL') {
-        const existing = myGrades.find(g => 
+        const existing = myGrades.find(g =>
             g.studentId === currentStudentForModal.id &&
             g.subjectId === currentSubjectId &&
             g.trimestre === trimestre &&
@@ -661,8 +706,7 @@ async function addNewGrade() {
         if (res.ok) {
             Swal.fire({ title: '¡Nota registrada!', icon: 'success', timer: 1500, showConfirmButton: false, toast: true, position: 'top-end' });
             await reloadGradesAndRefresh();
-
-           } else {
+        } else {
             const error = await res.json().catch(() => ({}));
             Swal.fire(
                 res.status === 409 ? 'Aviso' : 'Error',
@@ -670,7 +714,7 @@ async function addNewGrade() {
                 res.status === 409 ? 'info' : 'error'
             );
         }
-        
+
     } catch (error) {
         Swal.fire('Error', error.message, 'error');
     }
@@ -717,20 +761,29 @@ async function reloadGradesAndRefresh() {
 }
 
 // ==================== EXPORTAR REPORTES (PDF / Excel) ====================
-// El archivo lo genera el backend (GET /notas/exportar.php).
-
 // ---------- GRUPAL (por grado, dentro de una materia) ----------
-async function exportarReporteGrupal(grado) {
+async function exportarReporteGrupal(grado, seccion = null) {
     const subject = mySubjects.find(s => s.id === currentSubjectId);
     if (!subject) {
         Swal.fire('Error', 'Selecciona una materia primero', 'error');
         return;
     }
 
-    const estudiantesGrado = getStudentsForSubject(currentSubjectId)
-        .filter(s => (s.grade || 'Sin grado') === grado);
-    if (!estudiantesGrado.length) {
-        Swal.fire('Sin estudiantes', 'No hay estudiantes en este grado para exportar', 'info');
+    // ✅ FIX: la sección "Sin sección" se compara correctamente
+    const estudiantesFiltrados = getStudentsForSubject(currentSubjectId).filter(s => {
+        if ((s.grade || 'Sin grado') !== grado) return false;
+        if (seccion) {
+            const secEst = (s.seccion || '').trim().toUpperCase() || 'SIN SECCIÓN';
+            if (secEst !== seccion.trim().toUpperCase()) return false;
+        }
+        return true;
+    });
+
+    if (!estudiantesFiltrados.length) {
+        const msg = seccion
+            ? `No hay estudiantes en ${grado} ${seccion} para exportar`
+            : 'No hay estudiantes en este grado para exportar';
+        Swal.fire('Sin estudiantes', msg, 'info');
         return;
     }
 
@@ -740,7 +793,13 @@ async function exportarReporteGrupal(grado) {
     const format = await elegirFormatoExportacion();
     if (!format) return;
 
-    await exportarReporte({ format, materia_id: currentSubjectId, grado, trimestre });
+    await exportarReporte({
+        format,
+        materia_id: currentSubjectId,
+        grado,
+        seccion: seccion || undefined,
+        trimestre
+    });
 }
 
 // ---------- INDIVIDUAL (por estudiante, dentro del modal) ----------
@@ -758,6 +817,7 @@ async function exportarReporteIndividual() {
         estudiante_id: currentStudentForModal.id
     });
 }
+
 // ==================== COMENTARIOS ====================
 function renderComments() {
     const container = document.getElementById('commentsList');
@@ -817,7 +877,7 @@ document.getElementById('changePasswordForm')?.addEventListener('submit', async 
 document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', function () {
         if (!this.dataset.view) return;
-        
+
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         this.classList.add('active');
         const view = this.dataset.view;
@@ -850,8 +910,10 @@ async function logout() {
 
 // ==================== UTILIDADES ====================
 function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[m]));
 }
 
 // ==================== INICIALIZAR ====================

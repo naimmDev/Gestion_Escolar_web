@@ -30,6 +30,7 @@ $materiaId    = paramEntero('materia_id');
 $estudianteId = paramEntero('estudiante_id');
 $trimestre    = isset($_GET['trimestre']) && $_GET['trimestre'] !== '' ? $_GET['trimestre'] : null;
 $grado        = isset($_GET['grado']) && trim($_GET['grado']) !== '' ? trim($_GET['grado']) : null;
+$seccion      = isset($_GET['seccion']) && trim($_GET['seccion']) !== '' ? trim($_GET['seccion']) : null;
 
 if (!in_array($format, ['pdf', 'excel'], true)) {
     sendError("Formato inválido, use 'pdf' o 'excel'", 400);
@@ -37,7 +38,9 @@ if (!in_array($format, ['pdf', 'excel'], true)) {
 if ($trimestre !== null && !in_array($trimestre, TRIMESTRES_REPORTE, true)) {
     sendError("Trimestre inválido", 400);
 }
-
+if ($seccion !== null && mb_strlen($seccion) > 20) {
+    sendError("Sección inválida", 400);
+}
 // ---------- Permisos y selección del tipo de reporte ----------
 if ($authUser['rol'] === 'estudiante') {
     // Siempre el propio estudiante; nunca grupal.
@@ -66,7 +69,7 @@ if ($authUser['rol'] === 'estudiante') {
         }
         $documento = documentoIndividual($pdo, $estudianteId, $materiaId, $trimestre);
     } else {
-        $documento = documentoGrupal($pdo, $materiaId, $grado, $trimestre);
+       $documento = documentoGrupal($pdo, $materiaId, $grado, $trimestre, $seccion);
     }
 } else {
     // Profesor: solo sus propias materias
@@ -85,7 +88,7 @@ if ($authUser['rol'] === 'estudiante') {
         }
         $documento = documentoIndividual($pdo, $estudianteId, $materiaId, $trimestre);
     } else {
-        $documento = documentoGrupal($pdo, $materiaId, $grado, $trimestre);
+        $documento = documentoGrupal($pdo, $materiaId, $grado, $trimestre, $seccion);
     }
 }
 
@@ -111,5 +114,6 @@ if ($format === 'pdf') {
 header('Access-Control-Expose-Headers: Content-Disposition');
 header('X-Content-Type-Options: nosniff');
 header('Content-Length: ' . strlen($contenido));
+if (ob_get_length()) ob_clean();
 echo $contenido;
 exit;

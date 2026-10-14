@@ -154,9 +154,9 @@
         </form>
     </div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-</html> <link rel="stylesheet" href="css/profesor.css">
-<script src="js/reportes.js"></script>
 <script src="js/api.js"></script>
+<script src="js/reportes.js"></script>
 <script src="js/profesor.js"></script>  
 </body>
+</html>
+

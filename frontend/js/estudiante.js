@@ -294,9 +294,9 @@ function renderTrimestreSection(trimestre) {
 }
 function renderSubjectRow(subject, grades, notaTrim, trimestre) {
     const notasBtn = grades.length > 0
-        ? `<button class="btn-ver-notas" onclick="openGradesDetailModal(${subject.id}, '${escapeHtml(subject.name)}', '${trimestre}')">
-               <i class="fas fa-eye"></i> Ver notas (${grades.length})
-           </button>`
+        ? `<button class="btn-ver-notas" onclick="openGradesDetailModal(${parseInt(subject.id)}, '${trimestre}')">
+       <i class="fas fa-eye"></i> Ver notas (${grades.length})
+   </button>`
         : `<span class="no-grades"><i class="fas fa-minus-circle"></i> Sin notas</span>`;
 
     let statusHtml = '<span class="status-badge empty"><i class="fas fa-question-circle"></i> Sin definir</span>';
@@ -319,7 +319,8 @@ function renderSubjectRow(subject, grades, notaTrim, trimestre) {
 }
 
 // ==================== MODAL DETALLE DE NOTAS ====================
-function openGradesDetailModal(subjectId, subjectName, trimestre) {
+function openGradesDetailModal(subjectId, trimestre) {
+    const subjectName = mySubjects.find(s => parseInt(s.id) === subjectId)?.name || '';
     const grades = getGradesForSubjectTrimestre(subjectId, trimestre);
     const resumen = generarResumenTrimestre(subjectId, trimestre);
     
@@ -603,8 +604,10 @@ async function logout() {
 
 // ==================== UTILIDADES ====================
 function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[m]));
 }
 
 // ==================== INICIALIZAR ====================

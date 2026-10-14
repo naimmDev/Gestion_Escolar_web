@@ -48,12 +48,13 @@ function elegirTrimestreExportacion() {
  * Parámetros: { format, materia_id, estudiante_id, trimestre, grado }
  * trimestre 'TODOS' (o vacío) = sin filtro de trimestre.
  */
-async function exportarReporte({ format, materia_id, estudiante_id, trimestre, grado }) {
+async function exportarReporte({ format, materia_id, estudiante_id, trimestre, grado, seccion }) {
     const params = new URLSearchParams({ format });
     if (materia_id)    params.append('materia_id', materia_id);
     if (estudiante_id) params.append('estudiante_id', estudiante_id);
     if (trimestre && trimestre !== 'TODOS') params.append('trimestre', trimestre);
     if (grado)         params.append('grado', grado);
+    if (seccion)       params.append('seccion', seccion);   // ✅ NUEVO
 
     try {
         const res = await apiFetch(`/notas/exportar.php?${params}`);

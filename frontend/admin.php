@@ -11,7 +11,7 @@
     <!-- SweetAlert + Font Awesome para mejor UX -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="css/admin.css">
+<link rel="stylesheet" href="css/admin.css?v=2">
 </head>
 
 <body>
@@ -219,39 +219,49 @@
                     </p>
 
                     <div class="report-form">
-                        <div class="form-group">
-                            <label for="reportStudentSelect">Estudiante (opcional)</label>
-                            <select id="reportStudentSelect">
-                                <option value="">— Todos / no aplica —</option>
-                            </select>
-                        </div>
+                       <div class="form-group">
+                          <label for="reportGradeSelect">Grado (filtra la lista y acota el reporte grupal)</label>
+                                <select id="reportGradeSelect">
+                                     <option value="">— Todos los grados —</option>
+                                     <option>7°</option>
+                                     <option>8°</option>
+                                     <option>9°</option>
+                                     <option>10°</option>
+                                     <option>11°</option>
+                                     <option>12°</option>
+                                </select>
+                               </div>
 
-                        <div class="form-group">
-                            <label for="reportSubjectSelect">Materia (opcional si eliges solo estudiante)</label>
-                            <select id="reportSubjectSelect">
-                                <option value="">— Ninguna —</option>
-                            </select>
-                        </div>
+                       <div class="form-group">
+                           <label for="reportSectionFilter">Sección</label>
+                                 <select id="reportSectionFilter">
+                                     <option value="">Todas las secciones</option>
+                                 </select>
+                                 </div>
 
-                        <div class="form-group">
-                            <label for="reportGradeSelect">Grado (solo aplica con Materia sin Estudiante)</label>
-                            <select id="reportGradeSelect">
-                                <option value="">— Todos los grados —</option>
-                                <option>7°</option>
-                                <option>8°</option>
-                                <option>9°</option>
-                                <option>10°</option>
-                                <option>11°</option>
-                                <option>12°</option>
-                            </select>
-                        </div>
+                           <div class="form-group">
+                             <label for="reportStudentSearch">Estudiante (opcional)</label>
+                                  <div class="search-box">
+                                   <i class="fas fa-search"></i>
+                            <input type="text" id="reportStudentSearch" placeholder="Buscar por nombre o identificación..." autocomplete="off">
+                       </div>
+                           <select id="reportStudentSelect" class="student-list" size="6" title="Lista de estudiantes"></select>
+                  <small id="reportStudentCount" class="student-count"></small>
+                 </div>
 
-                        <button type="button" class="btn-primary" onclick="exportarReporteAdmin()">
-                            <i class="fas fa-file-export"></i> Exportar
-                        </button>
+                 <div class="form-group">
+                     <label for="reportSubjectSelect">Materia (opcional si eliges solo estudiante)</label>
+                    <select id="reportSubjectSelect">
+                     <option value="">— Ninguna —</option>
+                   </select>
                     </div>
-                </div>
-            </div>
+
+    <button type="button" class="btn-primary" onclick="exportarReporteAdmin()">
+        <i class="fas fa-file-export"></i> Exportar
+    </button>
+</div>
+  </div>     
+            </div> 
             
             <!-- Modales-->
             <div id="studentModal" class="modal">
@@ -369,26 +379,62 @@
                             <input type="number" id="subjectCredits" value="3" placeholder="3"
                                 title="Número de créditos">
                         </div>
-                        <div class="form-group"><label for="subjectTeacher">Profesor</label><select id="subjectTeacher"
-                                title="Selecciona un profesor">
-                                <option value="">-- Ninguno --</option>
-                            </select></div><button type="submit" class="btn-primary">Guardar</button>
+   <div class="form-group">
+    <label for="subjectTeacherSearch">Profesor</label>
+    <div class="search-box">
+        <i class="fas fa-search"></i>
+        <input type="text" id="subjectTeacherSearch"
+               placeholder="Buscar por nombre, identificación o especialidad..."
+               autocomplete="off">
+    </div>
+    <select id="subjectTeacher" class="student-list" size="6" title="Seleccione un profesor">
+        <option value="">-- Ninguno --</option>
+    </select>
+    <small id="subjectTeacherCount" class="student-count"></small>
+</div>
+<button type="submit" class="btn-primary">Guardar</button>
                     </form>
                 </div>
             </div>
 
-            <div id="enrollmentModal" class="modal">
-                <div class="modal-content"><span class="close" onclick="closeModal('enrollmentModal')">&times;</span>
-                    <h3><i class="fas fa-clipboard-list"></i> Asignar Materia</h3>
-                    <form id="enrollmentForm">
-                        <div class="form-group"><label for="enrollmentStudent">Estudiante</label><select
-                                id="enrollmentStudent" title="Seleccione un estudiante"></select></div>
-                        <div class="form-group"><label for="enrollmentSubject">Materia</label><select
-                                id="enrollmentSubject" title="Seleccione una materia"></select></div><button
-                            type="submit" class="btn-primary">Asignar</button>
-                    </form>
-                </div>
+    <div id="enrollmentModal" class="modal">
+    <div class="modal-content"><span class="close" onclick="closeModal('enrollmentModal')">&times;</span>
+        <h3><i class="fas fa-clipboard-list"></i> Asignar Materia</h3>
+        <form id="enrollmentForm">
+            <div class="form-group">
+                <label for="enrollmentGradeFilter">Grado</label>
+                <select id="enrollmentGradeFilter">
+                    <option value="">Todos los grados</option>
+                    <option>7°</option>
+                    <option>8°</option>
+                    <option>9°</option>
+                    <option>10°</option>
+                    <option>11°</option>
+                    <option>12°</option>
+                </select>
             </div>
+            <div class="form-group">
+                <label for="enrollmentSectionFilter">Sección</label>
+                <select id="enrollmentSectionFilter">
+                    <option value="">Todas las secciones</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="enrollmentStudentSearch">Estudiante</label>
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="enrollmentStudentSearch" placeholder="Buscar por nombre o identificación..." autocomplete="off">
+                </div>
+                <select id="enrollmentStudent" class="student-list" size="6" title="Seleccione un estudiante"></select>
+                <small id="enrollmentStudentCount" class="student-count"></small>
+            </div>
+            <div class="form-group"><label for="enrollmentSubject">Materia</label>
+                <select id="enrollmentSubject" title="Seleccione una materia"></select>
+            </div>
+            <button type="submit" class="btn-primary">Asignar</button>
+        </form>
+    </div>
+</div>
 
             <div id="changePasswordModal" class="modal">
                 <div class="modal-content">
@@ -419,6 +465,5 @@
 <script src="js/api.js"></script>
 <script src="js/reportes.js"></script>
 <script src="js/admin.js"></script>
-            <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </body>
 </html>

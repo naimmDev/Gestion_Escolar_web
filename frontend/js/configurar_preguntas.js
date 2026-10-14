@@ -141,8 +141,10 @@ document.getElementById('preguntasForm').addEventListener('submit', async functi
 });
 
 function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[m]));
 }
 
 cargarPreguntas();

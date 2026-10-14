@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link rel="stylesheet" href="css/estudiante.css">
+    <link rel="stylesheet" href="css/estudiante.css?v=2">
 </head>
 <body>
     <div class="app-container">
@@ -96,7 +96,7 @@
                         <select id="commentSubject"></select>
                     </div>
                     <div class="form-group">
-                        <label><i class="fas fa-pen"></i> Tu comentario</label>
+                        <label for="commentText"><i class="fas fa-pen"></i> Tu comentario</label>
                         <textarea id="commentText" rows="4" placeholder="Escribe aquí tu comentario sobre la materia, la nota o el profesor..."></textarea>
                     </div>
                     <button class="btn-primary" onclick="sendComment()"><i class="fas fa-paper-plane"></i> Enviar Comentario</button>
@@ -129,8 +129,7 @@
         </form>
     </div>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<link rel="stylesheet" href="css/estudiante.css">
+
     <script src="js/reportes.js"></script>
     <script src="js/api.js"></script>
     <script src="js/estudiante.js"></script>

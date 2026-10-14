@@ -1,17 +1,8 @@
 /*
  * NOTA SOBRE CACHÉ DEL NAVEGADOR:
- *Si editas el archivo y los cambios no se aplican al recargar la página
- *(botones que siguen con el comportamiento viejo, lógica que no cambia) y 
- *ya revisaste que el archivo subido al servidor tiene los cambios, entonces
- *es probable que el navegador esté usando una copia cacheada del JS.
- *
- * Solución: en el <script> que carga el archivo, agrega o sube el parámetro
- * de versión, ej: js/ayuda.js?v=2 -> ?v=3
- * Cada valor distinto de "?v=" obliga al navegador a pedir el archivo de
- * nuevo al servidor en vez de usar el caché.
- *
- * Útil mientras se está desarrollando/ajustando el archivo seguido.
- * Una vez estable, no es necesario seguir subiéndolo.
+ * Si editas el archivo y los cambios no se aplican al recargar la página,
+ * agrega o sube el parámetro de versión en el <script> que carga el archivo,
+ * ej: js/admin.js?v=2 -> ?v=3
  */
 
 // ==================== VERIFICACIÓN DE SESIÓN ====================
@@ -26,6 +17,7 @@ window.addEventListener('pageshow', function (event) {
         window.location.reload();
     }
 });
+
 // ==================== FUNCIONES GLOBALES ====================
 window.closeModal = function (modalId) {
     const modal = document.getElementById(modalId);
@@ -91,7 +83,7 @@ let currentSubjectPage = 1;
 let currentEnrollmentPage = 1;
 let perPage = 10;
 let currentActiveView = 'dashboard';
-let currentUserTab = 'students';   // NUEVO: pestaña activa dentro de "Usuarios"
+let currentUserTab = 'students';
 
 let studentSearch = '';
 let professorSearch = '';
@@ -118,8 +110,14 @@ async function confirmDelete(message) {
 }
 
 function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[m]));
+}
+
+function normalizarTexto(s) {
+    return String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 }
 
 // ==================== CONTRASEÑA INICIAL ====================
@@ -251,7 +249,7 @@ function renderActivities() {
     const container = document.getElementById('activityList');
     if (!container) return;
     container.innerHTML = activities
-        .map(a => `<div class="activity-item"><i class="fas fa-circle-dot"></i> ${a.action} — ${a.date}</div>`)
+        .map(a => `<div class="activity-item"><i class="fas fa-circle-dot"></i> ${escapeHtml(a.action)} — ${escapeHtml(a.date)}</div>`)
         .join('') || '<div class="activity-item">Sin actividad reciente</div>';
 }
 
@@ -368,7 +366,7 @@ function renderStudents() {
                     <td><span class="badge password-badge">${escapeHtml(s.initialPassword || '......')}</span></td>
                     <td>${escapeHtml(s.name)}</td>
                     <td>${escapeHtml(s.email)}</td>
-                    <td>${s.grade || '—'}</td>
+                    <td>${escapeHtml(s.grade) || '—'}</td>
                     <td>${escapeHtml(s.seccion || '—')}</td>
                     <td>
                         <button class="btn-edit"   onclick="editStudent(${s.id})"><i class="fas fa-edit"></i></button>
@@ -386,7 +384,7 @@ function openStudentModal() {
     document.getElementById('studentForm').reset();
     document.getElementById('studentId').value = '';
     document.getElementById('studentPassword').value = generatePassword();
-        originalStudentPassword = '';
+    originalStudentPassword = '';
     document.getElementById('studentPassword').readOnly = true;
     document.getElementById('studentPassword').classList.remove('password-editable');
     openModal('studentModal');
@@ -397,7 +395,7 @@ function editStudent(id) {
     if (!s) return;
     document.getElementById('studentId').value = s.id;
     document.getElementById('studentIdentificacion').value = s.identificacion || '';
-        originalStudentPassword = s.initialPassword || generatePassword();
+    originalStudentPassword = s.initialPassword || generatePassword();
     document.getElementById('studentPassword').value = originalStudentPassword;
     document.getElementById('studentPassword').readOnly = true;
     document.getElementById('studentPassword').classList.remove('password-editable');
@@ -486,9 +484,7 @@ document.getElementById('studentForm')?.addEventListener('submit', async functio
         email: document.getElementById('studentEmail').value,
         identificacion: document.getElementById('studentIdentificacion').value.trim(),
         grade: document.getElementById('studentGrade').value,
-              seccion: document.getElementById('studentSeccion').value.trim(),
-        // Solo se envía si es alumno nuevo o el admin cambió la contraseña
-        // (el backend resetea el acceso cuando recibe initialPassword)
+        seccion: document.getElementById('studentSeccion').value.trim(),
         ...((!id || password !== originalStudentPassword) ? { initialPassword: password } : {})
     };
     try {
@@ -523,7 +519,7 @@ function renderTeachers() {
                         <td>${escapeHtml(t.name)}</td>
                         <td>${escapeHtml(t.email)}</td>
                         <td>${escapeHtml(t.specialty)}</td>
-                        <td><span class="badge">${teacherSubjects.substring(0, 40)}${teacherSubjects.length > 40 ? '…' : ''}</span></td>
+                        <td><span class="badge">${escapeHtml(teacherSubjects.substring(0, 40))}${teacherSubjects.length > 40 ? '…' : ''}</span></td>
                         <td>
                             <button class="btn-edit"   onclick="editTeacher(${t.id})"><i class="fas fa-edit"></i></button>
                             <button class="btn-reset"  onclick="resetTeacherAccess(${t.id})" title="Restablecer acceso"><i class="fas fa-key"></i></button>
@@ -538,11 +534,11 @@ function renderTeachers() {
 }
 
 function openProfessorModal() {
-    document.getElementById('professorSubjects').innerHTML = subjects.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+    document.getElementById('professorSubjects').innerHTML = subjects.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
     document.getElementById('professorForm').reset();
     document.getElementById('professorId').value = '';
     document.getElementById('professorPassword').value = generatePassword();
-        originalTeacherPassword = '';
+    originalTeacherPassword = '';
     document.getElementById('professorPassword').readOnly = true;
     document.getElementById('professorPassword').classList.remove('password-editable');
     openModal('professorModal');
@@ -552,11 +548,11 @@ function editTeacher(id) {
     const t = teachers.find(t => t.id === id);
     if (!t) return;
     document.getElementById('professorSubjects').innerHTML = subjects.map(s =>
-        `<option value="${s.id}" ${t.subjectIds?.includes(s.id) ? 'selected' : ''}>${s.name}</option>`
+        `<option value="${s.id}" ${t.subjectIds?.includes(s.id) ? 'selected' : ''}>${escapeHtml(s.name)}</option>`
     ).join('');
     document.getElementById('professorId').value = t.id;
     document.getElementById('professorIdentificacion').value = t.identificacion || '';
-        originalTeacherPassword = t.initialPassword || generatePassword();
+    originalTeacherPassword = t.initialPassword || generatePassword();
     document.getElementById('professorPassword').value = originalTeacherPassword;
     document.getElementById('professorPassword').readOnly = true;
     document.getElementById('professorPassword').classList.remove('password-editable');
@@ -571,6 +567,7 @@ async function deleteTeacher(id) {
     try {
         const res = await apiFetch('/profesores/delete.php', { method: 'DELETE', body: JSON.stringify({ id }) });
         if (res.ok) {
+            invalidateTeachersCache();
             await loadProfessorsPage();
             await loadSubjectsPage();
             addActivity(`Eliminó profesor ID ${id}`);
@@ -636,12 +633,13 @@ document.getElementById('professorForm')?.addEventListener('submit', async funct
         name: document.getElementById('professorName').value,
         email: document.getElementById('professorEmail').value,
         identificacion: document.getElementById('professorIdentificacion').value.trim(),
-                specialty: document.getElementById('professorSpecialty').value,
+        specialty: document.getElementById('professorSpecialty').value,
         ...((!id || password !== originalTeacherPassword) ? { initialPassword: password } : {})
     };
     try {
         const res = await apiFetch('/profesores/', { method: id ? 'PUT' : 'POST', body: JSON.stringify(teacher) });
         if (res.ok) {
+            invalidateTeachersCache();
             showToast(id ? 'Profesor actualizado' : 'Profesor creado');
             addActivity(id ? `Editó ${teacher.name}` : `Agregó ${teacher.name}`);
             await loadProfessorsPage();
@@ -661,13 +659,14 @@ function renderSubjects() {
         tbody.innerHTML = subjects.length
             ? subjects.map(s => {
                 const teacher = teachers.find(t => t.id === parseInt(s.teacherId));
+                const teacherName = s.teacherName || (teacher ? teacher.name : null);
                 return `
                     <tr>
                         <td>${s.id}</td>
                         <td>${escapeHtml(s.code)}</td>
                         <td>${escapeHtml(s.name)}</td>
-                        <td>${s.credits}</td>
-                        <td>${teacher ? escapeHtml(teacher.name) : 'Sin asignar'}</td>
+                        <td>${escapeHtml(s.credits)}</td>
+                        <td>${teacherName ? escapeHtml(teacherName) : 'Sin asignar'}</td>
                         <td>
                             <button class="btn-edit"   onclick="editSubject(${s.id})"><i class="fas fa-edit"></i></button>
                             <button class="btn-danger" onclick="deleteSubject(${s.id})"><i class="fas fa-trash"></i></button>
@@ -680,27 +679,50 @@ function renderSubjects() {
     renderServerPagination('subjectPagination', currentSubjectPage, totalPages, subjectTotal, perPage, 'changeSubjectPage');
 }
 
-function openSubjectModal() {
-    document.getElementById('subjectTeacher').innerHTML =
-        '<option value="">-- Ninguno --</option>' +
-        teachers.map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
+async function openSubjectModal() {
     document.getElementById('subjectForm').reset();
     document.getElementById('subjectId').value = '';
     document.getElementById('subjectCredits').value = 3;
+    document.getElementById('subjectTeacherSearch').value = '';
+
+    const selProf = document.getElementById('subjectTeacher');
+    selProf.innerHTML = '<option value="">Cargando profesores...</option>';
+
     openModal('subjectModal');
+
+    await new Promise(r => setTimeout(r, 50));
+
+    try {
+        const profesores = await getAllTeachers();
+        montarBuscadorProfesores(BUSCADOR_PROFESOR, profesores, null);
+    } catch (error) {
+        Swal.fire('Error', 'No se pudieron cargar los profesores: ' + error.message, 'error');
+    }
 }
 
-function editSubject(id) {
+async function editSubject(id) {
     const s = subjects.find(s => s.id === id);
     if (!s) return;
-    document.getElementById('subjectTeacher').innerHTML =
-        '<option value="">-- Ninguno --</option>' +
-        teachers.map(t => `<option value="${t.id}" ${t.id === parseInt(s.teacherId) ? 'selected' : ''}>${escapeHtml(t.name)}</option>`).join('');
+
     document.getElementById('subjectId').value = s.id;
     document.getElementById('subjectCode').value = s.code;
     document.getElementById('subjectName').value = s.name;
     document.getElementById('subjectCredits').value = s.credits;
+    document.getElementById('subjectTeacherSearch').value = '';
+
+    const selProf = document.getElementById('subjectTeacher');
+    selProf.innerHTML = '<option value="">Cargando profesores...</option>';
+
     openModal('subjectModal');
+
+    await new Promise(r => setTimeout(r, 50));
+
+    try {
+        const profesores = await getAllTeachers();
+        montarBuscadorProfesores(BUSCADOR_PROFESOR, profesores, s.teacherId);
+    } catch (error) {
+        Swal.fire('Error', 'No se pudieron cargar los profesores: ' + error.message, 'error');
+    }
 }
 
 async function deleteSubject(id) {
@@ -760,35 +782,23 @@ function renderEnrollments() {
             ? enrollments.map((e, i) => `
                 <tr>
                     <td>${((currentEnrollmentPage - 1) * perPage) + i + 1}</td>
-                    <td><strong>${escapeHtml(e.studentName)}</strong><br><small class="badge">${e.studentGrade || '—'}</small></td>
+                    <td><strong>${escapeHtml(e.studentName)}</strong><br><small class="badge">${escapeHtml(e.studentGrade) || '—'}</small></td>
                     <td>${escapeHtml(e.subjectName)}</td>
                     <td>${escapeHtml(e.teacherName || 'Sin asignar')}</td>
-                    <td>${e.enrollmentDate || '—'}</td>
+                    <td>${escapeHtml(e.enrollmentDate) || '—'}</td>
                     <td><button class="btn-danger" onclick="deleteEnrollment(${e.id})"><i class="fas fa-trash"></i></button></td>
                  </tr>
             `).join('')
             : '<tr class="empty-row"><td colspan="6">No hay matrículas</td></tr>';
     }
     renderServerPagination('enrollmentPagination', currentEnrollmentPage, totalPages, enrollmentTotal, perPage, 'changeEnrollmentPage');
-    updateEnrollmentSelects();
-}
-
-function updateEnrollmentSelects() {
-    const studentSelect = document.getElementById('enrollmentStudent');
-    const subjectSelect = document.getElementById('enrollmentSubject');
-    if (studentSelect) studentSelect.innerHTML =
-        '<option value="">-- Seleccionar Estudiante --</option>' +
-        students.map(s => `<option value="${s.id}">${escapeHtml(s.name)} — ${s.grade || ''}</option>`).join('');
-    if (subjectSelect) subjectSelect.innerHTML =
-        '<option value="">-- Seleccionar Materia --</option>' +
-        subjects.map(s => `<option value="${s.id}">${escapeHtml(s.name)} (${s.code})</option>`).join('');
 }
 
 async function deleteEnrollment(id) {
     const enrollment = enrollments.find(e => e.id === id);
     const result = await Swal.fire({
         title: '¿Eliminar matrícula?',
-        html: `Estás por eliminar la matrícula de <strong>${enrollment?.studentName}</strong> en <strong>${enrollment?.subjectName}</strong>`,
+        html: `Estás por eliminar la matrícula de <strong>${escapeHtml(enrollment?.studentName)}</strong> en <strong>${escapeHtml(enrollment?.subjectName)}</strong>`,
         icon: 'warning', showCancelButton: true, confirmButtonColor: '#8B0000',
         confirmButtonText: 'Sí, eliminar', cancelButtonText: 'Cancelar'
     });
@@ -808,10 +818,32 @@ async function deleteEnrollment(id) {
     }
 }
 
-function openEnrollmentModal() {
-    updateEnrollmentSelects();
+async function openEnrollmentModal() {
     document.getElementById('enrollmentForm').reset();
+    const selMateria = document.getElementById('enrollmentSubject');
+    selMateria.innerHTML = '<option value="">Cargando materias...</option>';
     openModal('enrollmentModal');
+
+    // Buscador de estudiantes aislado: si falla, no bloquea la carga de materias
+    try {
+        montarBuscadorEstudiantes(BUSCADOR_MATRICULA);
+    } catch (error) {
+        console.error('Buscador de estudiantes:', error);
+        const count = document.getElementById('enrollmentStudentCount');
+        if (count) count.textContent = 'Error al iniciar el buscador: ' + error.message;
+    }
+
+    // Materias (independiente del buscador)
+    try {
+        const materias = await fetchAllPages('/materias/');
+        selMateria.innerHTML =
+            '<option value="">-- Seleccionar Materia --</option>' +
+            materias.map(s => `<option value="${s.id}">${escapeHtml(s.name)} (${escapeHtml(s.code)})</option>`).join('');
+    } catch (error) {
+        console.error('Materias:', error);
+        selMateria.innerHTML = '<option value="">No se pudieron cargar las materias</option>';
+        Swal.fire('Error', 'No se pudieron cargar las materias: ' + error.message, 'error');
+    }
 }
 
 document.getElementById('enrollmentForm')?.addEventListener('submit', async function (e) {
@@ -883,15 +915,12 @@ document.getElementById('changePasswordForm')?.addEventListener('submit', async 
 // ==================== NAVEGACIÓN ====================
 document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', function () {
-        // Si el botón no tiene data-view, ignorar (evita error con otros botones del sidebar)
         if (!this.dataset.view) return;
 
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         this.classList.add('active');
         const view = this.dataset.view;
 
-        // "users" agrupa estudiantes y profesores: la vista activa para el render
-        // es la de la pestaña interna que esté seleccionada
         currentActiveView = (view === 'users') ? currentUserTab : view;
 
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -916,49 +945,213 @@ document.querySelectorAll('.user-tab-btn').forEach(tab => {
         document.querySelectorAll('.user-tab-panel').forEach(p => p.classList.remove('active'));
         document.getElementById(`${this.dataset.usertab}View`).classList.add('active');
 
-        // Mantener sincronizado el estado para que el render y la paginación funcionen
         currentUserTab = this.dataset.usertab;
         currentActiveView = currentUserTab;
 
-        // Los datos ya están cargados; solo se vuelve a pintar la tabla activa
         if (currentUserTab === 'students') renderStudents();
         else renderTeachers();
     });
 });
 
+// ==================== BUSCADOR DE ESTUDIANTES (búsqueda en servidor) ====================
+// No precarga la lista: cada filtro/escritura consulta al backend (50 resultados máx.).
+let allStudentsCache = null; // se mantiene solo por compatibilidad con las invalidaciones existentes
+
+const BUSCADOR_REPORTES = {
+    grade: 'reportGradeSelect', section: 'reportSectionFilter', search: 'reportStudentSearch',
+    select: 'reportStudentSelect', count: 'reportStudentCount',
+    placeholder: '— Ninguno (sin estudiante) —', enlazado: false, timer: null, reqId: 0
+};
+
+const BUSCADOR_MATRICULA = {
+    grade: 'enrollmentGradeFilter', section: 'enrollmentSectionFilter', search: 'enrollmentStudentSearch',
+    select: 'enrollmentStudent', count: 'enrollmentStudentCount',
+    placeholder: '-- Seleccionar Estudiante --', enlazado: false, timer: null, reqId: 0
+};
+
+const MAX_OPCIONES_ESTUDIANTES = 100;      // lo sigue usando el buscador de profesores
+const RESULTADOS_POR_BUSQUEDA = 50;
+
+function montarBuscadorEstudiantes(cfg) {
+    if (!cfg.enlazado) {
+        document.getElementById(cfg.grade).addEventListener('change', async () => {
+            await cargarSecciones(cfg);
+            buscarEstudiantes(cfg);
+        });
+        document.getElementById(cfg.section).addEventListener('change', () => buscarEstudiantes(cfg));
+        document.getElementById(cfg.search).addEventListener('input', () => {
+            clearTimeout(cfg.timer);
+            cfg.timer = setTimeout(() => buscarEstudiantes(cfg), 300); // espera a que dejes de escribir
+        });
+        cfg.enlazado = true;
+    }
+    cargarSecciones(cfg);
+    buscarEstudiantes(cfg);
+}
+
+async function cargarSecciones(cfg) {
+    const grado  = document.getElementById(cfg.grade).value;
+    const selSec = document.getElementById(cfg.section);
+    const actual = selSec.value;
+    try {
+        const secciones = await apiGet(`/estudiantes/?secciones=1&grado=${encodeURIComponent(grado)}`);
+        selSec.innerHTML = '<option value="">Todas las secciones</option>' +
+            secciones.map(s => `<option value="${escapeHtml(s)}">Sección ${escapeHtml(s)}</option>`).join('');
+        if (secciones.includes(actual)) selSec.value = actual;
+    } catch (e) {
+        // si falla, queda "Todas las secciones"
+        console.warn('No se pudieron cargar secciones:', e.message);
+    }
+}
+
+async function buscarEstudiantes(cfg) {
+    const id     = ++cfg.reqId;                    // descarta respuestas viejas
+    const sel    = document.getElementById(cfg.select);
+    const count  = document.getElementById(cfg.count);
+    const previo = sel.value;
+
+    const params = new URLSearchParams({
+        page: 1,
+        per_page: RESULTADOS_POR_BUSQUEDA,
+        search: document.getElementById(cfg.search).value.trim(),
+        grado: document.getElementById(cfg.grade).value,
+        seccion: document.getElementById(cfg.section).value
+    });
+
+    try {
+        const data = await apiGet(`/estudiantes/?${params}`);
+        if (id !== cfg.reqId) return; // llegó tarde: ya hay una búsqueda más reciente
+
+        const items = data.items ?? [];
+        sel.innerHTML = `<option value="">${escapeHtml(cfg.placeholder)}</option>` +
+            items.map(e =>
+                `<option value="${e.id}">${escapeHtml(e.name)} · ${escapeHtml(e.identificacion || 's/id')} · ` +
+                `${escapeHtml(e.grade || 'Sin grado')}${e.seccion ? ' ' + escapeHtml(e.seccion) : ''}</option>`
+            ).join('');
+        if (previo && items.some(e => String(e.id) === previo)) sel.value = previo;
+
+        const total = data.total ?? items.length;
+        count.textContent = total === 0
+            ? 'Sin resultados con esos filtros'
+            : total > items.length
+                ? `Mostrando ${items.length} de ${total}. Escribe o usa los filtros para acotar.`
+                : `${total} estudiante(s)`;
+    } catch (error) {
+        if (id === cfg.reqId) count.textContent = 'No se pudo buscar: ' + error.message;
+    }
+}
+
+// ==================== BUSCADOR DE PROFESORES (modal Materias) ====================
+let allTeachersCache = null;
+
+async function getAllTeachers(force = false) {
+    if (!force && allTeachersCache) return allTeachersCache;
+    allTeachersCache = await fetchAllPages('/profesores/');
+    return allTeachersCache;
+}
+
+function invalidateTeachersCache() {
+    allTeachersCache = null;
+}
+
+const BUSCADOR_PROFESOR = {
+    search: 'subjectTeacherSearch',
+    select: 'subjectTeacher',
+    count: 'subjectTeacherCount',
+    placeholder: '-- Ninguno --',
+    lista: [],
+    enlazado: false,
+    seleccionado: null
+};
+
+function montarBuscadorProfesores(cfg, profesores, seleccionadoId = null) {
+    cfg.lista = profesores;
+    cfg.seleccionado = seleccionadoId ? String(seleccionadoId) : null;
+    if (!cfg.enlazado) {
+        document.getElementById(cfg.search)?.addEventListener('input', () => refrescarListaProfesores(cfg));
+        document.getElementById(cfg.select)?.addEventListener('change', () => {
+            cfg.seleccionado = document.getElementById(cfg.select).value || null;
+        });
+        cfg.enlazado = true;
+    }
+    refrescarListaProfesores(cfg);
+}
+
+function refrescarListaProfesores(cfg) {
+    const texto  = normalizarTexto(document.getElementById(cfg.search).value);
+    const sel    = document.getElementById(cfg.select);
+    const previo = cfg.seleccionado || sel.value;
+
+    const filtrados = cfg.lista.filter(p => {
+        if (!texto) return true;
+        return normalizarTexto(p.name).includes(texto) ||
+               normalizarTexto(p.identificacion).includes(texto) ||
+               normalizarTexto(p.email).includes(texto) ||
+               normalizarTexto(p.specialty).includes(texto);
+    });
+
+    let mostrados = filtrados.slice(0, MAX_OPCIONES_ESTUDIANTES);
+
+    // Incluir siempre el profesor seleccionado aunque no entre en el corte,
+    // para que al editar una materia no se pierda el profesor asignado.
+    if (previo && !mostrados.some(p => String(p.id) === String(previo))) {
+        const selProf = cfg.lista.find(p => String(p.id) === String(previo));
+        if (selProf) mostrados = [selProf, ...mostrados];
+    }
+
+    sel.innerHTML = `<option value="">${escapeHtml(cfg.placeholder)}</option>` +
+        mostrados.map(p =>
+            `<option value="${p.id}">${escapeHtml(p.name)} · ${escapeHtml(p.identificacion || 's/id')} · ${escapeHtml(p.specialty || 'Sin especialidad')}</option>`
+        ).join('');
+
+    if (previo && mostrados.some(p => String(p.id) === String(previo))) sel.value = previo;
+
+    const count = document.getElementById(cfg.count);
+    if (count) {
+        count.textContent = filtrados.length === 0
+            ? 'Sin resultados'
+            : filtrados.length > MAX_OPCIONES_ESTUDIANTES
+                ? `Mostrando ${MAX_OPCIONES_ESTUDIANTES} de ${filtrados.length}. Usa la búsqueda para acotar.`
+                : `${filtrados.length} profesor(es)`;
+    }
+}
+
 // ==================== REPORTES (ADMIN) ====================
-// Trae todas las páginas de un endpoint paginado (el backend limita per_page a 100)
+// Trae todas las páginas de un endpoint paginado en paralelo (más rápido)
 async function fetchAllPages(endpoint) {
-    let page = 1, totalPages = 1, all = [];
-    do {
-        const data = await apiGet(`${endpoint}?page=${page}&per_page=100`);
-        all = all.concat(data.items ?? data);
-        totalPages = data.total_pages ?? 1;
-        page++;
-    } while (page <= totalPages);
+    const first = await apiGet(`${endpoint}?page=1&per_page=100`);
+    let all = first.items ?? first;
+    const totalPages = first.total_pages ?? 1;
+    if (totalPages > 1) {
+        const rest = await Promise.all(
+            Array.from({ length: totalPages - 1 }, (_, i) =>
+                apiGet(`${endpoint}?page=${i + 2}&per_page=100`))
+        );
+        rest.forEach(r => { all = all.concat(r.items ?? r); });
+    }
     return all;
 }
 
 async function loadReportsPage() {
+    // Buscador aislado: si falla, no bloquea la carga de materias
     try {
-        const [estudiantes, materias] = await Promise.all([
-            fetchAllPages('/estudiantes/'),
-            fetchAllPages('/materias/')
-        ]);
-
-        document.getElementById('reportStudentSelect').innerHTML =
-            '<option value="">— Todos / no aplica —</option>' +
-            estudiantes.map(e =>
-                `<option value="${e.id}">${escapeHtml(e.name)} — ${escapeHtml(e.grade || 'Sin grado')}</option>`
-            ).join('');
-
-        document.getElementById('reportSubjectSelect').innerHTML =
-            '<option value="">— Ninguna —</option>' +
-            materias.map(m =>
-                `<option value="${m.id}">${escapeHtml(m.name)} (${escapeHtml(m.code)})</option>`
-            ).join('');
+        montarBuscadorEstudiantes(BUSCADOR_REPORTES);
     } catch (error) {
-        Swal.fire('Error', 'No se pudieron cargar las listas: ' + error.message, 'error');
+        console.error('Buscador de reportes:', error);
+        const count = document.getElementById('reportStudentCount');
+        if (count) count.textContent = 'Error al iniciar el buscador: ' + error.message;
+    }
+
+    const sel = document.getElementById('reportSubjectSelect');
+    sel.innerHTML = '<option value="">Cargando materias...</option>';
+    try {
+        const materias = await fetchAllPages('/materias/');
+        sel.innerHTML = '<option value="">— Ninguna —</option>' +
+            materias.map(m => `<option value="${m.id}">${escapeHtml(m.name)} (${escapeHtml(m.code)})</option>`).join('');
+    } catch (error) {
+        console.error('Materias:', error);
+        sel.innerHTML = '<option value="">No se pudieron cargar las materias</option>';
+        Swal.fire('Error', 'No se pudieron cargar las materias: ' + error.message, 'error');
     }
 }
 
@@ -966,6 +1159,7 @@ async function exportarReporteAdmin() {
     const estudianteId = document.getElementById('reportStudentSelect').value || null;
     const materiaId    = document.getElementById('reportSubjectSelect').value || null;
     const grado        = document.getElementById('reportGradeSelect').value || null;
+    const seccion      = document.getElementById('reportSectionFilter').value || null;
 
     if (!estudianteId && !materiaId) {
         Swal.fire('Falta información', 'Elige al menos un estudiante o una materia.', 'warning');
@@ -983,6 +1177,7 @@ async function exportarReporteAdmin() {
         estudiante_id: estudianteId || undefined,
         materia_id: materiaId || undefined,
         grado: (!estudianteId && grado) ? grado : undefined,
+        seccion: (!estudianteId && seccion) ? seccion : undefined,
         trimestre: trimestre === 'TODOS' ? undefined : trimestre
     });
 }

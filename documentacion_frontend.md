@@ -1,13 +1,17 @@
 # Documentación Frontend — Sistema de Gestión Escolar
-**Versión:** 1.0
+**Versión:** 1.1
 **Stack:** HTML5 · CSS3 · JavaScript (vanilla, sin frameworks) · SweetAlert2 · Font Awesome 6
-**Consumo de API:** `http://localhost/gestion_escolar/api` (ver `documentacion_backend_v2.md`)
-**Fecha:** Julio 2026
+**Consumo de API:** `http://localhost/gestion_escolar/api` (ver `documentacion_backend_v2.3.md`)
+**Fecha:** Octubre 2026
 
-> Este documento complementa `documentacion_backend_v2.md`, que dejaba la sección de frontend
-> pendiente ("documentación a cargo de otro integrante del equipo"). Cubre la estructura de
-> páginas, los scripts JS, el flujo de autenticación/primer ingreso y, en particular, el
-> **sistema de Ayuda**, que no estaba documentado.
+> Este documento complementa `documentacion_backend_v2.3.md`. Cubre la estructura de
+> páginas, los scripts JS, el flujo de autenticación/primer ingreso, la exportación de
+> reportes y el **sistema de Ayuda**.
+>
+> **Cambios de la v1.1:** sesión por cookie `httpOnly` (sin token en `localStorage`),
+> páginas internas migradas a `.php`, exportación PDF/Excel generada en el servidor
+> (`reportes.js`), panel admin con **Usuarios** (pestañas) y **Reportes**, y botón
+> "Exportar Boletín" reubicado en la vista de estudiante.
 
 ---
 
@@ -22,8 +26,9 @@
 8. [Panel de Estudiante](#8-panel-de-estudiante)
 9. [Sistema de Ayuda (`ayuda.html` / `ayuda.js`)](#9-sistema-de-ayuda-ayudahtml--ayudajs)
 10. [Estilos y Convenciones Visuales](#10-estilos-y-convenciones-visuales)
-11. [Notas Técnicas y Caché del Navegador](#11-notas-técnicas-y-caché-del-navegador)
-12. [Pendientes / Mejoras Sugeridas](#12-pendientes--mejoras-sugeridas)
+11. [Exportación de Reportes (`reportes.js`)](#11-exportación-de-reportes-reportesjs)
+12. [Notas Técnicas y Caché del Navegador](#12-notas-técnicas-y-caché-del-navegador)
+13. [Pendientes / Mejoras Sugeridas](#13-pendientes--mejoras-sugeridas)
 
 ---
 
@@ -31,32 +36,40 @@
 
 ```
 frontend/
-├── index.html                  # Login + modal de recuperación de contraseña
-├── cambiar_password.html       # Cambio obligatorio de contraseña (primer ingreso)
-├── configurar_preguntas.html   # Configuración de 3 preguntas de seguridad (primer ingreso)
-├── admin.html                  # Panel del administrador
-├── profesor.html                # Panel del profesor
-├── estudiante.html             # Panel del estudiante
-├── ayuda.html                  # Centro de ayuda (común a los 3 roles)
+├── index.html                  # Login + modal de recuperación (público)
+├── ayuda.html                  # Centro de ayuda (público, común a los 3 roles)
+├── admin.php                   # Panel admin (requiere sesión rol admin)
+├── profesor.php                # Panel profesor (requiere sesión rol profesor)
+├── estudiante.php              # Panel estudiante (requiere sesión rol estudiante)
+├── cambiar_password.php        # Cambio de contraseña de primer ingreso (profesor/estudiante)
+├── configurar_preguntas.php    # 3 preguntas de seguridad (profesor/estudiante)
 ├── css/
-│   ├── login.css                # Login, recuperación de contraseña, preguntas de seguridad
+│   ├── login.css               # Login, recuperación de contraseña, preguntas de seguridad
 │   ├── admin.css
 │   ├── profesor.css
 │   ├── estudiante.css
 │   └── ayuda.css
 └── js/
-    ├── api.js                   # Helper central de fetch hacia la API
-    ├── login.js                 # Lógica de index.html (login + recuperación)
-    ├── cambiar_password.js      # Lógica de cambiar_password.html
-    ├── configurar_preguntas.js  # Lógica de configurar_preguntas.html
-    ├── admin.js                 # Lógica de admin.html
-    ├── profesor.js               # Lógica de profesor.html
-    ├── estudiante.js            # Lógica de estudiante.html
-    └── ayuda.js                 # Lógica de ayuda.html
+    ├── api.js                  # Helper central de fetch (cookie de sesión)
+    ├── reportes.js             # Diálogos y descarga de exportaciones PDF/Excel
+    ├── login.js                # Lógica de index.html (login + recuperación)
+    ├── cambiar_password.js     # Lógica de cambiar_password.php
+    ├── configurar_preguntas.js # Lógica de configurar_preguntas.php
+    ├── admin.js                # Lógica de admin.php
+    ├── profesor.js             # Lógica de profesor.php
+    ├── estudiante.js           # Lógica de estudiante.php
+    └── ayuda.js                # Lógica de ayuda.html
 ```
 
-Cada página HTML carga siempre `js/api.js` antes de su script específico, ya que todos
-dependen de `apiFetch()` / `apiGet()` para comunicarse con el backend.
+Las páginas `.php` empiezan con `verificarSesionPagina('rol')`
+(`api/config/verificar_sesion_pagina.php`). Si no hay sesión válida o el rol no coincide,
+redirigen a `index.html`. **No deben existir versiones `.html` de esas cinco páginas**
+(anularían la protección). Una página interna nueva debe ser `.php` y llevar esa línea como
+primera línea del archivo.
+
+Orden de scripts: `api.js` antes de cualquier script de panel. `reportes.js` se carga en
+`admin.php`, `profesor.php` y `estudiante.php`, antes del script del panel, porque lo usan
+los tres.
 
 ---
 
@@ -68,40 +81,35 @@ Punto único de configuración de la URL base:
 const API_URL = 'http://localhost/gestion_escolar/api';
 ```
 
-### `getToken()`
-Lee `currentUser` de `localStorage` y devuelve `user.token` (o `null` si no hay sesión).
-
 ### `apiFetch(endpoint, options)`
-Wrapper sobre `fetch()` que:
-- Agrega automáticamente el header `Content-Type: application/json`.
-- Agrega `Authorization: Bearer <token>` si existe sesión.
-- Si la respuesta es **401** (token inválido/expirado): limpia `localStorage.currentUser` y
-  redirige a `index.html` — esto ocurre de forma silenciosa en cualquier página, funcionando
-  como un "logout forzado" ante expiración de sesión (la sesión dura 8 horas, ver backend).
-- Si la respuesta es **403**: lanza un `Error` con el mensaje devuelto por el backend
-  (`err.error`), para que el código que llama pueda mostrarlo (usualmente vía SweetAlert2).
-- En cualquier otro caso, devuelve el objeto `Response` sin procesar — quien llama decide si
-  hace `.json()` y valida `res.ok`.
+- Agrega `Content-Type: application/json` y siempre usa `credentials: 'include'`, para que
+  el navegador adjunte la cookie `sesion_token`. **Ya no lee ningún token ni manda el
+  header `Authorization`.**
+- **401**: solo se trata como sesión expirada si el mensaje de error contiene "token";
+  entonces limpia `localStorage.currentUser` y redirige a `index.html`. Otros 401 (por
+  ejemplo "La contraseña actual es incorrecta") se devuelven al llamador.
+- **403**: lanza un `Error` con el mensaje devuelto por el backend (`err.error`).
+- En cualquier otro caso devuelve el `Response` sin procesar; quien llama decide si hace
+  `.json()` y valida `res.ok`.
 
 ### `apiGet(endpoint)`
-Azúcar sintáctica sobre `apiFetch` para peticiones `GET` que solo necesitan el payload:
-hace `res.json()` y retorna `json.data ?? json` (compatibilidad con endpoints que devuelven
-el array directo o envuelto en `{ success, data }`).
+Hace `apiFetch`, lanza `Error` si `!res.ok` y devuelve `json.data ?? json`.
 
-> **Nota:** varias vistas (`admin.js`, `profesor.js`, `estudiante.js`) no usan `apiGet` y en su
-> lugar repiten el patrón `const json = await res.json(); const data = json.data ?? json;`
-> manualmente. Es candidato a refactor para unificar en `apiGet`.
+> **Nota:** varias vistas (`admin.js`, `profesor.js`, `estudiante.js`) no usan `apiGet` y
+> repiten `const json = await res.json(); const data = json.data ?? json;`. Candidato a
+> refactor. La excepción es `fetchAllPages()` de `admin.js`, que sí usa `apiGet`.
 
 ---
 
 ## 3. Sesión de Usuario en el Cliente
 
-Toda la sesión se guarda en `localStorage.currentUser` como JSON, con esta forma:
+La sesión real vive en la cookie `sesion_token` (`httpOnly`, `samesite=Lax`, 8 horas),
+inaccesible desde JavaScript. `localStorage.currentUser` guarda solo datos de interfaz,
+**sin campo `token`**:
 
 ```json
 {
   "email": "...",
-  "token": "...",
   "rol": "admin | profesor | estudiante",
   "nombre": "...",
   "id_referencia": null,
@@ -112,16 +120,15 @@ Toda la sesión se guarda en `localStorage.currentUser` como JSON, con esta form
 ```
 
 - `id_referencia`: `null` para admin; para profesor/estudiante es su `id` en la tabla
-  correspondiente (`estudiante.id` o `profesor.id`). Se usa para filtrar datos propios en el
-  frontend (ej. `profesor.js` filtra `mySubjects` comparando `teacherId === id_referencia`).
-- `password_cambiada` / `preguntas_configuradas`: controlan el flujo de primer ingreso
-  (sección 4).
-- `password_skipped` (opcional, solo en cliente): se agrega cuando el usuario presiona
-  **"Más tarde"** al cambiar la contraseña. Permite navegar al panel sin haber cambiado la
-  contraseña, pero **no** se envía nunca al backend; es puramente una bandera de UX local.
+  correspondiente. Se usa para filtrar datos propios (ej. `profesor.js` compara
+  `teacherId === id_referencia`).
+- `password_cambiada` / `preguntas_configuradas`: controlan el flujo de primer ingreso.
+- `password_skipped` (solo cliente): se agrega al presionar **"Más tarde"**. Nunca se envía
+  al backend.
 
-No existe refresco de token: al expirar la sesión (8h), cualquier llamada a `apiFetch`
-devuelve 401 y el usuario es redirigido a `index.html`.
+No existe refresco de sesión: a las 8 h la cookie vence y el siguiente `apiFetch` devuelve
+401 con mensaje de token y redirige a `index.html`. Cada panel recarga la página si se
+restaura desde bfcache (evento `pageshow`), para no mostrar datos de una sesión cerrada.
 
 ---
 
@@ -131,43 +138,46 @@ devuelve 401 y el usuario es redirigido a `index.html`.
 index.html (login)
       │
       ▼
- rol === 'admin'? ──► sí ──► admin.html (omite todo el flujo de primer ingreso)
+ rol === 'admin'? ──► sí ──► admin.php (omite todo el flujo de primer ingreso)
       │ no
       ▼
- password_cambiada === false? ──► sí ──► cambiar_password.html
+ password_cambiada === false? ──► sí ──► cambiar_password.php
       │ no                                    │
       ▼                                       │ (guardar o "Más tarde")
- preguntas_configuradas === false? ──► sí ──► configurar_preguntas.html
+ preguntas_configuradas === false? ──► sí ──► configurar_preguntas.php
       │ no                                    │
       ▼                                       ▼
- profesor.html / estudiante.html  ◄───────────┘
+ profesor.php / estudiante.php  ◄─────────────┘
 ```
 
 ### `login.js`
-- Hace `POST /auth/login.php` directamente con `fetch` (no usa `apiFetch`, porque aún no hay
-  token).
-- Guarda la sesión en `localStorage` con los campos recibidos del backend.
-- Redirige según `rol`, `password_cambiada` y `preguntas_configuradas` (ver diagrama arriba).
+- Hace `POST /auth/login.php` directamente con `fetch` y `credentials: 'include'` (no usa
+  `apiFetch`, porque aún no hay sesión).
+- Guarda en `localStorage.currentUser` los campos recibidos (sin token).
+- Redirige según `rol`, `password_cambiada` y `preguntas_configuradas` (ver diagrama).
+- El backend bloquea la cuenta 15 minutos tras 5 intentos fallidos seguidos (HTTP 429); el
+  mensaje se muestra con SweetAlert2.
+- Si el `fetch` falla por completo, muestra "No se pudo conectar con el servidor". Un 500
+  con HTML (en vez de JSON) provoca el mismo mensaje; en ese caso revisar el log de Apache
+  y que la base de datos tenga las columnas `intentos_fallidos` y `bloqueado_hasta`.
 
-### `cambiar_password.html` / `cambiar_password.js`
-- Se autoprotege: si no hay `currentUser` en `localStorage`, redirige a `index.html`; si
-  `password_cambiada` ya es `true`, redirige directo al panel correspondiente (o a
-  `configurar_preguntas.html` si faltan las preguntas).
+### `cambiar_password.php` / `cambiar_password.js`
+- Accesible para profesor y estudiante. Se autoprotege: si no hay `currentUser`, redirige a
+  `index.html`; si `password_cambiada` ya es `true`, redirige al panel (o a
+  `configurar_preguntas.php` si faltan las preguntas).
 - Envía `POST /auth/cambiar_password.php` con `password_actual` y `password_nueva`.
-- Botón **"Más tarde"** (`skipPasswordChange()`): si el rol es `admin`, va directo a
-  `admin.html`; si es profesor/estudiante, marca `password_skipped = true` en `localStorage` y
-  continúa el flujo (preguntas de seguridad o panel).
+- Botón **"Más tarde"** (`skipPasswordChange()`): si el rol es `admin`, va a `admin.php`; si
+  es profesor/estudiante, marca `password_skipped = true` y continúa el flujo (preguntas de
+  seguridad o panel).
 
-### `configurar_preguntas.html` / `configurar_preguntas.js`
-- Permite acceso si `password_cambiada` **o** `password_skipped` es verdadero (para no bloquear
-  a quien pospuso el cambio de contraseña).
+### `configurar_preguntas.php` / `configurar_preguntas.js`
+- Permite acceso si `password_cambiada` **o** `password_skipped` es verdadero.
 - Carga las 8 preguntas predefinidas vía `GET /auth/preguntas_seguridad.php`.
-- Renderiza 3 selects independientes; cada uno excluye las preguntas ya elegidas en los otros
-  dos slots (`getOpcionesDisponibles`), evitando duplicados sin depender solo de la validación
-  del backend.
-- Al enviar, hace `POST /auth/configurar_preguntas.php` con `{ preguntas: [{pregunta_id,
-  respuesta}, ...] }` (exactamente 3).
-- Actualiza `preguntas_configuradas = true` en `localStorage` y redirige al panel según rol.
+- Renderiza 3 selects independientes; cada uno excluye las preguntas ya elegidas en los
+  otros dos (`getOpcionesDisponibles`).
+- Al enviar, hace `POST /auth/configurar_preguntas.php` con
+  `{ preguntas: [{pregunta_id, respuesta}, ...] }` (exactamente 3).
+- Actualiza `preguntas_configuradas = true` y redirige al panel según rol.
 
 ---
 
@@ -186,61 +196,91 @@ requerir sesión activa**:
 4. Si es exitoso, se limpia el formulario de login para que el usuario inicie sesión con la
    nueva contraseña. Este flujo **no** modifica `password_cambiada` en el backend.
 
-> El modal se cierra con la `x`, haciendo clic fuera de él (`window.onclick`), o al completar
-> la recuperación exitosamente.
+> El modal se cierra con la `x`, haciendo clic fuera de él (`window.onclick`), o al
+> completar la recuperación.
 
 ---
 
 ## 6. Panel de Administrador
 
-**Archivos:** `admin.html` + `js/admin.js` + `css/admin.css`
+**Archivos:** `admin.php` + `js/admin.js` + `css/admin.css` (+ `js/reportes.js`)
 
-### Vistas (navegación por `data-view` en `.nav-btn`)
+### Vistas (sidebar, `data-view`)
 | Vista | Descripción |
 |---|---|
-| Dashboard | Tarjetas con totales (estudiantes, profesores, materias, matrículas) + actividad reciente **local** (no persiste al recargar, se reconstruye solo con acciones de la sesión actual). |
-| Estudiantes | CRUD paginado server-side, con búsqueda y gestión de contraseña inicial. |
-| Profesores | CRUD paginado server-side, con búsqueda, gestión de contraseña inicial y materias asignadas. |
+| Dashboard | Tarjetas con totales (estudiantes, profesores, materias, matrículas) + actividad reciente **local** (no persiste al recargar). |
+| **Usuarios** | Contenedor `#usersView` con dos pestañas internas: **Estudiantes** y **Profesores**. Cada pestaña conserva su CRUD paginado, búsqueda y gestión de contraseña inicial. |
 | Materias | CRUD paginado server-side, con asignación de profesor. |
 | Matrículas | Alta/baja de matrícula estudiante–materia, paginado y con búsqueda. |
+| **Reportes** | Exportación PDF/Excel de cualquier estudiante, materia o grado (ver abajo). |
+
+### Estructura de `admin.php`
+Las vistas son **hermanas** dentro de `<main class="main-content">`, en este orden:
+`dashboardView`, `usersView`, `subjectsView`, `enrollmentsView`, `reportsView`, los modales
+y el cierre `</main>`. Cada vista cierra con su propio `</div>` antes de que empiece la
+siguiente. Un `reportsView` anidado dentro de otra vista queda oculto y rompe la página.
+
+### Usuarios: pestañas internas
+- `#studentsView` y `#professorsView` tienen la clase `user-tab-panel` (no `view`). La
+  navegación principal solo muestra u oculta `#usersView`; las pestañas (`.user-tab-btn`,
+  `data-usertab`) alternan los paneles.
+- **Estado sincronizado:** `loadStudentsPage()` y `loadProfessorsPage()` solo pintan la
+  tabla si `currentActiveView` es `'students'` o `'professors'`. Por eso, al entrar a
+  Usuarios, `currentActiveView` toma el valor de `currentUserTab` (la pestaña activa) y se
+  actualiza al cambiar de pestaña. Si se rompe esta sincronía, las tablas quedan vacías.
+- Al cambiar de pestaña no se vuelven a pedir datos; solo se llama a `renderStudents()` o
+  `renderTeachers()`. Al entrar a Usuarios desde el sidebar sí se cargan ambas listas.
+
+### Reportes (admin)
+Formulario (`#reportsView`) con tres selects: Estudiante (opcional), Materia (opcional) y
+Grado (lista fija 7°–12°). Combinaciones soportadas por `exportar.php`:
+
+| Selección | Resultado |
+|---|---|
+| Solo estudiante | Boletín completo del estudiante (todas sus materias, I/II/III + nota final) |
+| Estudiante + materia | Reporte individual de esa materia |
+| Solo materia (+ grado opcional) | Reporte grupal |
+
+- `loadReportsPage()` llena los selects con `fetchAllPages(endpoint)`, que recorre todas las
+  páginas (el backend limita `per_page` a 100). Es necesario porque para admin `/materias/`
+  y `/estudiantes/` devuelven un objeto paginado, no un array.
+- `exportarReporteAdmin()` valida que haya al menos estudiante o materia, pide **formato** y
+  luego **trimestre** (diálogos de `reportes.js`), e invoca `exportarReporte()`.
+- El grado se ignora si hay un estudiante seleccionado.
 
 ### Paginación y búsqueda
-Cada entidad mantiene su propio estado independiente (`currentStudentPage`,
-`studentSearch`, `perPage`, etc.) y su propio total (`studentTotal`, etc.), consultando los
-parámetros `page`, `per_page`, `search` contra el backend (ver sección 7 de
-`documentacion_backend_v2.md`). El selector de "por página" (`per-page-select`) reinicia todas
-las páginas a 1 al cambiar.
+Cada entidad mantiene su propio estado (`currentStudentPage`, `studentSearch`, `perPage`,
+etc.) y su propio total, consultando `page`, `per_page` y `search` contra el backend. El
+selector "por página" reinicia todas las páginas a 1.
 
 ### Gestión de contraseña inicial
-- `generatePassword()`: genera una contraseña aleatoria de 6 caracteres alfanuméricos.
-- Botón de **regenerar** (🔄): reemplaza el valor del campo, siempre en modo solo lectura.
-- Botón de **editar manualmente** (✏️): habilita el campo para escritura libre
-  (`togglePasswordEdit`).
-- Al guardar (crear o editar estudiante/profesor), la contraseña se envía como
-  `initialPassword`.
+- `generatePassword()`: contraseña aleatoria de 6 caracteres alfanuméricos.
+- Botón regenerar (🔄): reemplaza el valor, siempre en modo solo lectura.
+- Botón editar (✏️): habilita el campo para escritura libre (`togglePasswordEdit`).
+- Al guardar, la contraseña se envía como `initialPassword` solo si es alumno/profesor nuevo
+  o si el admin la cambió.
 
 ### Restablecer acceso (`resetStudentAccess` / `resetTeacherAccess`)
-Genera una nueva contraseña aleatoria y hace `PUT` reenviando todos los campos del usuario más
-`initialPassword`. Esto dispara en el backend el reseteo de `password_cambiada` y
-`preguntas_configuradas` (ver documentación backend, sección de `PUT /estudiantes` y
-`PUT /profesores`), forzando al usuario a repetir el flujo de primer ingreso. El frontend
-muestra la nueva contraseña en un `Swal.fire` para que el admin la comunique manualmente.
+Genera una nueva contraseña y hace `PUT` reenviando los campos del usuario más
+`initialPassword`. El backend resetea `password_cambiada` y `preguntas_configuradas`, y
+borra sus preguntas de seguridad, forzando de nuevo el flujo de primer ingreso. El frontend
+muestra la nueva contraseña en un `Swal.fire` para que el admin la comunique.
 
 ### Cambio de contraseña propia
-Modal `#changePasswordModal`, disponible en el sidebar de las tres vistas (admin, profesor,
-estudiante) con la misma lógica: `POST /auth/cambiar_password.php`.
+Modal `#changePasswordModal`, disponible en el sidebar de los tres paneles
+(`POST /auth/cambiar_password.php`).
 
 ---
 
 ## 7. Panel de Profesor
 
-**Archivos:** `profesor.html` + `js/profesor.js` + `css/profesor.css`
+**Archivos:** `profesor.php` + `js/profesor.js` + `css/profesor.css` (+ `js/reportes.js`)
 
 ### Carga inicial (`loadData`)
 Trae en paralelo (`Promise.all`) `materias`, `matriculas`, `notas` y `comentarios`, y luego
 filtra en el cliente:
 - `mySubjects`: materias donde `teacherId === id_referencia` del profesor.
-- `myEnrollments` / `myGrades`: ya vienen filtrados por el backend según el rol del token.
+- `myEnrollments` / `myGrades`: ya vienen filtrados por el backend según el rol.
 - `myStudents`: se deriva de `myEnrollments`, deduplicando por `studentId`.
 
 ### Gestión de notas
@@ -249,65 +289,33 @@ filtra en el cliente:
 - Modal de detalle por estudiante (`openStudentGradesModal`), con pestañas por trimestre
   (`I`, `II`, `III`, `Todas`).
 - **Cálculo de nota trimestral en el cliente** (`calcularNotaTrimestral`,
-  `generarResumenTrimestre`): replica la misma fórmula que el backend
+  `generarResumenTrimestre`): replica la fórmula del backend
   (`(promedio_parciales + promedio_apreciacion + examen) / 3`, solo si los tres componentes
-  existen) — usado para mostrar retroalimentación inmediata sin esperar al endpoint de resumen.
-- Alta de nota: valida rango 1.0–5.0 en el cliente antes de enviar, y bloquea visualmente
-  (`disabled`) la opción "Examen Trimestral" en el select si ya existe uno registrado para ese
+  existen). Se usa únicamente para la vista en pantalla.
+- Alta de nota: valida rango 1.0–5.0 en el cliente, exige elegir un trimestre concreto (no
+  "Todas") y bloquea la opción "Examen Trimestral" si ya existe uno para ese
   estudiante/materia/trimestre.
-- Eliminación de nota: confirmación con SweetAlert2 antes de `DELETE /notas/`.
-- Tras cualquier alta/baja, `reloadGradesAndRefresh()` vuelve a pedir `/notas/` completo y
-  recalcula estadísticas y vistas dependientes.
+- Eliminación de nota: confirmación con SweetAlert2 antes de `DELETE /notas/`. La interfaz
+  **no** ofrece editar notas, aunque el backend sí tiene `PUT /notas/`.
+- Tras cualquier alta/baja, `reloadGradesAndRefresh()` vuelve a pedir `/notas/` y recalcula
+  estadísticas y vistas dependientes.
 
-  ### Exportación de boletines en PDF / Excel (nuevo)
+### Exportación de reportes PDF / Excel
+**Ya no se genera nada en el navegador.** Los archivos los produce
+`GET /api/notas/exportar.php` (DomPDF y PhpSpreadsheet) y `reportes.js` solo pide las
+opciones y descarga el resultado (ver sección 11). No se usan jsPDF ni SheetJS.
 
-Se agregaron tres puntos de exportación, todos generados 100% en el navegador (sin
-depender del endpoint de backend `/api/notas/exportar.php`, reservado para exportación
-por materia individual desde otro flujo):
-
-**Librerías añadidas (CDN):** jsPDF 2.5.1, jspdf-autotable 3.8.2, SheetJS (xlsx) 0.18.5.
-Cargadas en `estudiante.html` y `profesor.html`.
-
-**Selector de formato:** al presionar cualquier botón "Exportar Notas", se muestra un
-`Swal.fire` con tres opciones (PDF, Excel, Cancelar) mediante la función
-`elegirFormatoExportacion()`, duplicada en `estudiante.js` y `profesor.js` por ser
-scripts independientes.
-
-**1. Boletín del estudiante (`estudiante.js` — `exportarBoletin(trimestre)`):**
-Botón junto al badge de cada trimestre en el Reporte Académico. Genera una tabla
-horizontal con una fila por materia matriculada: Total Parciales, Total Apreciación,
-Examen Trimestral y Nota Final (resultado de ese trimestre específico, vía
-`generarResumenTrimestre`). Cualquier componente sin registros se muestra como `S/N`
-en vez de `0`. Incluye un renglón de promedio general del trimestre al pie, calculado
-sobre la columna Nota Final. No se incluye el promedio final anual del curso en este
-boletín (por trimestre) para evitar ambigüedad entre "nota del trimestre" y "nota final
-del año" bajo el mismo nombre de columna; ese dato solo aparece en el boletín individual
-generado desde el panel de profesor, donde ambos valores tienen sentido en el mismo
-documento (una fila por trimestre + una fila final aparte).
-**2. Reporte grupal por grado (`profesor.js` — `exportarBoletinGrupo(grado)`):**
-Botón junto al encabezado de cada grupo de grado en "Gestionar Notas" (ej. "Grado 10°").
-Exporta una fila por estudiante de ese grado matriculado en la materia seleccionada, con
-columnas: Total Parciales, Total Apreciación, Examen Trimestral y Nota Final. Los
-promedios se calculan sobre **todas** las notas de ese tipo registradas en la materia,
-sin filtrar por trimestre (puede haber hasta 3 exámenes, uno por trimestre). Si el
-estudiante no tiene ningún registro de un tipo, se muestra `S/N`.
-
-**3. Boletín individual del estudiante (`profesor.js` — `exportarBoletinIndividual()`):**
-Botón junto a las pestañas de trimestre dentro del modal de detalle de un estudiante.
-Exporta una fila por cada uno de los 3 trimestres (Total Parciales, Total Apreciación,
-Examen Trimestral, Nota Trimestral) más una línea final con la **Nota Final** del curso
-(`calcularPromedioFinal(estudianteId, materiaId)`), independientemente de qué pestaña de
-trimestre esté activa en el modal al momento de exportar.
-
-**Consistencia de cálculos:** las tres exportaciones reutilizan las mismas funciones que
-ya alimentan las vistas en pantalla (`generarResumenTrimestre`, `calcularPromedioFinal`),
-por lo que los valores del PDF/Excel nunca pueden divergir de lo que el usuario ve en la
-interfaz.
-
-**Nombres de archivo generados:**
-- Estudiante: `boletin_<estudiante>_<trimestre>.pdf` / `.xlsx`
-- Grupal: `reporte_grupal_<materia>_<grado>.pdf` / `.xlsx`
-- Individual (profesor): `boletin_<estudiante>_<materia>.pdf` / `.xlsx`
+- **Grupal por grado** (`exportarReporteGrupal(grado)`): botón "Exportar Notas" junto al
+  encabezado de cada grado en "Gestionar Notas". Pide **trimestre**, luego **formato**, y
+  envía `materia_id` + `grado` + `trimestre`. Agrega una fila por estudiante e incluye un
+  pie con total de estudiantes, promedio del grupo, aprobados y en proceso.
+- **Individual** (`exportarReporteIndividual()`): botón "Exportar Notas" junto a las
+  pestañas de trimestre del modal de estudiante. Pide formato y envía `materia_id` +
+  `estudiante_id`, sin filtro de trimestre: incluye una fila por trimestre y la **Nota
+  Final del Curso**, sin importar qué pestaña esté activa.
+- Los valores sin registros se muestran como `S/N` (nunca como 0).
+- Los cálculos los hace el backend (`notas_calculo.php`), la misma fuente que usa
+  `GET /notas/?resumen=1`.
 
 ### Comentarios
 Vista de solo lectura con los comentarios enviados por estudiantes en las materias del
@@ -317,63 +325,50 @@ profesor (`GET /comentarios/`, ya filtrado por rol en backend).
 
 ## 8. Panel de Estudiante
 
-**Archivos:** `estudiante.html` + `js/estudiante.js` + `css/estudiante.css`
+**Archivos:** `estudiante.php` + `js/estudiante.js` + `css/estudiante.css` (+ `js/reportes.js`)
 
 ### Carga inicial (`loadData`)
-Trae `matriculas`, `notas` y `materias` en paralelo, y filtra `mySubjects` a solo las materias
-en las que el estudiante está matriculado.
+Trae `matriculas`, `notas` y `materias` en paralelo, y filtra `mySubjects` a solo las
+materias en las que el estudiante está matriculado.
 
 ### Reporte de notas por trimestre
-- `renderGradesReport()` construye una tabla por cada uno de los 3 trimestres, mostrando por
-  materia: cantidad de notas, nota trimestral (o "En curso" si falta algún componente) y un
-  badge de estado (Aprobado / En proceso / Incompleto / Sin definir).
+- `renderGradesReport()` construye una sección por cada uno de los 3 trimestres, mostrando
+  por materia: botón "Ver notas (N)", nota trimestral (o "En curso" si falta algún
+  componente) y un badge de estado (Aprobado / En proceso / Incompleto / Sin definir).
 - Los trimestres son colapsables (clic en el encabezado).
 - **Modal de detalle** (`openGradesDetailModal`): agrupa las notas por tipo (Parciales,
-  Apreciación, Examen Trimestral) con su promedio, y muestra el resumen final del trimestre.
+  Apreciación, Examen Trimestral) con su promedio y muestra el resumen del trimestre.
 - El promedio general del dashboard (`myAverage`) es un promedio simple de todas las notas
-  registradas por materia (no el promedio trimestral ponderado); es una métrica informativa
-  distinta de la "nota trimestral" oficial.
+  registradas por materia (no el promedio trimestral ponderado); es una métrica
+  informativa distinta de la "nota trimestral" oficial.
 
-  ### Exportación de boletín en PDF (nuevo)
+### Exportación de boletines PDF / Excel
+**Ya no se genera nada en el navegador**: todo pasa por `GET /api/notas/exportar.php` a
+través de `exportarReporte()` de `reportes.js`. El backend fuerza siempre el `estudiante_id`
+propio, así que el estudiante solo puede exportar sus datos.
 
-Cada acordeón de trimestre (I, II, III) incluye un botón **"Exportar Notas"** ubicado junto
-al badge que indica si hay o no notas registradas en ese período.
-
-- **Librerías:** jsPDF 2.5.1 + jspdf-autotable 3.8.2, cargadas por CDN en `estudiante.html`.
-  No requiere backend: el PDF se genera enteramente en el navegador con los datos ya cargados
-  en memoria (`mySubjects`, `myGrades`).
-- **Función:** `exportarBoletinTrimestre(trimestre)` en `estudiante.js`.
-- **Formato del boletín:** una fila horizontal por cada materia en la que el estudiante está
-  matriculado (`mySubjects`), con columnas: Materia, Total Parciales, Total Apreciación,
-  Examen Trimestral, Nota Trimestral. Reutiliza `generarResumenTrimestre(subjectId, trimestre)`,
-  la misma función que alimenta el modal de detalle en pantalla, garantizando que el PDF y la
-  vista web nunca muestren cifras distintas.
-- **Regla de "S/N":** si una materia no tiene ninguna nota del componente correspondiente
-  (parcial, apreciación o examen) en ese trimestre, la celda muestra `S/N` en lugar de `0`.
-  Si el componente tiene una sola nota, se muestra ese puntaje; si tiene varias, se muestra
-  el promedio, igual que en la fórmula oficial de nota trimestral.
-- **Pie del documento:** promedio general del trimestre, calculado como el promedio de las
-  notas trimestrales de las materias que sí tienen los tres componentes completos (ignora
-  las `S/N` en ese cálculo, no las trata como 0).
-- **Nombre del archivo:** `boletin_<estudiante>_<trimestre>.pdf`.
-- **Diferencia con el endpoint de backend (`GET /api/notas/exportar.php`, ver
-  `contrato_exportacion_frontend.md`):** ese endpoint exporta una sola materia por llamada
-  (o el grupal de una materia, en el panel de profesor) y requiere `materia_id` obligatorio.
-  Esta nueva función resuelve un caso distinto: un boletín consolidado con **todas** las
-  materias matriculadas del estudiante en un solo PDF, por lo que se optó por generarlo
-  100% en cliente en vez de extender el endpoint existente.
+- **Exportar Boletín** (`exportarBoletinCompleto()`): la tarjeta `.boletin-completo-card`
+  está **justo bajo el header del Reporte Académico** (junto al promedio general), para
+  verse sin hacer scroll. Pide el formato y genera el boletín con una fila por materia y
+  columnas I, II, III y Nota Final.
+- **Exportar Notas por trimestre** (`exportarBoletin(trimestre)`): botón en el encabezado de
+  cada trimestre. Pide el formato y exporta ese trimestre en todas las materias, con
+  columnas Prom. Parciales, Prom. Apreciación, Nota Examen y Nota Trimestral.
+- Regla de `S/N`: si un componente no tiene notas, la celda muestra `S/N` en lugar de 0.
+- `.boletin-completo-card` tiene `margin-bottom` para separarla del primer trimestre.
 
 ### Comentarios
 El estudiante puede enviar un comentario sobre una materia en la que esté matriculado
-(`POST /comentarios/`, valida en backend que exista la matrícula) y ver el historial de sus
-propios comentarios enviados.
+(`POST /comentarios/`, valida en backend la matrícula) y ver el historial de sus propios
+comentarios enviados.
 
 ---
 
 ## 9. Sistema de Ayuda (`ayuda.html` / `ayuda.js`)
 
-Módulo de FAQ **contextual por rol**, accesible desde el botón "Ayuda" del sidebar en los tres
-paneles (`admin.html`, `profesor.html`, `estudiante.html`), enlazando a `ayuda.html`.
+Módulo de FAQ **contextual por rol**, accesible desde el botón "Ayuda" del sidebar en los
+tres paneles (`admin.php`, `profesor.php`, `estudiante.php`), enlazando a `ayuda.html`
+(que sigue siendo `.html` y público).
 
 ### Detección del rol activo
 ```js
@@ -382,53 +377,48 @@ function getCurrentRole() {
     return user?.rol || null;
 }
 ```
-No requiere `apiFetch` ni llamadas a la API: toda la información de ayuda es **estática**,
-definida como arrays de objetos `{ q, a }` directamente en `ayuda.js`. Si no hay usuario en
-sesión (o el rol no coincide con ninguno conocido), se muestran **todas** las secciones de
-todos los roles como fallback.
+No requiere `apiFetch` ni llamadas a la API: la información es **estática**, definida como
+arrays de objetos `{ q, a }` en `ayuda.js`. Si no hay usuario en sesión (o el rol no
+coincide), se muestran **todas** las secciones como fallback.
 
 ### Contenido por bloques
 | Constante | Contenido |
 |---|---|
-| `AYUDA_COMUN` | Login, primer ingreso, preguntas de seguridad, recuperación de contraseña, cambio de contraseña desde el panel, cerrar sesión. Se muestra siempre, sin importar el rol. |
-| `AYUDA_ADMIN` | Dashboard, alta/baja/edición de estudiantes y profesores, gestión de materias, asignación de matrículas, y **restablecer acceso** de un usuario (explica que se genera una nueva contraseña inicial y se repite el flujo de primer ingreso). |
-| `AYUDA_PROFESOR` | Dashboard, ver materias asignadas, registrar/editar/eliminar notas, ver comentarios de estudiantes. |
-| `AYUDA_ESTUDIANTE` | Dashboard, consultar notas por trimestre, enviar comentarios, y por qué una nota trimestral puede aparecer como "En curso" (explica que falta algún componente: Parciales, Apreciación o Examen Trimestral). |
-| `AYUDA_FAQ` | Preguntas transversales (contraseña olvidada, preguntas de seguridad olvidadas). Incluye un ítem exclusivo para `admin` (campo `roles: ['admin']`) explicando por qué no se puede eliminar un estudiante/profesor/materia con calificaciones asociadas. |
+| `AYUDA_COMUN` | Login, primer ingreso, preguntas de seguridad, recuperación de contraseña, cambio de contraseña desde el panel, cerrar sesión. Se muestra siempre. |
+| `AYUDA_ADMIN` | Dashboard, alta/baja/edición de estudiantes y profesores, materias, matrículas y **restablecer acceso**. |
+| `AYUDA_PROFESOR` | Dashboard, materias asignadas, registrar y eliminar notas, ver comentarios. |
+| `AYUDA_ESTUDIANTE` | Dashboard, consultar notas por trimestre, enviar comentarios y por qué una nota trimestral aparece "En curso". |
+| `AYUDA_FAQ` | Preguntas transversales. Incluye un ítem solo para `admin` (`roles: ['admin']`) sobre por qué no se puede eliminar un registro con calificaciones asociadas. |
+
+> **Contenido pendiente de actualizar** (ver sección 13): las preguntas de admin deberían
+> indicar que estudiantes y profesores están en **Usuarios**, y faltan preguntas sobre
+> Reportes y exportación de boletines. La pregunta "¿Cómo edito o elimino una nota?" del
+> profesor debe decir solo "eliminar".
 
 ### Construcción dinámica de secciones (`buildSections(role)`)
 1. Siempre agrega "Acceso al sistema" (`AYUDA_COMUN`).
-2. Según el rol, agrega **solo** la sección correspondiente (`admin` → panel del
-   administrador; `profesor` → panel del profesor; `estudiante` → panel del estudiante). Si no
-   hay rol detectado, agrega las tres.
-3. Filtra `AYUDA_FAQ` con `item.roles`, para que preguntas específicas de un rol (como la de
-   eliminación con notas asociadas) no aparezcan a usuarios de otros roles.
+2. Según el rol, agrega solo la sección correspondiente (admin, profesor o estudiante). Sin
+   rol detectado, agrega las tres.
+3. Filtra `AYUDA_FAQ` con `item.roles`, para que preguntas específicas de un rol no
+   aparezcan a otros.
 4. Siempre agrega "Preguntas frecuentes" al final.
 
 ### Renderizado y comportamiento de UI
 - `renderAyuda(sections)` genera un acordeón: cada pregunta es clicable
-  (`toggleAyudaItem`) y expande/colapsa su respuesta animando `max-height` según
-  `scrollHeight`.
-- Las respuestas (`item.a`) permiten HTML enriquecido con `<strong>` para resaltar botones o
-  acciones referenciadas (ej. `<strong>"Guardar y continuar"</strong>`); el resto del texto se
-  escapa con `escapeHtmlAyuda()` para evitar inyección al mostrar preguntas.
-- **Búsqueda en vivo** (`#ayudaSearch`, evento `input`): filtra tanto preguntas como
-  respuestas por coincidencia de subcadena (case-insensitive) contra
-  `allSectionsCache`, ocultando secciones que quedan sin resultados y mostrando el mensaje
-  "No se encontraron resultados." si la búsqueda no arroja nada.
-- `volverAlPanel()`: navega de regreso al panel correspondiente al rol detectado
-  (`admin.html`, `profesor.html`, `estudiante.html`); si no hay rol, cae a `index.html`.
+  (`toggleAyudaItem`) y expande/colapsa su respuesta animando `max-height`.
+- Las respuestas (`item.a`) permiten HTML con `<strong>`; las preguntas y títulos se
+  escapan con `escapeHtmlAyuda()`.
+- **Búsqueda en vivo** (`#ayudaSearch`): filtra preguntas y respuestas por subcadena
+  (case-insensitive) contra `allSectionsCache`, ocultando secciones sin resultados y
+  mostrando "No se encontraron resultados." si no hay coincidencias.
+- `volverAlPanel()`: vuelve al panel según el rol (`admin.php`, `profesor.php`,
+  `estudiante.php`); sin rol, cae a `index.html`.
 
 ### Cómo extender el contenido de ayuda
-Para agregar una nueva pregunta:
-1. Agregar `{ q: '...', a: '...' }` al array correspondiente (`AYUDA_COMUN`, `AYUDA_ADMIN`,
-   `AYUDA_PROFESOR`, `AYUDA_ESTUDIANTE` o `AYUDA_FAQ`).
-2. Si es una pregunta exclusiva de un rol dentro de `AYUDA_FAQ`, agregar
-   `roles: ['admin' | 'profesor' | 'estudiante']`.
-3. No se requiere tocar `ayuda.js` fuera de estos arrays ni tocar `ayuda.html`: el
-   renderizado es completamente dinámico.
-4. Recordar subir el parámetro de versión en el `<link>` de `ayuda.css` (`?v=`) si se editan
-   estilos, para evitar problemas de caché (ver sección 11).
+1. Agregar `{ q: '...', a: '...' }` al array correspondiente.
+2. Si es exclusiva de un rol dentro de `AYUDA_FAQ`, agregar `roles: ['admin' | 'profesor' | 'estudiante']`.
+3. No hace falta tocar nada más: el renderizado es dinámico.
+4. Si se editan estilos, subir el `?v=` del `<link>` de `ayuda.css` (ver sección 12).
 
 ---
 
@@ -445,54 +435,96 @@ Todas las hojas de estilo comparten una paleta de variables CSS (`:root`) con te
 ```
 
 - Tipografías: `Cinzel` (títulos, mayúsculas espaciadas), `Cormorant Garamond` (texto
-  itálico/decorativo), `EB Garamond` (cuerpo de texto), cargadas vía Google Fonts.
+  itálico/decorativo), `EB Garamond` (cuerpo), cargadas vía Google Fonts. Los componentes
+  nuevos deben usar estas, con bordes de 2px (no `Quicksand` ni `border-radius: 8px`).
 - Iconografía: Font Awesome 6 (CDN).
-- Cada panel (`admin`, `profesor`, `estudiante`) reutiliza la misma estructura de sidebar fijo
-  + `.main-content`, y el mismo patrón de `.view` / `.view.active` para alternar secciones sin
-  recargar la página (SPA simple por ocultamiento de `div`s).
-- Los modales comparten la clase `.modal` / `.modal-content` con una variante duplicada de
-  reglas en cada hoja de estilo (existe una segunda definición idéntica de `.modal` al final
-  de `admin.css`, `profesor.css` y `estudiante.css` — redundante, candidato a limpieza).
-- SweetAlert2 se usa de forma consistente para confirmaciones, errores y notificaciones tipo
-  toast en las tres vistas de rol.
+- Cada panel reutiliza la misma estructura de sidebar fijo + `.main-content`, y el patrón
+  `.view` / `.view.active` para alternar secciones sin recargar (SPA simple por
+  ocultamiento de `div`s). Dentro de "Usuarios" se usa `.user-tab-panel` /
+  `.user-tab-panel.active` con el mismo principio.
+- Componentes de admin añadidos: `.users-tabs`, `.user-tab-btn` (activa en crimson),
+  `.card` (antes solo existía en `profesor.css` y `estudiante.css`), `.reports-card`,
+  `.reports-help` y `.report-form`.
+- Los modales comparten la clase `.modal` / `.modal-content`, con un bloque duplicado al
+  final de `admin.css`, `profesor.css` y `estudiante.css` (redundante, candidato a limpieza).
+- SweetAlert2 se usa de forma consistente para confirmaciones, errores y toasts.
 
 ---
 
-## 11. Notas Técnicas y Caché del Navegador
+## 11. Exportación de Reportes (`reportes.js`)
 
-Varios archivos (`ayuda.css`, `admin.css`, `admin.js`) incluyen comentarios explícitos sobre
-un problema recurrente: los cambios no se reflejan en el navegador aunque se recargue con
-`Ctrl+Shift+R`, debido a caché agresiva del archivo estático.
+Archivo compartido por los tres paneles. El archivo lo genera el backend
+(`GET /notas/exportar.php`); aquí solo se piden las opciones y se descarga.
 
-**Solución documentada en el propio código:** en la etiqueta `<link>` o `<script>` que carga el
-archivo, subir manualmente el parámetro de versión:
+| Función | Qué hace |
+|---|---|
+| `elegirFormatoExportacion()` | Diálogo PDF / Excel / Cancelar. Devuelve `'pdf'`, `'excel'` o `null`. |
+| `elegirTrimestreExportacion()` | Selector de trimestre o "Todos los trimestres". Devuelve `'I Trimestre'`, `'II Trimestre'`, `'III Trimestre'`, `'TODOS'` o `null` si se cancela. |
+| `exportarReporte({format, materia_id, estudiante_id, trimestre, grado})` | Arma la query, llama a `/notas/exportar.php`, toma el nombre del header `Content-Disposition` y descarga el blob. Si `trimestre` es `'TODOS'` o vacío, no filtra por trimestre. Si el backend responde error, lo muestra con SweetAlert2. |
+
+Antes, `elegirFormatoExportacion` estaba duplicada en `estudiante.js` y `profesor.js`; ahora
+es una sola.
+
+**Quién llama a qué:**
+| Panel | Acción | Parámetros enviados |
+|---|---|---|
+| Estudiante | Exportar Boletín | `format` |
+| Estudiante | Exportar Notas (trimestre) | `format`, `trimestre` |
+| Profesor | Grupal por grado | `format`, `materia_id`, `grado`, `trimestre` |
+| Profesor | Individual | `format`, `materia_id`, `estudiante_id` |
+| Admin | Reportes | `format`, `trimestre`, `estudiante_id`, `materia_id`, `grado` (según selección) |
+
+**Nombres de archivo:** los define el backend (sin acentos ni espacios, máx. 80
+caracteres), con extensión `.pdf` o `.xlsx`. Por ejemplo: `reporte_grupal_<materia>[_<grado>][_<trimestre>]`,
+`reporte_<estudiante>_<materia>[_<trimestre>]`, `boletin_<estudiante>` y
+`reporte_notas_<estudiante>_<trimestre>`.
+
+---
+
+## 12. Notas Técnicas y Caché del Navegador
+
+Varios archivos (`ayuda.css`, `admin.css`, `admin.js`) incluyen comentarios sobre un
+problema recurrente: los cambios no se reflejan aunque se recargue con `Ctrl+Shift+R`,
+por caché agresiva del archivo estático.
+
+**Solución:** en la etiqueta `<link>` o `<script>` que carga el archivo, subir manualmente
+el parámetro de versión:
 ```html
 <link rel="stylesheet" href="css/ayuda.css?v=3.0" />
+<script src="js/admin.js?v=2"></script>
 ```
-Cada valor distinto de `?v=` fuerza al navegador a tratarlo como una URL nueva y descargar el
-archivo actualizado. Solo es necesario mientras se edita activamente el archivo; una vez
-estable, puede dejarse el número como está.
+Cada valor distinto de `?v=` fuerza al navegador a descargar el archivo de nuevo. Solo es
+necesario mientras se edita activamente el archivo.
 
-> Actualmente `ayuda.html` ya usa `?v=3.0`; el resto de páginas (`admin.html`, `profesor.html`,
-> `estudiante.html`) referencian sus CSS/JS **sin** parámetro de versión. Se recomienda
-> unificar el criterio si el equipo sigue iterando sobre esos archivos.
+> `ayuda.html` ya usa `?v=3.0`; las páginas `admin.php`, `profesor.php` y `estudiante.php`
+> referencian sus CSS/JS **sin** versión. Conviene unificar el criterio si el equipo sigue
+> iterando.
 
 ---
 
-## 12. Pendientes / Mejoras Sugeridas
+## 13. Pendientes / Mejoras Sugeridas
 
 | Área | Descripción |
 |---|---|
-| **Refresco de sesión** | No hay renovación de token; al expirar (8h) el usuario es desconectado sin aviso previo (solo redirige en el próximo `apiFetch`). |
-| **Actividad reciente (admin)** | Es puramente local (`activities` en memoria de `admin.js`); se pierde al recargar la página. Podría persistirse en backend. |
-| **Duplicación de reglas `.modal`** | Cada hoja de estilo de panel repite dos veces el bloque `.modal` / `.modal-content`. Se puede consolidar en un archivo CSS compartido. |
-| **Uso inconsistente de `apiGet`** | `admin.js`, `profesor.js` y `estudiante.js` repiten manualmente `json.data ?? json` en vez de usar la función `apiGet` ya disponible en `api.js`. |
-| **Versionado de caché** | Falta parámetro `?v=` en la mayoría de páginas fuera de `ayuda.html` (ver sección 11). |
-| **Panel de períodos (referencia backend)** | Cuando se implemente la tabla `periodo` y el bloqueo de trimestres cerrados (pendiente documentado en el backend), el frontend de profesor deberá deshabilitar el formulario de alta de notas fuera del período activo. |
-| **Boletín consolidado (estudiante)** | Implementado en frontend (jsPDF, cliente). Pendiente: extender el mismo patrón de boletín horizontal al panel de profesor (exportar boletín de un estudiante en todas sus materias, o de un grupo completo por materia usando el endpoint ya existente `/api/notas/exportar.php`). |
+| **Refresco de sesión** | No hay renovación ni aviso antes del vencimiento (8 h); el usuario es desconectado en la siguiente llamada a `apiFetch`. |
+| **Actividad reciente (admin)** | Solo en memoria (`activities` en `admin.js`); se pierde al recargar. Podría persistirse en backend. |
+| **Reglas `.modal` duplicadas** | Se repiten en los tres CSS de panel; consolidar en un CSS compartido. |
+| **Uso inconsistente de `apiGet`** | Varias vistas repiten `json.data ?? json` en vez de usar `apiGet`. |
+| **Versionado de caché `?v=`** | Falta en la mayoría de páginas fuera de `ayuda.html`. |
+| **Selects paginados (admin)** | "Asignar materia" y el modal de materia usan solo la página actual de estudiantes/profesores/materias; la columna Profesor de Materias puede mostrar "Sin asignar" si el profesor no está en la página cargada. Se puede reutilizar `fetchAllPages()`. |
+| **HTML mal formado** | `profesor.php` cierra `</html>` antes de sus scripts; `estudiante.php` repite CSS y SweetAlert; `admin.php` carga SweetAlert dos veces si no se limpia. |
+| **Escapado** | `escapeHtml` no escapa comillas; `openGradesDetailModal` se rompe con un apóstrofo en el nombre de la materia, y varios `<option>` insertan valores sin escapar. |
+| **Ayuda desactualizada** | Actualizar `ayuda.js`: admin (Usuarios, Reportes), profesor (quitar "editar" nota, agregar Exportar Notas) y estudiante (Exportar Boletín). |
+| **Orden de diálogos de exportación** | Admin pide formato → trimestre; profesor grupal pide trimestre → formato. Conviene unificar. |
+| **Admin: comentarios** | La matriz de permisos del backend permite al admin ver todos los comentarios, pero no hay vista. |
+| **Panel de períodos** | Pendiente en backend (tabla `periodo`). Al implementarse, el frontend de profesor deberá deshabilitar el alta de notas fuera del período activo. |
 
-| **Filtro de trimestre en reporte grupal** | El reporte grupal por grado actualmente agrega notas de todos los trimestres sin distinción. Si se requiere exportar solo un trimestre específico a nivel grupal, hay que agregar un selector de trimestre en la vista "Gestionar Notas" (fuera del modal de estudiante). |
+**Resueltos en la v1.1 (retirados de la lista):** fusión Estudiantes/Profesores en
+"Usuarios", vista Reportes del admin, reubicación del botón "Exportar Boletín", filtro de
+trimestre en el reporte grupal, boletín individual y grupal del profesor, exportación del
+boletín consolidado del estudiante.
+
 ---
 
 *Documentación de frontend generada para uso interno del equipo de desarrollo, como
-complemento a `documentacion_backend_v2.md`.*
+complemento a `documentacion_backend_v2.3.md`.*

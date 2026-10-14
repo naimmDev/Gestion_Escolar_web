@@ -869,3 +869,32 @@ body {
     gap: 4px;
     max-width: 420px;
 }
+/* ========== BUSCADOR DE ESTUDIANTES ========== */
+.report-form { max-width: 560px; }
+
+.search-box { position: relative; margin-bottom: 8px; }
+
+.search-box i {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--gold);
+    pointer-events: none;
+}
+
+.form-group .search-box input { padding-left: 36px; }
+
+.form-group select.student-list {
+    min-height: 150px;
+    padding: 6px;
+}
+
+.student-count {
+    display: block;
+    margin-top: 4px;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: #8a7055;
+}

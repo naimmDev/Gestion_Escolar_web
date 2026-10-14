@@ -483,12 +483,11 @@ body {
 
 .grade-header:hover { background: var(--parchment); }
 
-.grade-header i {
-    color: var(--gold);
-    transition: transform 0.3s;
-}
-
-.grade-header.collapsed i { transform: rotate(-90deg); }
+/* ✅ FIX: se eliminó aquí el bloque viejo:
+   .grade-header i { color: var(--gold); transition: transform 0.3s; }
+   .grade-header.collapsed i { transform: rotate(-90deg); }
+   porque rotaba TODOS los <i> del header (graduación + botón exportar).
+   La versión correcta está al final del archivo apuntando solo a .fa-chevron-down */
 
 .grade-students {
     padding: 16px 20px;
@@ -1024,3 +1023,87 @@ body {
 }
 
 .btn-exportar-individual i { margin-right: 6px; }
+
+/* ========== ÍCONOS DEL HEADER DE GRADO (solo rota la flecha) ========== */
+.grade-header .fa-chevron-down { color: var(--gold); transition: transform 0.3s; }
+.grade-header.collapsed .fa-chevron-down { transform: rotate(-90deg); }
+.grade-header .fa-graduation-cap { color: var(--gold); }
+/* ========== SUB-SECCIONES (A, B, C...) dentro de cada grado ========== */
+.section-block {
+    margin-bottom: 14px;
+}
+
+.section-block:last-child {
+    margin-bottom: 0;
+}
+
+.section-header {
+    background: rgba(201,168,76,0.08);
+    padding: 10px 16px;
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--crimson-deep);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid var(--parchment);
+    border-left: 3px solid var(--gold);
+    border-radius: 2px;
+    transition: 0.2s;
+    margin-bottom: 10px;
+}
+
+.section-header:hover {
+    background: var(--parchment);
+}
+
+.section-header .fa-chevron-down {
+    color: var(--gold);
+    transition: transform 0.3s;
+}
+
+.section-header.collapsed .fa-chevron-down {
+    transform: rotate(-90deg);
+}
+
+.section-students.collapsed {
+    display: none;
+}
+
+/* ========== BOTÓN EXPORTAR POR SECCIÓN (dentro del header de la sección) ========== */
+.section-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.btn-exportar-seccion {
+    background: linear-gradient(135deg, var(--crimson-deep), var(--crimson));
+    border: 1px solid rgba(201,168,76,0.4);
+    padding: 5px 12px;
+    border-radius: 2px;
+    color: var(--gold-pale);
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 6px rgba(92,0,0,0.2);
+    white-space: nowrap;
+}
+
+.btn-exportar-seccion:hover {
+    background: linear-gradient(135deg, var(--crimson), var(--crimson-light));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(92,0,0,0.3);
+}
+
+.btn-exportar-seccion i {
+    margin-right: 4px;
+}

@@ -21,8 +21,8 @@ function obtenerMateria(PDO $pdo, int $materiaId): ?array {
     return $row ?: null;
 }
 
-/** Estudiantes matriculados en una materia, opcionalmente filtrados por grado ('Sin grado' = sin grado asignado). */
-function obtenerEstudiantesMatriculados(PDO $pdo, int $materiaId, ?string $grado = null): array {
+/** Estudiantes matriculados en una materia, filtrados opcionalmente por grado y sección ('Sin grado' / 'Sin sección' = vacío). */
+function obtenerEstudiantesMatriculados(PDO $pdo, int $materiaId, ?string $grado = null, ?string $seccion = null): array {
     $sql = "SELECT e.id, e.nombre, e.identificacion, e.grado, e.seccion
             FROM matricula m
             JOIN estudiante e ON m.estudiante_id = e.id
@@ -37,6 +37,16 @@ function obtenerEstudiantesMatriculados(PDO $pdo, int $materiaId, ?string $grado
             $params[] = $grado;
         }
     }
+
+    if ($seccion !== null) {
+        if ($seccion === 'Sin sección') {
+            $sql .= " AND (e.seccion IS NULL OR TRIM(e.seccion) = '')";
+        } else {
+            $sql .= " AND UPPER(TRIM(e.seccion)) = UPPER(?)";
+            $params[] = trim($seccion);
+        }
+    }
+
     $sql .= " ORDER BY e.nombre ASC";
 
     $stmt = $pdo->prepare($sql);
@@ -90,16 +100,24 @@ function armarBoletinEstudiante(PDO $pdo, int $estudianteId): ?array {
     return ["estudiante" => $estudiante, "filas" => $filas];
 }
 
-/** Grupal: un resumen por estudiante matriculado (opcionalmente de un solo grado), ordenado por grado y nombre. */
-function armarReporteGrupal(PDO $pdo, int $materiaId, ?string $grado = null): ?array {
+/** Grupal: un resumen por estudiante, ordenado por grado, luego sección (A, B, C...; sin sección al final) y nombre. */
+function armarReporteGrupal(PDO $pdo, int $materiaId, ?string $grado = null, ?string $seccion = null): ?array {
     $materia = obtenerMateria($pdo, $materiaId);
     if (!$materia) return null;
 
-    $estudiantes = obtenerEstudiantesMatriculados($pdo, $materiaId, $grado);
-    usort($estudiantes, function ($a, $b) {
+    $estudiantes = obtenerEstudiantesMatriculados($pdo, $materiaId, $grado, $seccion);
+
+    $claveSeccion = function (array $e): string {
+        $s = strtoupper(trim((string)($e['seccion'] ?? '')));
+        return $s === '' ? '~' : $s;   // '~' ordena después de las letras
+    };
+
+    usort($estudiantes, function ($a, $b) use ($claveSeccion) {
         $ga = ((int)$a['grado']) ?: 99;
         $gb = ((int)$b['grado']) ?: 99;
-        return $ga <=> $gb ?: strcmp($a['nombre'], $b['nombre']);
+        return $ga <=> $gb
+            ?: strcmp($claveSeccion($a), $claveSeccion($b))
+            ?: strcmp($a['nombre'], $b['nombre']);
     });
 
     $filas = [];

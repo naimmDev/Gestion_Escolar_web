@@ -10,8 +10,29 @@ if ($method === 'GET') {
     $page    = max(1, intval($_GET['page']     ?? 1));
     $perPage = max(1, min(100, intval($_GET['per_page'] ?? 10)));
     $search  = trim($_GET['search'] ?? '');
+    $grado   = trim($_GET['grado']   ?? '');
+    $seccion = trim($_GET['seccion'] ?? '');
     $offset  = ($page - 1) * $perPage;
 
+    // ===== Modo ligero: solo las secciones existentes (opcionalmente filtrando por grado) =====
+    // Debe ir ANTES de $whereSQL y de la consulta paginada.
+    // Devuelve: ["A", "B", "C"] (array de strings).
+    if (!empty($_GET['secciones'])) {
+        $sqlSec = "SELECT DISTINCT UPPER(TRIM(seccion)) AS s FROM estudiante
+                   WHERE seccion IS NOT NULL AND TRIM(seccion) <> ''";
+        $pSec = [];
+        if ($grado !== '') {
+            $sqlSec .= " AND grado = ?";
+            $pSec[] = $grado;
+        }
+        $sqlSec .= " ORDER BY s";
+        $stSec = $pdo->prepare($sqlSec);
+        $stSec->execute($pSec);
+        sendSuccess($stSec->fetchAll(PDO::FETCH_COLUMN));
+        exit;
+    }
+
+    // ===== Filtros de la consulta paginada =====
     $where  = [];
     $params = [];
 
@@ -22,6 +43,16 @@ if ($method === 'GET') {
         $params[] = "%$search%";
     }
 
+    if ($grado !== '') {
+        $where[]  = "e.grado = ?";
+        $params[] = $grado;
+    }
+
+    if ($seccion !== '') {
+        $where[]  = "UPPER(TRIM(e.seccion)) = UPPER(?)";
+        $params[] = $seccion;
+    }
+
     $whereSQL = count($where) > 0 ? "WHERE " . implode(" AND ", $where) : "";
 
     $countStmt = $pdo->prepare("SELECT COUNT(*) FROM estudiante e $whereSQL");
@@ -29,16 +60,14 @@ if ($method === 'GET') {
     $total = (int) $countStmt->fetchColumn();
 
     $stmt = $pdo->prepare("
-       
-    SELECT e.id, e.nombre AS name, e.email, e.identificacion, e.grado AS grade,
-           e.seccion,
-           CASE WHEN u.password_cambiada = 1 THEN NULL ELSE e.password_inicial END AS initialPassword
-    FROM estudiante e
-    LEFT JOIN usuario u ON u.id_referencia = e.id AND u.rol = 'estudiante'
-    $whereSQL
-    ORDER BY e.nombre ASC
-    LIMIT $perPage OFFSET $offset
-
+        SELECT e.id, e.nombre AS name, e.email, e.identificacion, e.grado AS grade,
+               e.seccion,
+               CASE WHEN u.password_cambiada = 1 THEN NULL ELSE e.password_inicial END AS initialPassword
+        FROM estudiante e
+        LEFT JOIN usuario u ON u.id_referencia = e.id AND u.rol = 'estudiante'
+        $whereSQL
+        ORDER BY e.nombre ASC
+        LIMIT $perPage OFFSET $offset
     ");
     $stmt->execute($params);
 
@@ -51,13 +80,12 @@ if ($method === 'GET') {
     ]);
 }
 
-
 elseif ($method === 'POST') {
     requireRole($pdo, 'admin');
     $data = getJsonBody();
     validateRequired($data, ['name', 'email', 'identificacion']);
 
-     if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+    if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
         sendError("Email no válido", 400);
     }
 
@@ -65,7 +93,7 @@ elseif ($method === 'POST') {
         sendError("La contraseña inicial debe tener al menos 6 caracteres", 400);
     }
 
-        $check = $pdo->prepare("SELECT id FROM estudiante WHERE identificacion = ? OR email = ?");
+    $check = $pdo->prepare("SELECT id FROM estudiante WHERE identificacion = ? OR email = ?");
     $check->execute([$data['identificacion'], $data['email']]);
     if ($check->fetch()) {
         sendError("Ya existe un estudiante con ese email o identificación", 409);
@@ -120,7 +148,7 @@ elseif ($method === 'PUT') {
         sendError("La contraseña inicial debe tener al menos 6 caracteres", 400);
     }
 
-        $check = $pdo->prepare("SELECT id FROM estudiante WHERE (identificacion = ? OR email = ?) AND id != ?");
+    $check = $pdo->prepare("SELECT id FROM estudiante WHERE (identificacion = ? OR email = ?) AND id != ?");
     $check->execute([$data['identificacion'], $data['email'], $data['id']]);
     if ($check->fetch()) {
         sendError("Ese email o identificación ya está en uso", 409);
@@ -132,7 +160,6 @@ elseif ($method === 'PUT') {
         sendError("Ya existe una cuenta con ese email", 409);
     }
 
-    // Si viene nueva contraseña, actualizar hash en usuario también
     $passwordPlain = !empty($data['initialPassword']) ? $data['initialPassword'] : null;
 
     $pdo->prepare("
@@ -149,14 +176,14 @@ elseif ($method === 'PUT') {
         ->execute([$data['email'], $data['name'], $data['id']]);
 
     if ($passwordPlain) {
-    $newHash = password_hash($passwordPlain, PASSWORD_BCRYPT, ['cost' => 12]);
-    $pdo->prepare("UPDATE usuario SET password_hash=?, password_cambiada=0, preguntas_configuradas=0 WHERE id_referencia=? AND rol='estudiante'")
-        ->execute([$newHash, $data['id']]);
-    $usuarioStmt = $pdo->prepare("SELECT id FROM usuario WHERE id_referencia=? AND rol='estudiante'");
-    $usuarioStmt->execute([$data['id']]);
-    $usuarioId = $usuarioStmt->fetchColumn();
-    if ($usuarioId) {
-        $pdo->prepare("DELETE FROM usuario_pregunta WHERE usuario_id=?")->execute([$usuarioId]);
+        $newHash = password_hash($passwordPlain, PASSWORD_BCRYPT, ['cost' => 12]);
+        $pdo->prepare("UPDATE usuario SET password_hash=?, password_cambiada=0, preguntas_configuradas=0 WHERE id_referencia=? AND rol='estudiante'")
+            ->execute([$newHash, $data['id']]);
+        $usuarioStmt = $pdo->prepare("SELECT id FROM usuario WHERE id_referencia=? AND rol='estudiante'");
+        $usuarioStmt->execute([$data['id']]);
+        $usuarioId = $usuarioStmt->fetchColumn();
+        if ($usuarioId) {
+            $pdo->prepare("DELETE FROM usuario_pregunta WHERE usuario_id=?")->execute([$usuarioId]);
         }
     }
 
@@ -166,4 +193,3 @@ elseif ($method === 'PUT') {
 else {
     sendError("Método no permitido", 405);
 }
-?>

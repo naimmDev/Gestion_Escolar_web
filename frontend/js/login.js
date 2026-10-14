@@ -200,10 +200,11 @@ if (recoveryForm) {
 }
 
 function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[m]));
 }
-
 window.onclick = function(event) {
     const modal = document.getElementById('recoveryModal');
     if (event.target === modal) closeRecoveryModal();
