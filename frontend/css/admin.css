@@ -886,7 +886,8 @@ body {
 .form-group .search-box input { padding-left: 36px; }
 
 .form-group select.student-list {
-    min-height: 150px;
+    min-height: 130px;
+    max-height: 160px;
     padding: 6px;
 }
 

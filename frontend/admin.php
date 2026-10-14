@@ -212,11 +212,7 @@
                 <h2 class="page-title"><i class="fas fa-file-export"></i> Reportes</h2>
 
                 <div class="card reports-card">
-                    <p class="reports-help">
-                        Elige qué quieres exportar. Si solo seleccionas un estudiante, se genera su boletín completo.
-                        Si además eliges una materia, se genera el reporte de esa materia. Si solo eliges una materia
-                        (sin estudiante), se genera el reporte grupal; puedes acotarlo a un grado.
-                    </p>
+                    <p class="reports-help" id="reportPreview">Elige un estudiante o una materia para exportar</p>
 
                     <div class="report-form">
                        <div class="form-group">
@@ -250,11 +246,13 @@
                  </div>
 
                  <div class="form-group">
-                     <label for="reportSubjectSelect">Materia (opcional si eliges solo estudiante)</label>
-                    <select id="reportSubjectSelect">
-                     <option value="">— Ninguna —</option>
-                   </select>
+                    <label for="reportSubjectSearch">Materia (opcional si eliges solo estudiante)</label>
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="reportSubjectSearch" placeholder="Buscar por nombre o código..." autocomplete="off">
                     </div>
+                    <select id="reportSubjectSelect" class="student-list" size="6" title="Lista de materias"></select>
+                 </div>
 
     <button type="button" class="btn-primary" onclick="exportarReporteAdmin()">
         <i class="fas fa-file-export"></i> Exportar
@@ -428,8 +426,13 @@
                 <select id="enrollmentStudent" class="student-list" size="6" title="Seleccione un estudiante"></select>
                 <small id="enrollmentStudentCount" class="student-count"></small>
             </div>
-            <div class="form-group"><label for="enrollmentSubject">Materia</label>
-                <select id="enrollmentSubject" title="Seleccione una materia"></select>
+            <div class="form-group">
+                <label for="enrollmentSubjectSearch">Materia</label>
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="enrollmentSubjectSearch" placeholder="Buscar por nombre o código..." autocomplete="off">
+                </div>
+                <select id="enrollmentSubject" class="student-list" size="6" title="Seleccione una materia"></select>
             </div>
             <button type="submit" class="btn-primary">Asignar</button>
         </form>

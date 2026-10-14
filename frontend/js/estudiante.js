@@ -221,7 +221,6 @@ function renderGradesReport() {
     }
 
     container.innerHTML = html;
-    container.innerHTML = html;
 
     document.querySelectorAll('.trimestre-header').forEach(header => {
         header.addEventListener('click', function () {

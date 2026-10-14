@@ -207,6 +207,7 @@ async function loadProfessorsPage() {
     const data = json.data ?? json;
     teachers = data.items ?? data;
     professorTotal = data.total ?? teachers.length;
+    try { await getAllSubjects(); } catch (e) { /* usa la página actual como respaldo */ }
     teachers.forEach(t => { if (!t.subjectIds) t.subjectIds = []; });
     if (currentActiveView === 'professors') renderTeachers();
     updateStats();
@@ -221,6 +222,8 @@ async function loadSubjectsPage() {
     const data = json.data ?? json;
     subjects = data.items ?? data;
     subjectTotal = data.total ?? subjects.length;
+    allSubjectsCache = null;
+    try { await getAllTeachers(); } catch (e) { /* usa la página actual como respaldo */ }
     if (currentActiveView === 'subjects') renderSubjects();
     updateStats();
 }
@@ -508,7 +511,7 @@ function renderTeachers() {
     if (tbody) {
         tbody.innerHTML = teachers.length
             ? teachers.map((t, i) => {
-                const teacherSubjects = subjects
+                const teacherSubjects = (allSubjectsCache || subjects)
                     .filter(s => parseInt(s.teacherId) === t.id)
                     .map(s => s.name).join(', ') || 'Sin materias';
                 return `
@@ -658,7 +661,7 @@ function renderSubjects() {
     if (tbody) {
         tbody.innerHTML = subjects.length
             ? subjects.map(s => {
-                const teacher = teachers.find(t => t.id === parseInt(s.teacherId));
+                const teacher = (allTeachersCache || teachers).find(t => t.id === parseInt(s.teacherId));
                 const teacherName = s.teacherName || (teacher ? teacher.name : null);
                 return `
                     <tr>
@@ -836,9 +839,8 @@ async function openEnrollmentModal() {
     // Materias (independiente del buscador)
     try {
         const materias = await fetchAllPages('/materias/');
-        selMateria.innerHTML =
-            '<option value="">-- Seleccionar Materia --</option>' +
-            materias.map(s => `<option value="${s.id}">${escapeHtml(s.name)} (${escapeHtml(s.code)})</option>`).join('');
+        montarBuscadorMaterias('enrollmentSubject', 'enrollmentSubjectSearch', materias,
+            '-- Seleccionar Materia --');
     } catch (error) {
         console.error('Materias:', error);
         selMateria.innerHTML = '<option value="">No se pudieron cargar las materias</option>';
@@ -1029,6 +1031,7 @@ async function buscarEstudiantes(cfg) {
                 `${escapeHtml(e.grade || 'Sin grado')}${e.seccion ? ' ' + escapeHtml(e.seccion) : ''}</option>`
             ).join('');
         if (previo && items.some(e => String(e.id) === previo)) sel.value = previo;
+                if (cfg === BUSCADOR_REPORTES) actualizarVistaPreviaReporte();
 
         const total = data.total ?? items.length;
         count.textContent = total === 0
@@ -1048,6 +1051,14 @@ async function getAllTeachers(force = false) {
     if (!force && allTeachersCache) return allTeachersCache;
     allTeachersCache = await fetchAllPages('/profesores/');
     return allTeachersCache;
+}
+
+let allSubjectsCache = null;
+
+async function getAllSubjects(force = false) {
+    if (!force && allSubjectsCache) return allSubjectsCache;
+    allSubjectsCache = await fetchAllPages('/materias/');
+    return allSubjectsCache;
 }
 
 function invalidateTeachersCache() {
@@ -1142,17 +1153,21 @@ async function loadReportsPage() {
         if (count) count.textContent = 'Error al iniciar el buscador: ' + error.message;
     }
 
-    const sel = document.getElementById('reportSubjectSelect');
-    sel.innerHTML = '<option value="">Cargando materias...</option>';
+        const sel = document.getElementById('reportSubjectSelect');
+        sel.innerHTML = '<option value="">Cargando materias...</option>';
     try {
         const materias = await fetchAllPages('/materias/');
-        sel.innerHTML = '<option value="">— Ninguna —</option>' +
-            materias.map(m => `<option value="${m.id}">${escapeHtml(m.name)} (${escapeHtml(m.code)})</option>`).join('');
+        montarBuscadorMaterias('reportSubjectSelect', 'reportSubjectSearch', materias,
+            '— Ninguna —', actualizarVistaPreviaReporte);
     } catch (error) {
         console.error('Materias:', error);
         sel.innerHTML = '<option value="">No se pudieron cargar las materias</option>';
         Swal.fire('Error', 'No se pudieron cargar las materias: ' + error.message, 'error');
     }
+    ['reportStudentSelect', 'reportGradeSelect', 'reportSectionFilter'].forEach(id => {
+        document.getElementById(id).onchange = actualizarVistaPreviaReporte;
+    });
+        actualizarVistaPreviaReporte();
 }
 
 async function exportarReporteAdmin() {
@@ -1166,11 +1181,11 @@ async function exportarReporteAdmin() {
         return;
     }
 
-    const format = await elegirFormatoExportacion();
-    if (!format) return;
-
     const trimestre = await elegirTrimestreExportacion();
     if (trimestre === null) return;
+
+    const format = await elegirFormatoExportacion();
+    if (!format) return;
 
     await exportarReporte({
         format,
@@ -1180,4 +1195,40 @@ async function exportarReporteAdmin() {
         seccion: (!estudianteId && seccion) ? seccion : undefined,
         trimestre: trimestre === 'TODOS' ? undefined : trimestre
     });
+}
+
+function montarBuscadorMaterias(selectId, searchId, materias, placeholder, onChange) {
+    const sel = document.getElementById(selectId);
+    const inp = document.getElementById(searchId);
+    inp.value = '';
+    const pintar = () => {
+        const q = normalizarTexto(inp.value);
+        const previo = sel.value;
+        const lista = materias.filter(m =>
+            !q || normalizarTexto(m.name).includes(q) || normalizarTexto(m.code).includes(q));
+        sel.innerHTML = `<option value="">${escapeHtml(placeholder)}</option>` +
+            lista.map(m => `<option value="${m.id}">${escapeHtml(m.name)} (${escapeHtml(m.code)})</option>`).join('');
+        if (previo && lista.some(m => String(m.id) === previo)) sel.value = previo;
+        if (onChange) onChange();
+    };
+    inp.oninput = pintar;
+    sel.onchange = () => { if (onChange) onChange(); };
+    pintar();
+}
+
+function actualizarVistaPreviaReporte() {
+    const est = document.getElementById('reportStudentSelect');
+    const mat = document.getElementById('reportSubjectSelect');
+    const grado = document.getElementById('reportGradeSelect').value;
+    const sec = document.getElementById('reportSectionFilter').value;
+    const estTxt = est.value ? est.options[est.selectedIndex].text.split(' · ')[0] : null;
+    const matTxt = mat.value ? mat.options[mat.selectedIndex].text : null;
+
+    let txt;
+    if (estTxt && matTxt) txt = `Reporte individual de ${estTxt} en ${matTxt}`;
+    else if (estTxt) txt = `Boletín completo de ${estTxt}`;
+    else if (matTxt) txt = `Reporte grupal de ${matTxt} — ${grado || 'todos los grados'}${sec ? ' sección ' + sec : ''}`;
+    else txt = 'Elige un estudiante o una materia para exportar';
+
+    document.getElementById('reportPreview').textContent = txt;
 }
