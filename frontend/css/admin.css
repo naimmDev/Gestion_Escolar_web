@@ -899,3 +899,45 @@ body {
     font-size: 13px;
     color: #8a7055;
 }
+
+.check-list {
+    max-height: 170px;
+    overflow-y: auto;
+    border: 1px solid var(--parchment);
+    border-bottom: 2px solid var(--crimson);
+    border-radius: 2px;
+    background: rgba(250,246,238,0.5);
+    padding: 4px;
+}
+
+.form-group .check-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    padding: 7px 10px;
+    cursor: pointer;
+    font-family: 'EB Garamond', serif;
+    font-size: 15px;
+    letter-spacing: normal;
+    text-transform: none;
+    color: var(--ink-soft);
+}
+
+.form-group .check-item:hover { background: var(--ivory-dark); }
+
+.form-group .check-item input {
+    width: auto;
+    padding: 0;
+    margin: 0;
+    flex-shrink: 0;
+    accent-color: var(--crimson);
+}
+
+.check-empty {
+    padding: 14px;
+    text-align: center;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    color: #8a7055;
+}

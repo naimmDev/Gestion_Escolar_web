@@ -427,12 +427,13 @@
                 <small id="enrollmentStudentCount" class="student-count"></small>
             </div>
             <div class="form-group">
-                <label for="enrollmentSubjectSearch">Materia</label>
+                <label for="enrollmentSubjectSearch">Materias</label>
                 <div class="search-box">
                     <i class="fas fa-search"></i>
                     <input type="text" id="enrollmentSubjectSearch" placeholder="Buscar por nombre o código..." autocomplete="off">
                 </div>
-                <select id="enrollmentSubject" class="student-list" size="6" title="Seleccione una materia"></select>
+                <div id="enrollmentSubjectList" class="check-list"></div>
+                <small id="enrollmentSubjectCount" class="student-count"></small>
             </div>
             <button type="submit" class="btn-primary">Asignar</button>
         </form>
