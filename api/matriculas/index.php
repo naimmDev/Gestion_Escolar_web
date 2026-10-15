@@ -79,24 +79,55 @@ if ($method === 'GET') {
 elseif ($method === 'POST') {
     requireRole($pdo, 'admin');
     $data = getJsonBody();
-    validateRequired($data, ['studentId', 'subjectId']);
+    validateRequired($data, ['studentId']);
+
+    $subjectIds = $data['subjectIds'] ?? (isset($data['subjectId']) ? [$data['subjectId']] : []);
+    if (!is_array($subjectIds) || count($subjectIds) === 0) {
+        sendError("Selecciona al menos una materia", 400);
+    }
+    $subjectIds = array_values(array_unique(array_filter(array_map('intval', $subjectIds))));
+    if (count($subjectIds) === 0 || count($subjectIds) > 50) {
+        sendError("Lista de materias inválida", 400);
+    }
 
     $checkEst = $pdo->prepare("SELECT id FROM estudiante WHERE id = ?");
     $checkEst->execute([$data['studentId']]);
     if (!$checkEst->fetch()) sendError("El estudiante no existe", 404);
 
     $checkMat = $pdo->prepare("SELECT id FROM materia WHERE id = ?");
-    $checkMat->execute([$data['subjectId']]);
-    if (!$checkMat->fetch()) sendError("La materia no existe", 404);
+    $check    = $pdo->prepare("SELECT id FROM matricula WHERE estudiante_id = ? AND materia_id = ?");
+    $insert   = $pdo->prepare("INSERT INTO matricula (estudiante_id, materia_id, fecha_asignacion) VALUES (?, ?, CURDATE())");
 
-    $check = $pdo->prepare("SELECT id FROM matricula WHERE estudiante_id = ? AND materia_id = ?");
-    $check->execute([$data['studentId'], $data['subjectId']]);
-    if ($check->fetch()) sendError("Este estudiante ya está matriculado en esta materia", 409);
+    $creadas = 0;
+    $omitidas = 0;
+    $ultimoId = null;
 
-    $pdo->prepare("INSERT INTO matricula (estudiante_id, materia_id, fecha_asignacion) VALUES (?, ?, CURDATE())")
-        ->execute([$data['studentId'], $data['subjectId']]);
+    try {
+        $pdo->beginTransaction();
+        foreach ($subjectIds as $sid) {
+            $checkMat->execute([$sid]);
+            if (!$checkMat->fetch()) {
+                $pdo->rollBack();
+                sendError("Una de las materias no existe", 404);
+            }
+            $check->execute([$data['studentId'], $sid]);
+            if ($check->fetch()) { $omitidas++; continue; }
 
-    sendCreated(["id" => $pdo->lastInsertId()]);
+            $insert->execute([$data['studentId'], $sid]);
+            $ultimoId = $pdo->lastInsertId();
+            $creadas++;
+        }
+        $pdo->commit();
+    } catch (Exception $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        sendError("No se pudo crear la matrícula", 500);
+    }
+
+    if ($creadas === 0) {
+        sendError("Este estudiante ya está matriculado en las materias seleccionadas", 409);
+    }
+
+    sendCreated(["id" => $ultimoId, "created" => $creadas, "skipped" => $omitidas]);
 }
 
 elseif ($method === 'DELETE') {

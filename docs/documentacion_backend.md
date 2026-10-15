@@ -1,5 +1,5 @@
 # Documentación Backend — Sistema de Gestión Escolar
-**Versión:** 2.3
+**Versión:** 2.3.1
 **Stack:** PHP 8.2 · MariaDB 10.4 · XAMPP
 **Fecha de inicio:** Junio 2026
 
@@ -354,7 +354,7 @@ Igual estructura que Estudiantes (`/profesores/`, `/profesores/delete.php`), mis
 | Método | Endpoint | Rol | Descripción |
 |---|---|---|---|
 | GET | `/matriculas/` | admin, profesor, estudiante | Filtrado por rol; admin paginado |
-| POST | `/matriculas/` | admin | Asignar materia |
+| POST | `/matriculas/` | admin | Asignar una o varias materias. Body: `{ "studentId", "subjectIds": [..] }` (también acepta `subjectId`). Transacción: omite las ya matriculadas y responde `{ id, created, skipped }`; 409 si todas ya existían, 404 si una materia no existe |
 | DELETE | `/matriculas/` | admin | Eliminar matrícula |
 
 ### Notas

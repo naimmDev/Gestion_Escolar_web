@@ -821,13 +821,36 @@ async function deleteEnrollment(id) {
     }
 }
 
+let matriculaMaterias = [];
+const matriculaSel = new Set();
+
+function pintarMateriasMatricula() {
+    const q = normalizarTexto(document.getElementById('enrollmentSubjectSearch').value);
+    const cont = document.getElementById('enrollmentSubjectList');
+    const lista = matriculaMaterias.filter(m =>
+        !q || normalizarTexto(m.name).includes(q) || normalizarTexto(m.code).includes(q));
+
+    cont.innerHTML = lista.length
+        ? lista.map(m => `
+            <label class="check-item">
+                <input type="checkbox" value="${m.id}" ${matriculaSel.has(String(m.id)) ? 'checked' : ''}>
+                <span>${escapeHtml(m.name)} (${escapeHtml(m.code)})</span>
+            </label>`).join('')
+        : '<div class="check-empty">Sin resultados</div>';
+
+    document.getElementById('enrollmentSubjectCount').textContent =
+        `${matriculaSel.size} materia(s) seleccionada(s)`;
+}
+
 async function openEnrollmentModal() {
     document.getElementById('enrollmentForm').reset();
-    const selMateria = document.getElementById('enrollmentSubject');
-    selMateria.innerHTML = '<option value="">Cargando materias...</option>';
+    matriculaSel.clear();
+    matriculaMaterias = [];
+    const cont = document.getElementById('enrollmentSubjectList');
+    cont.innerHTML = '<div class="check-empty">Cargando materias...</div>';
+    document.getElementById('enrollmentSubjectCount').textContent = '';
     openModal('enrollmentModal');
 
-    // Buscador de estudiantes aislado: si falla, no bloquea la carga de materias
     try {
         montarBuscadorEstudiantes(BUSCADOR_MATRICULA);
     } catch (error) {
@@ -836,14 +859,21 @@ async function openEnrollmentModal() {
         if (count) count.textContent = 'Error al iniciar el buscador: ' + error.message;
     }
 
-    // Materias (independiente del buscador)
+    cont.onchange = (e) => {
+        if (e.target.type !== 'checkbox') return;
+        if (e.target.checked) matriculaSel.add(e.target.value);
+        else matriculaSel.delete(e.target.value);
+        document.getElementById('enrollmentSubjectCount').textContent =
+            `${matriculaSel.size} materia(s) seleccionada(s)`;
+    };
+    document.getElementById('enrollmentSubjectSearch').oninput = pintarMateriasMatricula;
+
     try {
-        const materias = await fetchAllPages('/materias/');
-        montarBuscadorMaterias('enrollmentSubject', 'enrollmentSubjectSearch', materias,
-            '-- Seleccionar Materia --');
+        matriculaMaterias = await fetchAllPages('/materias/');
+        pintarMateriasMatricula();
     } catch (error) {
         console.error('Materias:', error);
-        selMateria.innerHTML = '<option value="">No se pudieron cargar las materias</option>';
+        cont.innerHTML = '<div class="check-empty">No se pudieron cargar las materias</div>';
         Swal.fire('Error', 'No se pudieron cargar las materias: ' + error.message, 'error');
     }
 }
@@ -851,23 +881,26 @@ async function openEnrollmentModal() {
 document.getElementById('enrollmentForm')?.addEventListener('submit', async function (e) {
     e.preventDefault();
     const studentId = parseInt(document.getElementById('enrollmentStudent').value);
-    const subjectId = parseInt(document.getElementById('enrollmentSubject').value);
+    const subjectIds = [...matriculaSel].map(Number);
 
-    if (!studentId || !subjectId) {
-        Swal.fire('Error', 'Selecciona un estudiante y una materia', 'error');
+    if (!studentId || subjectIds.length === 0) {
+        Swal.fire('Error', 'Selecciona un estudiante y al menos una materia', 'error');
         return;
     }
 
     try {
-        const res = await apiFetch('/matriculas/', { method: 'POST', body: JSON.stringify({ studentId, subjectId }) });
+        const res = await apiFetch('/matriculas/', { method: 'POST', body: JSON.stringify({ studentId, subjectIds }) });
+        const json = await res.json();
         if (res.ok) {
+            const { created = 0, skipped = 0 } = json.data ?? {};
             await loadEnrollmentsPage();
             updateStats();
-            addActivity(`Nueva matrícula creada`);
-            showToast('Matrícula creada');
+            addActivity(`Matriculó ${created} materia(s)`);
+            showToast(skipped > 0
+                ? `${created} creada(s), ${skipped} ya existía(n)`
+                : `${created} matrícula(s) creada(s)`);
             closeModal('enrollmentModal');
         } else {
-            const json = await res.json();
             Swal.fire('Error', json.error || 'No se pudo crear', 'error');
         }
     } catch (error) { Swal.fire('Error', error.message, 'error'); }

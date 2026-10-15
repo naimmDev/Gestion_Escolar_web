@@ -1,5 +1,5 @@
 # Documentación Frontend — Sistema de Gestión Escolar
-**Versión:** 1.1
+**Versión:** 2.2.1
 **Stack:** HTML5 · CSS3 · JavaScript (vanilla, sin frameworks) · SweetAlert2 · Font Awesome 6
 **Consumo de API:** `http://localhost/gestion_escolar/api` (ver `documentacion_backend_v2.3.md`)
 **Fecha:** Octubre 2026
@@ -230,6 +230,14 @@ siguiente. Un `reportsView` anidado dentro de otra vista queda oculto y rompe la
   actualiza al cambiar de pestaña. Si se rompe esta sincronía, las tablas quedan vacías.
 - Al cambiar de pestaña no se vuelven a pedir datos; solo se llama a `renderStudents()` o
   `renderTeachers()`. Al entrar a Usuarios desde el sidebar sí se cargan ambas listas.
+
+### Matrículas: asignación múltiple
+- `openEnrollmentModal()` muestra las materias como lista de casillas con buscador (`#enrollmentSubjectList`). La selección vive en `matriculaSel` (Set) y se conserva al filtrar.
+- El submit envía `{ studentId, subjectIds }` a `POST /matriculas/` y muestra cuántas se crearon y cuántas ya existían.
+
+### Selector de materia en Reportes
+- `montarBuscadorMaterias()` (caja de búsqueda + lista `size=6`) y `actualizarVistaPreviaReporte()` (línea `#reportPreview` con el reporte que se generará).
+- Orden de diálogos de exportación unificado en admin: trimestre → formato.
 
 ### Reportes (admin)
 Formulario (`#reportsView`) con tres selects: Estudiante (opcional), Materia (opcional) y
