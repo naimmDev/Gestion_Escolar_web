@@ -11,7 +11,7 @@
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link rel="stylesheet" href="css/login.css">
+    <link rel="stylesheet" href="css/login.css?v=3">
 </head>
 
 <body>
@@ -45,8 +45,8 @@
             </form>
         </div>
     </div>
-    <script src="js/api.js"></script>
-    <script src="js/cambiar_password.js"></script>
+    <script src="js/api.js?v=3"></script>
+    <script src="js/cambiar_password.js?v=3"></script>
 </body>
 
 </html>

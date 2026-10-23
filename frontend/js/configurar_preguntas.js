@@ -105,7 +105,6 @@ document.getElementById('preguntasForm').addEventListener('submit', async functi
 
     const requestBody = { preguntas: preguntas };
     
-    console.log('Enviando al backend:', requestBody);
 
     try {
         const res = await apiFetch('/auth/configurar_preguntas.php', {
@@ -117,7 +116,6 @@ document.getElementById('preguntasForm').addEventListener('submit', async functi
         });
         
         const json = await res.json();
-        console.log('Respuesta del servidor:', json);
 
         if (res.ok) {
             user.preguntas_configuradas = true;

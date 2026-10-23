@@ -537,7 +537,6 @@ function renderTeachers() {
 }
 
 function openProfessorModal() {
-    document.getElementById('professorSubjects').innerHTML = subjects.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
     document.getElementById('professorForm').reset();
     document.getElementById('professorId').value = '';
     document.getElementById('professorPassword').value = generatePassword();
@@ -550,9 +549,6 @@ function openProfessorModal() {
 function editTeacher(id) {
     const t = teachers.find(t => t.id === id);
     if (!t) return;
-    document.getElementById('professorSubjects').innerHTML = subjects.map(s =>
-        `<option value="${s.id}" ${t.subjectIds?.includes(s.id) ? 'selected' : ''}>${escapeHtml(s.name)}</option>`
-    ).join('');
     document.getElementById('professorId').value = t.id;
     document.getElementById('professorIdentificacion').value = t.identificacion || '';
     originalTeacherPassword = t.initialPassword || generatePassword();
@@ -907,11 +903,6 @@ document.getElementById('enrollmentForm')?.addEventListener('submit', async func
 });
 
 // ==================== CAMBIO CONTRASEÑA ====================
-function openChangePasswordModal() {
-    document.getElementById('changePasswordForm').reset();
-    document.getElementById('changePasswordModal').style.display = 'flex';
-}
-
 document.getElementById('changePasswordForm')?.addEventListener('submit', async function (e) {
     e.preventDefault();
     const actual = document.getElementById('cpActual').value;
@@ -990,8 +981,6 @@ document.querySelectorAll('.user-tab-btn').forEach(tab => {
 
 // ==================== BUSCADOR DE ESTUDIANTES (búsqueda en servidor) ====================
 // No precarga la lista: cada filtro/escritura consulta al backend (50 resultados máx.).
-let allStudentsCache = null; // se mantiene solo por compatibilidad con las invalidaciones existentes
-
 const BUSCADOR_REPORTES = {
     grade: 'reportGradeSelect', section: 'reportSectionFilter', search: 'reportStudentSearch',
     select: 'reportStudentSelect', count: 'reportStudentCount',

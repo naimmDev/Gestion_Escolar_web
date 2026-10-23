@@ -184,13 +184,6 @@ function calcularNotaTrimestral(studentId, subjectId, trimestre) {
     return (promParciales + promApreciacion + examen) / 3;
 }
 
-function calcularPromedioFinal(studentId, subjectId) {
-    const trimestres = ['I Trimestre', 'II Trimestre', 'III Trimestre'];
-    const notas = trimestres.map(t => calcularNotaTrimestral(studentId, subjectId, t));
-    if (notas.some(n => n === null)) return null;
-    return notas.reduce((s, n) => s + n, 0) / notas.length;
-}
-
 function generarResumenTrimestre(studentId, subjectId, trimestre) {
     const grades = myGrades.filter(g => g.studentId === studentId && g.subjectId === subjectId && g.trimestre === trimestre);
     const parciales = grades.filter(g => g.type === 'PARCIAL');
