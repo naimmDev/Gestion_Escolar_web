@@ -2,6 +2,7 @@
 require '../config/db.php';
 require '../config/auth_middleware.php';
 require '../helpers/notas_calculo.php';
+require '../helpers/periodos.php';
 //para que el analizador y editor de código reconozca la variable $authUser y su tipo, se agrega esta anotación:
 /** @var array{usuario_id: int, rol: string, id_referencia: int|null} $authUser */
 
@@ -94,6 +95,8 @@ elseif ($method === 'POST') {
     $checkMatricula->execute([$data['estudiante_id'], $data['materia_id']]);
     if (!$checkMatricula->fetch()) sendError("El estudiante no está matriculado en esta materia", 409);
 
+    exigirTrimestreAbierto($pdo, $data['trimestre']);
+
     // Unicidad: solo EXAMEN_TRIMESTRAL puede existir una vez por estudiante/materia/trimestre
     if ($data['tipo'] === 'EXAMEN_TRIMESTRAL') {
         $checkUnico = $pdo->prepare("SELECT id FROM nota WHERE estudiante_id = ? AND materia_id = ? AND trimestre = ? AND tipo = 'EXAMEN_TRIMESTRAL'");
@@ -134,7 +137,11 @@ elseif ($method === 'PUT') {
 
     $trimestre = $data['trimestre'] ?? $anterior['trimestre'];
         if (!in_array($trimestre, TRIMESTRES_VALIDOS)) sendError("Trimestre no válido", 400);
-        
+
+    // Período: el trimestre de origen y, si se mueve la nota, el de destino deben estar abiertos
+    exigirTrimestreAbierto($pdo, $anterior['trimestre']);
+    if ($trimestre !== $anterior['trimestre']) exigirTrimestreAbierto($pdo, $trimestre);
+
         if ($tipo === 'EXAMEN_TRIMESTRAL') {//fix (11/10/26): sentencia de apuntado correcto para auditoria y validación de unicidad
         $checkUnico = $pdo->prepare("SELECT id FROM nota WHERE estudiante_id = ? AND materia_id = ? AND trimestre = ? AND tipo = 'EXAMEN_TRIMESTRAL' AND id != ?");
         $checkUnico->execute([$anterior['estudiante_id'], $anterior['materia_id'], $trimestre, $data['id']]);
@@ -171,9 +178,12 @@ elseif ($method === 'DELETE') {
 
     if (!$id) sendError("ID requerido", 400);
 
-    $check = $pdo->prepare("SELECT id FROM nota WHERE id = ? AND profesor_id = ?");
+    $check = $pdo->prepare("SELECT id, trimestre FROM nota WHERE id = ? AND profesor_id = ?");
     $check->execute([$id, $authUser['id_referencia']]);
-    if (!$check->fetch()) sendError("Nota no encontrada o sin permiso para eliminarla", 403);
+    $nota = $check->fetch(PDO::FETCH_ASSOC);
+    if (!$nota) sendError("Nota no encontrada o sin permiso para eliminarla", 403);
+
+    exigirTrimestreAbierto($pdo, $nota['trimestre']);
 
     $pdo->prepare("DELETE FROM nota WHERE id = ?")->execute([$id]);
     sendSuccess(["message" => "Nota eliminada"]);

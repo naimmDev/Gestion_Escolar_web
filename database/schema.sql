@@ -116,6 +116,21 @@ CREATE TABLE `nota_auditoria` (
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `periodo`
+--
+
+CREATE TABLE `periodo` (
+  `id` int(11) NOT NULL,
+  `trimestre` enum('I Trimestre','II Trimestre','III Trimestre') NOT NULL,
+  `fecha_inicio` date DEFAULT NULL,
+  `fecha_fin` date DEFAULT NULL,
+  `estado` enum('abierto','cerrado') NOT NULL DEFAULT 'cerrado',
+  `fecha_actualizacion` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `pregunta_seguridad`
 --
 
@@ -240,6 +255,13 @@ ALTER TABLE `nota_auditoria`
   ADD KEY `editor_id` (`editor_id`);
 
 --
+-- Indices de la tabla `periodo`
+--
+ALTER TABLE `periodo`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_periodo_trimestre` (`trimestre`);
+
+--
 -- Indices de la tabla `pregunta_seguridad`
 --
 ALTER TABLE `pregunta_seguridad`
@@ -318,6 +340,20 @@ ALTER TABLE `nota`
 --
 ALTER TABLE `nota_auditoria`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `periodo`
+--
+ALTER TABLE `periodo`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- Datos iniciales de `periodo` (solo el trimestre vigente abierto; ajustar desde el panel de admin)
+--
+INSERT INTO `periodo` (`trimestre`, `estado`) VALUES
+  ('I Trimestre',   'cerrado'),
+  ('II Trimestre',  'cerrado'),
+  ('III Trimestre', 'abierto');
 
 --
 -- AUTO_INCREMENT de la tabla `pregunta_seguridad`

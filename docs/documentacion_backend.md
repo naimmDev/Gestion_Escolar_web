@@ -1,5 +1,5 @@
 # Documentación Backend — Sistema de Gestión Escolar
-**Versión:** 2.4.0
+**Versión:** 2.5.0
 **Stack:** PHP 8.2 · MariaDB 10.4 · XAMPP
 **Fecha de inicio:** Junio 2026
 
@@ -53,10 +53,13 @@ gestion_escolar/
 │   │   └── delete.php                   # DELETE
 │   ├── matriculas/
 │   │   └── index.php                    # GET · POST · DELETE
+│   ├── periodos/
+│   │   └── index.php                    # GET · PUT — abrir/cerrar trimestres
 │   ├── notas/
 │   │   ├── index.php                    # GET (listado/resumen) · POST · PUT · DELETE
 │   │   └── exportar.php                 # GET — exportación de reportes PDF/Excel
 │   ├── helpers/
+│   │   ├── periodos.php                 # exigirTrimestreAbierto() — regla de período para notas
 │   │   ├── notas_calculo.php            # cálculo de resumen por trimestre — única fuente de verdad
 │   │   ├── reporte_data.php             # consultas a BD para armar reportes (individual/boletín/grupal)
 │   │   ├── reporte_documento.php        # construye el documento genérico (título, info, columnas, filas, pie)
@@ -65,7 +68,8 @@ gestion_escolar/
 │   └── comentarios/
 │       └── index.php                    # GET · POST
 ├── database/
-│   └── schema.sql                       # estructura de las tablas (volcado de phpMyAdmin)
+│   ├── schema.sql                       # estructura de las tablas (volcado de phpMyAdmin)
+│   └── migraciones/                     # scripts SQL para bases ya existentes (ej. 2026-10-22_periodos.sql)
 ├── docs/                                # documentación del proyecto (este archivo, frontend, instalación de Composer)
 └── frontend/
     (documentación a cargo de otro integrante del equipo)
@@ -174,6 +178,18 @@ gestion_escolar/
 | puntaje_anterior | DECIMAL(3,1) | Valor previo |
 | puntaje_nuevo | DECIMAL(3,1) | Valor nuevo |
 | fecha_cambio | DATETIME | Fecha del cambio |
+
+#### `periodo`
+| Campo | Tipo | Descripción |
+|---|---|---|
+| id | INT PK AUTO | Identificador |
+| trimestre | ENUM('I Trimestre','II Trimestre','III Trimestre') UNIQUE | Trimestre (3 filas fijas) |
+| fecha_inicio | DATE NULL | Informativa (no abre ni cierra automáticamente) |
+| fecha_fin | DATE NULL | Informativa |
+| estado | ENUM('abierto','cerrado') | Por defecto `cerrado`. Solo el admin lo cambia |
+| fecha_actualizacion | DATETIME | Se actualiza sola en cada cambio |
+
+> Estado inicial de la migración: `III Trimestre` abierto, I y II cerrados. Un trimestre cerrado bloquea crear, editar y eliminar notas de ese trimestre.
 
 #### `comentario`
 | Campo | Tipo | Descripción |
@@ -409,6 +425,14 @@ Mismos endpoints y comportamiento de `initialPassword` en POST/PUT que Estudiant
 | POST | `/matriculas/` | admin | Asignar una o varias materias. Body: `{ "studentId", "subjectIds": [..] }` (también acepta `subjectId`). Máximo 50 materias por petición. Transacción: omite las ya matriculadas y responde `{ id, created, skipped }`; 409 si todas ya existían, 404 si el estudiante o una materia no existe |
 | DELETE | `/matriculas/` | admin | Eliminar matrícula |
 
+### Períodos
+| Método | Endpoint | Rol | Descripción |
+|---|---|---|---|
+| GET | `/periodos/` | admin, profesor, estudiante | Lista los 3 trimestres (I, II, III) con `estado` y `abierto` (booleano) |
+| PUT | `/periodos/` | admin | Abre/cierra un trimestre o ajusta fechas. Body: `{ "trimestre", "estado"?, "fecha_inicio"?, "fecha_fin"? }`. Fecha `null` o `""` la borra. Devuelve la lista actualizada |
+
+No hay POST ni DELETE: los 3 trimestres existen siempre. Errores: 400 (trimestre/estado/fecha inválidos, inicio posterior a fin, sin campos), 403 (no admin).
+
 ### Notas
 Ver sección 8 (Sistema de Notas).
 
@@ -493,7 +517,9 @@ Separación deliberada: cambiar el formato de salida o agregar uno nuevo no requ
 | Ver/gestionar materias | ✅ | 👁️ | 👁️ |
 | Gestionar matrículas | ✅ | ❌ | ❌ |
 | Ver matrículas propias | ❌ | 👁️ | 👁️ |
-| Registrar/editar/eliminar notas | ❌ | ✅ | ❌ |
+| Registrar/editar/eliminar notas (solo en trimestres abiertos) | ❌ | ✅ | ❌ |
+| Abrir/cerrar trimestres | ✅ | ❌ | ❌ |
+| Consultar el estado de los trimestres | 👁️ | 👁️ | 👁️ |
 | Ver notas propias / resumen | ❌ | 👁️ | 👁️ |
 | Exportar reportes propios/de su materia | ❌ | ✅ | ✅ |
 | Exportar cualquier reporte (sin restricción de materia propia) | ✅ | ❌ | ❌ |
@@ -536,7 +562,7 @@ Separación deliberada: cambiar el formato de salida o agregar uno nuevo no requ
 | 403 | Sin permisos para esta acción |
 | 404 | Recurso no encontrado |
 | 405 | Método HTTP no permitido |
-| 409 | Conflicto (duplicado, restricción, examen trimestral ya registrado, borrado que requiere confirmación) |
+| 409 | Conflicto (duplicado, restricción, examen trimestral ya registrado, borrado que requiere confirmación, trimestre cerrado) |
 | 429 | Cuenta bloqueada temporalmente por intentos fallidos (login o recuperación de contraseña) |
 | 500 | Error interno del servidor |
 
@@ -599,6 +625,7 @@ Body: { "estudiante_id", "materia_id", "tipo", "puntaje", "trimestre", "tipo_act
 - `profesor_id` se extrae de la sesión, nunca del body.
 - Valida que la materia pertenezca al profesor y que el estudiante esté matriculado.
 - Si `tipo = EXAMEN_TRIMESTRAL`: rechaza con 409 si ya existe uno para ese estudiante/materia/trimestre.
+- Si el trimestre está cerrado: 409 `"Este trimestre ya fue cerrado"` (ver *Regla de períodos* al final de esta sección).
 
 ### Editar nota
 ```
@@ -608,13 +635,22 @@ Body: { "id", "puntaje", "tipo"?, "tipo_actividad"?, "trimestre"?, "nombre"?, "c
 - Solo el profesor propietario puede editar.
 - Genera un registro en `nota_auditoria` con el puntaje anterior y nuevo (`editor_id` = id del profesor).
 - Misma validación de unicidad de `EXAMEN_TRIMESTRAL` al cambiar tipo/trimestre.
+- El trimestre actual de la nota debe estar abierto; si además se mueve a otro trimestre (`trimestre` en el body), el destino también debe estar abierto.
 
 ### Eliminar nota
 ```
 DELETE /api/notas/
 Body: { "id" }
 ```
-Solo el profesor propietario puede eliminar.
+Solo el profesor propietario puede eliminar, y solo si el trimestre de la nota está abierto.
+
+### Regla de períodos
+Un trimestre `cerrado` bloquea POST, PUT y DELETE de notas. La respuesta es:
+```json
+{ "success": false, "error": "Este trimestre ya fue cerrado", "code": 409,
+  "details": { "codigo": "TRIMESTRE_CERRADO", "trimestre": "I Trimestre" } }
+```
+Si un trimestre no tiene fila en `periodo`, se trata como cerrado (falla cerrado). Las lecturas (listados, resumen, exportación de reportes y vista del estudiante) **no** se ven afectadas por el estado del período.
 
 ---
 
@@ -633,7 +669,7 @@ Solo el profesor propietario puede eliminar.
 
 | Funcionalidad | Descripción |
 |---|---|
-| **Panel de períodos** | Tabla `periodo` + endpoints para abrir/cerrar trimestres. El profesor solo podría registrar notas en el período activo. |
+| **Resto de la Propuesta de Mejoras** | Notificaciones por correo (6.2), PWA (6.4) y migración a HTTPS en servidor de producción (6.1). El panel de períodos (6.3) quedó implementado en la v2.5.0. |
 
 ---
 
