@@ -941,3 +941,16 @@ body {
     font-style: italic;
     color: #8a7055;
 }
+
+/* ========== PERÍODO S ========== */
+.periods-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+.period-card { background: white; border: 1px solid var(--parchment); border-top: 3px solid var(--crimson); border-radius: 2px; padding: 22px; box-shadow: 0 4px 16px rgba(26,5,5,0.05); }
+.period-card.open { border-top-color: #2a5c2a; }
+.period-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.period-title { font-family: 'Cinzel', serif; font-size: 14px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--crimson-deep); }
+.period-title i { color: var(--gold); margin-right: 6px; }
+.period-badge { padding: 4px 12px; border-radius: 2px; font-family: 'Cinzel', serif; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+.period-badge.open { background: rgba(46,92,46,0.1); color: #2a5c2a; border: 1px solid rgba(46,92,46,0.25); }
+.period-badge.closed { background: rgba(139,0,0,0.1); color: var(--crimson); border: 1px solid rgba(139,0,0,0.25); }
+.period-dates { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.period-actions { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: 6px; }

@@ -10,6 +10,7 @@ let currentSubjectId       = null;
 let currentStudentForModal = null;
 let currentTrimestre       = 'I Trimestre';
 let studentGradeSearch     = '';
+let periodos = {};   // { 'I Trimestre': true/false, ... } (true = abierto)
 
 window.closeModal = function(modalId) {
     const modal = document.getElementById(modalId);
@@ -118,6 +119,7 @@ async function loadData() {
             }
         });
         myStudents = Object.values(studentMap);
+                await cargarPeriodos();
 
         updateDashboard();
         renderSubjects();
@@ -130,6 +132,29 @@ async function loadData() {
     }
 }
 
+// ==================== PERÍODOS ====================
+async function cargarPeriodos() {
+    try {
+        const res = await apiFetch('/periodos/');
+        if (!res.ok) return;
+        const json = await res.json();
+        const lista = json.data ?? json;
+        periodos = {};
+        lista.forEach(p => { periodos[p.trimestre] = p.abierto; });
+    } catch (e) { /* tratar como abierto */ }
+}
+
+function trimestreAbierto(t) {
+    return periodos[t] !== false;   // si no hay dato, se asume abierto
+}
+
+async function manejarTrimestreCerrado(error) {
+    if (error?.details?.codigo !== 'TRIMESTRE_CERRADO') return false;
+    await Swal.fire('Trimestre cerrado', error.error, 'info');
+    await cargarPeriodos();
+    renderTrimestreContent();
+    return true;
+}
 // ==================== DASHBOARD ====================
 function updateDashboard() {
     const uniqueStudentIds = [...new Set(myEnrollments.map(e => e.studentId))];
@@ -430,9 +455,10 @@ function toggleSection(element) {
 }
 
 // ==================== MODAL DE NOTAS ====================
-function openStudentGradesModal(studentId) {
+async function openStudentGradesModal(studentId) {
     currentStudentForModal = myStudents.find(s => s.id === studentId);
     if (!currentStudentForModal) return;
+    await cargarPeriodos();
     renderStudentModal();
     document.getElementById('studentGradesModal').style.display = 'flex';
     document.body.style.overflow = 'hidden';
@@ -588,7 +614,20 @@ function renderTrimestreContent() {
         `;
     }
 }
-
+    const cerrado = currentTrimestre !== 'Todas' && !trimestreAbierto(currentTrimestre);
+    if (cerrado) {
+        const form = container.querySelector('.add-grade-section');
+        if (form) {
+            form.querySelectorAll('input, select').forEach(el => el.disabled = true);
+            const btn = form.querySelector('.btn-primary');
+            if (btn) {
+                btn.disabled = true;
+                btn.title = 'Trimestre cerrado';
+            }
+            form.insertAdjacentHTML('afterbegin',
+                '<div class="period-closed-banner"><i class="fas fa-lock"></i> Este trimestre está cerrado: solo lectura</div>');
+        }
+    }
 function renderGradeHistoryItem(grade) {
     let nombreDisplay = grade.nombre;
     if (!nombreDisplay || nombreDisplay.trim() === '') {
@@ -613,7 +652,7 @@ function renderGradeHistoryItem(grade) {
         'EXAMEN_TRIMESTRAL': '<i class="fas fa-star"></i> Examen Trimestral',
         'APRECIACION': '<i class="fas fa-hand-peace"></i> Apreciación'
     };
-    return `
+       return `
         <div class="grade-history-item ${grade.type}">
             <div class="grade-info">
                 <div>
@@ -627,14 +666,16 @@ function renderGradeHistoryItem(grade) {
                 ${grade.comment ? `<div class="grade-comment"><i class="fas fa-quote-left"></i> ${escapeHtml(grade.comment)}</div>` : ''}
                 <div class="grade-date"><i class="fas fa-calendar-alt"></i> ${grade.date} | ${grade.trimestre}</div>
             </div>
+            ${trimestreAbierto(grade.trimestre) ? `
             <div class="grade-actions">
                 <button class="delete-grade-btn" onclick="deleteGrade(${grade.id})">
                     <i class="fas fa-trash"></i> Eliminar
                 </button>
-            </div>
+            </div>` : ''}
         </div>
     `;
 }
+
 
 function changeTrimestre(trimestre) {
     currentTrimestre = trimestre;
@@ -656,6 +697,12 @@ async function addNewGrade() {
         return;
     }
     const trimestre = currentTrimestre;
+
+    if (!trimestreAbierto(trimestre)) {
+        Swal.fire('Trimestre cerrado', 'Este trimestre está cerrado: solo lectura.', 'info');
+        return;
+    }
+
     if (isNaN(score) || score < 1 || score > 5) {
         Swal.fire('Error', 'La nota debe ser un número entre 1.0 y 5.0', 'error');
         return;
@@ -701,6 +748,7 @@ async function addNewGrade() {
             await reloadGradesAndRefresh();
         } else {
             const error = await res.json().catch(() => ({}));
+            if (await manejarTrimestreCerrado(error)) return;
             Swal.fire(
                 res.status === 409 ? 'Aviso' : 'Error',
                 error.error || 'No se pudo guardar la nota',
@@ -712,7 +760,6 @@ async function addNewGrade() {
         Swal.fire('Error', error.message, 'error');
     }
 }
-
 // ==================== ELIMINAR NOTA ====================
 async function deleteGrade(gradeId) {
     const result = await Swal.fire({
@@ -731,8 +778,9 @@ async function deleteGrade(gradeId) {
             if (res.ok) {
                 Swal.fire({ title: 'Nota eliminada', icon: 'success', timer: 1200, showConfirmButton: false });
                 await reloadGradesAndRefresh();
-            } else {
-                const error = await res.json();
+                        } else {
+                const error = await res.json().catch(() => ({}));
+                if (await manejarTrimestreCerrado(error)) return;
                 Swal.fire('Error', error.error || 'No se pudo eliminar', 'error');
             }
         } catch (error) {

@@ -30,6 +30,7 @@
     <button class="nav-btn" data-view="subjects"><i class="fas fa-book"></i> <span> Materias</span></button>
     <button class="nav-btn" data-view="enrollments"><i class="fas fa-list-check"></i> <span> Matrículas</span></button>
     <button class="nav-btn" data-view="reports"><i class="fas fa-file-export"></i> <span> Reportes</span></button>
+    <button class="nav-btn" data-view="periods"><i class="fas fa-calendar-check"></i> <span> Períodos</span></button>
 </nav>
 
             <!-- Botón de cambiar contraseña: SIN clase nav-btn para no interferir con la navegación -->
@@ -260,6 +261,11 @@
 </div>
   </div>     
             </div> 
+            <div id="periodsView" class="view">
+    <h2 class="page-title"><i class="fas fa-calendar-check"></i> Períodos</h2>
+    <p class="reports-help">Las fechas son informativas; el cierre es manual.</p>
+    <div id="periodsList" class="periods-grid"></div>
+</div>
             
             <!-- Modales-->
             <div id="studentModal" class="modal">
@@ -460,7 +466,7 @@
             </div>
 </main>
 <script src="js/api.js?v=3"></script>
-<script src="js/reportes.js?v=3"></script>
-<script src="js/admin.js?v=3"></script>
+<script src="js/reportes.js?v=4"></script>
+<script src="js/admin.js?v=4"></script>
 </body>
 </html>

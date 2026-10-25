@@ -1,12 +1,21 @@
 # Documentación Frontend — Sistema de Gestión Escolar
-**Versión:** 2.3.0
+**Versión:** 2.4.0
 **Stack:** HTML5 · CSS3 · JavaScript (vanilla, sin frameworks) · SweetAlert2 · Font Awesome 6
-**Consumo de API:** `http://localhost/gestion_escolar/api` (ver `documentacion_backend.md`, v2.4.0)
+**Consumo de API:** `http://localhost/gestion_escolar/api` (ver `documentacion_backend.md`, v2.5.0)
 **Fecha:** Octubre 2026
 
 > Este documento complementa `documentacion_backend.md`. Cubre la estructura de
 > páginas, los scripts JS, el flujo de autenticación/primer ingreso, la exportación de
-> reportes y el **sistema de Ayuda**.
+> reportes, el **sistema de Ayuda** y el **panel de períodos**.
+>
+> **Cambios de la v2.3.0 a la v2.4.0:**
+> - Admin → nueva vista **Períodos**: abrir/cerrar trimestres y editar fechas informativas.
+> - Profesor: en un trimestre **cerrado** el formulario de notas queda deshabilitado (campos y
+>   botón "Guardar" en gris, con aviso) y se ocultan los botones **Eliminar** de esas notas.
+>   Un `409 TRIMESTRE_CERRADO` del backend se maneja con aviso y refresco de estado.
+> - Ayuda: preguntas nuevas sobre períodos (admin y profesor).
+> - Limpieza de pendientes ya resueltos (versionado `?v=`, orden de scripts, código sin uso,
+>   ayuda desactualizada, panel de períodos).
 >
 > **Cambios de la v2.2.1 a la v2.3.0:**
 > - Recuperación de contraseña: el **servidor** elige la pregunta (ya no el frontend), con
@@ -89,11 +98,9 @@ página interna nueva debe ser `.php` y llevar esta línea como primera línea d
 <?php require_once '../api/config/verificar_sesion_pagina.php'; verificarSesionPagina('ROL_AQUI'); ?>
 ```
 
-Orden de scripts: `api.js` antes de cualquier script de panel. `reportes.js` se carga en
-`admin.php`, `profesor.php` y `estudiante.php`, antes del script del panel, porque lo usan
-los tres. (En `estudiante.php` `reportes.js` se carga *antes* de `api.js`; funciona porque
-`reportes.js` solo usa `apiFetch` al ejecutarse una exportación, pero conviene mantener el
-mismo orden que en los otros paneles.)
+Orden de scripts (igual en los tres paneles): `api.js`, `reportes.js` y por último el script
+del panel. `reportes.js` se carga en `admin.php`, `profesor.php` y `estudiante.php` porque lo
+usan los tres.
 
 ---
 
@@ -118,7 +125,8 @@ const API_URL = 'http://localhost/gestion_escolar/api';
 
 ### `apiGet(endpoint)`
 Hace `apiFetch`, lanza `Error` si `!res.ok` y devuelve `json.data ?? json`. Lo usan
-`fetchAllPages()`, `buscarEstudiantes()` y `cargarSecciones()` de `admin.js`.
+`fetchAllPages()`, `buscarEstudiantes()`, `cargarSecciones()` y `loadPeriodsPage()` de
+`admin.js`.
 
 > **Nota:** las cargas principales de `admin.js` (`loadXxxPage`), `profesor.js` y
 > `estudiante.js` no usan `apiGet` y repiten `const json = await res.json(); const data =
@@ -157,6 +165,12 @@ inaccesible desde JavaScript. `localStorage.currentUser` guarda solo datos de in
 No existe refresco de sesión: a las 8 h la cookie vence y el siguiente `apiFetch` devuelve
 401 con mensaje de token y redirige a `index.html`. Cada panel recarga la página si se
 restaura desde bfcache (evento `pageshow`), para no mostrar datos de una sesión cerrada.
+
+> **Importante al probar con varios roles:** la cookie `sesion_token` es **una sola por
+> navegador**. Iniciar sesión como profesor en otra pestaña reemplaza la cookie del admin: la
+> pestaña del admin sigue abierta, pero el servidor ya la trata como profesor (por ejemplo, un
+> `PUT /periodos/` responde 403 "No tienes permisos para esta acción"). Para probar dos roles a
+> la vez hay que usar **dos navegadores distintos** o una ventana normal y una de incógnito.
 
 ---
 
@@ -257,12 +271,14 @@ requerir sesión activa**:
 | Materias | CRUD paginado server-side, con asignación de profesor mediante buscador. |
 | Matrículas | Alta (múltiple) y baja de matrícula estudiante–materia, paginado y con búsqueda. |
 | **Reportes** | Exportación PDF/Excel de cualquier estudiante, materia, grado o sección (ver abajo). |
+| **Períodos** | Una tarjeta por trimestre con badge Abierto/Cerrado, botón Abrir/Cerrar y fechas informativas (ver abajo). |
 
 ### Estructura de `admin.php`
 Las vistas son **hermanas** dentro de `<main class="main-content">`, en este orden:
-`dashboardView`, `usersView`, `subjectsView`, `enrollmentsView`, `reportsView`, los modales
-y el cierre `</main>`. Cada vista cierra con su propio `</div>` antes de que empiece la
-siguiente. Un `reportsView` anidado dentro de otra vista queda oculto y rompe la página.
+`dashboardView`, `usersView`, `subjectsView`, `enrollmentsView`, `reportsView`,
+`periodsView`, los modales y el cierre `</main>`. Cada vista cierra con su propio `</div>`
+antes de que empiece la siguiente. Una vista anidada dentro de otra (por ejemplo
+`reportsView` o `periodsView`) queda oculta y rompe la página.
 
 ### Comportamientos generales
 - `openModal(id)` / `closeModal(id)` son globales (`display:flex` + clase `show`, y bloqueo
@@ -359,6 +375,35 @@ Combinaciones soportadas por `exportar.php`:
   backend limita `per_page` a 100). Es necesario porque para admin `/materias/` y
   `/profesores/` devuelven un objeto paginado, no un array.
 
+### Períodos (admin)
+Vista `#periodsView` (botón `data-view="periods"`, ícono `fa-calendar-check`). Permite abrir y
+cerrar trimestres; un trimestre **cerrado** impide a los profesores crear, editar o eliminar
+notas (la regla la aplica el backend; ver `documentacion_backend.md`, sección 8).
+
+- `loadPeriodsPage()` se ejecuta al entrar a la vista: pide `GET /periodos/` con `apiGet` y
+  guarda el resultado en el arreglo `periods`. Si falla, muestra "No se pudieron cargar los
+  períodos" y un `Swal` con el error.
+- `renderPeriods()` pinta una tarjeta (`.period-card`) por trimestre, con borde verde si está
+  abierto y crimson si está cerrado, badge **Abierto/Cerrado** según el booleano `abierto`,
+  dos `<input type="date">` (inicio y fin) y dos botones:
+  - **Guardar fechas** → `guardarFechasPeriodo(trimestre, id)`: `PUT /periodos/` con
+    `{ trimestre, fecha_inicio, fecha_fin }` (`null` si el campo está vacío, lo que borra la
+    fecha). Si inicio > fin, el backend responde 400 y se muestra su mensaje.
+  - **Cerrar / Abrir** → `cambiarEstadoPeriodo(trimestre, estado)`: `PUT /periodos/` con
+    `{ trimestre, estado }`. **Cerrar pide confirmación** ("Los profesores no podrán
+    registrar, editar ni eliminar notas de este trimestre"); **Abrir no**.
+- `actualizarPeriodo(payload, mensajeOk, actividad)` centraliza los `PUT`: tras una respuesta
+  correcta reemplaza `periods` por `json.data` (el backend devuelve la lista completa
+  actualizada), repinta, muestra el toast y agrega la actividad reciente.
+- **Las fechas son solo informativas**: no abren ni cierran nada solas. La lógica usa siempre
+  `abierto`, nunca las fechas.
+- Pueden estar abiertos **varios trimestres a la vez** (por ejemplo, para corregir uno
+  anterior). No se asume que solo el III esté abierto.
+- No existe alta ni baja de períodos: los tres trimestres siempre existen.
+- Requisito de despliegue: la tabla `periodo` debe existir (migración
+  `database/migraciones/2026-10-22_periodos.sql`). Sin ella, `GET /periodos/` responde 500
+  "Error interno del servidor" y, además, registrar o eliminar notas también falla.
+
 ### Paginación y búsqueda
 Cada entidad mantiene su propio estado (`currentStudentPage`, `studentSearch`, `perPage`,
 etc.) y su propio total, consultando `page`, `per_page` y `search` contra el backend. El
@@ -401,6 +446,8 @@ filtra en el cliente:
 - `myEnrollments` / `myGrades`: ya vienen filtrados por el backend según el rol.
 - `myStudents`: se deriva de `myEnrollments`, deduplicando por `studentId` (incluye grado,
   email y sección).
+- Después llama a `cargarPeriodos()` para conocer qué trimestres están abiertos (ver
+  "Períodos").
 
 ### Gestión de notas
 - Selección de materia → estudiantes agrupados por **grado y, dentro de cada grado, por
@@ -414,17 +461,20 @@ filtra en el cliente:
   aprobados y en proceso. Usan el **promedio simple** de las notas del estudiante en esa
   materia; un estudiante cuenta como "aprobado" solo si tiene examen trimestral registrado y
   promedio ≥ 3, de lo contrario cuenta como "en proceso".
-- Modal de detalle por estudiante (`openStudentGradesModal`), con pestañas por trimestre
-  (`I`, `II`, `III`, `Todas`). El encabezado muestra nombre, sección, email, grado y materia.
+- Modal de detalle por estudiante (`openStudentGradesModal`, `async`), con pestañas por
+  trimestre (`I`, `II`, `III`, `Todas`). El encabezado muestra nombre, sección, email, grado y
+  materia. Al abrirlo vuelve a llamar a `cargarPeriodos()`, por si el admin cambió un estado
+  mientras la página estaba abierta.
 - **Cálculo de nota trimestral en el cliente** (`calcularNotaTrimestral`,
   `generarResumenTrimestre`): replica la fórmula del backend
   (`(promedio_parciales + promedio_apreciacion + examen) / 3`, solo si los tres componentes
   existen). Se usa únicamente para la vista en pantalla.
 - **Alta de nota** (`addNewGrade`): campos tipo de evaluación (Parcial / Examen Trimestral /
   Apreciación), tipo de actividad (opcional), nombre de la actividad (opcional), nota y
-  comentario (opcionales). Valida rango 1.0–5.0 en el cliente, exige elegir un trimestre
-  concreto (no "Todas") y bloquea la opción "Examen Trimestral" si ya existe uno para ese
-  estudiante/materia/trimestre. Un `409` del backend se muestra como aviso.
+  comentario (opcionales). Valida, en este orden: que se haya elegido un trimestre concreto
+  (no "Todas"), que ese trimestre esté **abierto** (`trimestreAbierto`), el rango 1.0–5.0 y
+  que no exista ya un "Examen Trimestral" para ese estudiante/materia/trimestre. Un `409` del
+  backend se muestra como aviso.
 - **Historial**: si una nota no tiene nombre, se muestra con un nombre automático
   (`Parcial 1`, `Apreciación 2`, …) según el orden de registro dentro del mismo trimestre y
   tipo.
@@ -432,6 +482,28 @@ filtra en el cliente:
   interfaz **no** ofrece editar notas, aunque el backend sí tiene `PUT /notas/`.
 - Tras cualquier alta/baja, `reloadGradesAndRefresh()` vuelve a pedir `/notas/` y recalcula
   estadísticas y vistas dependientes.
+
+### Períodos (profesor)
+El backend es la autoridad: rechaza con `409` cualquier alta o baja de notas en un trimestre
+cerrado. El frontend solo evita que el profesor choque con ese error.
+
+- `periodos` es un mapa `{ 'I Trimestre': true|false, ... }` (`true` = abierto), llenado por
+  `cargarPeriodos()` desde `GET /periodos/`.
+- `trimestreAbierto(t)` devuelve `periodos[t] !== false`: si no hay dato o la carga falló, se
+  **asume abierto** y el backend decide.
+- **Trimestre cerrado** (pestaña I, II o III): en `renderTrimestreContent()` el formulario
+  "Agregar nueva evaluación" **sigue visible pero deshabilitado**: todos sus campos y el botón
+  **Guardar** quedan en gris (`disabled`, tooltip "Trimestre cerrado") y arriba aparece el
+  banner `.period-closed-banner` ("Este trimestre está cerrado: solo lectura").
+- **Botón Eliminar:** se decide **por nota** (`trimestreAbierto(grade.trimestre)` en
+  `renderGradeHistoryItem`), no por la pestaña. Por eso la pestaña "Todas", que mezcla
+  trimestres, solo muestra Eliminar en las notas de trimestres abiertos.
+- **Respuesta 409:** `manejarTrimestreCerrado(error)` detecta
+  `details.codigo === 'TRIMESTRE_CERRADO'`, muestra el aviso, refresca `periodos` y repinta el
+  modal para que la interfaz quede coherente. Se usa en `addNewGrade()` y `deleteGrade()`.
+  Otros 409 (por ejemplo, examen duplicado) siguen mostrándose como aviso normal.
+- Las lecturas no cambian: el profesor sigue viendo las notas, el resumen del trimestre y
+  puede exportar reportes de trimestres cerrados.
 
 ### Exportación de reportes PDF / Excel
 **Ya no se genera nada en el navegador.** Los archivos los produce
@@ -464,6 +536,9 @@ profesor (`GET /comentarios/`, ya filtrado por rol en backend).
 ## 8. Panel de Estudiante
 
 **Archivos:** `estudiante.php` + `js/estudiante.js` + `css/estudiante.css` (+ `js/reportes.js`)
+
+*Sin cambios por el panel de períodos: el estudiante ve sus notas de los tres trimestres
+aunque estén cerrados.*
 
 ### Carga inicial (`loadData`)
 Trae `matriculas`, `notas` y `materias` en paralelo, y filtra `mySubjects` a solo las
@@ -526,16 +601,15 @@ coincide), se muestran **todas** las secciones como fallback.
 ### Contenido por bloques
 | Constante | Contenido |
 |---|---|
-| `AYUDA_COMUN` | Login, primer ingreso, preguntas de seguridad, recuperación de contraseña, cambio de contraseña desde el panel, cerrar sesión. Se muestra siempre. |
-| `AYUDA_ADMIN` | Dashboard, sección **Usuarios** (pestañas), alta/baja/edición de estudiantes y profesores, materias, **matrícula múltiple**, **Reportes** (qué reporte se genera según la selección) y **restablecer acceso**. |
-| `AYUDA_PROFESOR` | Dashboard, materias asignadas, registrar y eliminar notas, exportar notas de un grado, exportar el reporte de un estudiante, ver comentarios. |
+| `AYUDA_COMUN` | Login, primer ingreso, preguntas de seguridad, recuperación de contraseña, cambio de contraseña desde el panel, **bloqueo de cuenta tras 5 intentos fallidos** y cerrar sesión. Se muestra siempre. |
+| `AYUDA_ADMIN` | Dashboard, sección **Usuarios** (pestañas), alta/baja/edición de estudiantes y profesores, materias, **matrícula múltiple**, **Reportes** (filtros por grado y sección, vista previa y qué reporte se genera según la selección), **restablecer acceso** y **cómo abrir o cerrar un trimestre**. |
+| `AYUDA_PROFESOR` | Dashboard, materias asignadas, registrar y eliminar notas, exportar notas de un grado o de una sección, exportar el reporte de un estudiante, ver comentarios y **por qué no se pueden registrar o eliminar notas (trimestre cerrado)**. |
 | `AYUDA_ESTUDIANTE` | Dashboard, consultar notas por trimestre, descargar notas/boletín, enviar comentarios y por qué una nota trimestral aparece "En curso". |
 | `AYUDA_FAQ` | Preguntas transversales. Incluye un ítem solo para `admin` (`roles: ['admin']`) sobre por qué no se puede eliminar un registro con calificaciones asociadas. |
 
-> **Contenido aún pendiente de actualizar** (ver sección 13): el texto de Reportes del admin
-> no menciona el filtro por **sección**, el buscador de estudiantes/materias ni la **vista
-> previa**; el del profesor no menciona la exportación **por sección**; y ninguna sección
-> explica el **bloqueo de cuenta** tras 5 intentos fallidos.
+> **Al editar `ayuda.js`:** cada ítem de un arreglo debe terminar con coma salvo el último. Una
+> coma olvidada al agregar una pregunta es un error de sintaxis que deja **toda** la página
+> de ayuda vacía.
 
 ### Construcción dinámica de secciones (`buildSections(role)`)
 1. Siempre agrega "Acceso al sistema" (`AYUDA_COMUN`).
@@ -557,10 +631,12 @@ coincide), se muestran **todas** las secciones como fallback.
   `estudiante.php`); sin rol, cae a `index.html`.
 
 ### Cómo extender el contenido de ayuda
-1. Agregar `{ q: '...', a: '...' }` al array correspondiente.
+1. Agregar `{ q: '...', a: '...' }` al array correspondiente (sin olvidar la coma del ítem
+   anterior).
 2. Si es exclusiva de un rol dentro de `AYUDA_FAQ`, agregar `roles: ['admin' | 'profesor' | 'estudiante']`.
 3. No hace falta tocar nada más: el renderizado es dinámico.
-4. Si se editan estilos, subir el `?v=` del `<link>` de `ayuda.css` (ver sección 12).
+4. Subir el `?v=` del `<script>` de `ayuda.js` (y del `<link>` de `ayuda.css` si se editan
+   estilos); ver sección 12.
 
 ---
 
@@ -589,10 +665,17 @@ Todas las hojas de estilo comparten una paleta de variables CSS (`:root`) con te
   `.search-box` (caja con ícono de lupa), `.student-list` (select `size=6`),
   `.student-count`, `.check-list`, `.check-item` y `.check-empty` (lista de casillas de
   materias en Matrículas).
+- Componentes de **períodos (admin)**: `.periods-grid` (cuadrícula responsive),
+  `.period-card` (con modificadores `.open` / `.closed`: borde verde o crimson),
+  `.period-card-header`, `.period-title`, `.period-badge` (`.open` / `.closed`),
+  `.period-dates` (dos columnas inicio/fin) y `.period-actions`.
 - Componentes de **profesor**: `.section-block`, `.section-header` (sub-secciones A, B, C…
   dentro de cada grado), `.section-header-actions` y `.btn-exportar-seccion`, además de
   `.btn-exportar-grupo` e `.btn-exportar-individual`. La flecha de colapsado rota solo el
   ícono `.fa-chevron-down`.
+- **Trimestre cerrado (profesor):** `.period-closed-banner` (aviso crimson con candado) y los
+  estados `:disabled` de `.btn-primary` y de los campos de `.add-grade-section` (fondo gris,
+  `cursor: not-allowed`, sin sombra ni desplazamiento).
 - Componentes de **estudiante**: `.boletin-completo-card`, `.btn-exportar-boletin`,
   `.btn-exportar-boletin-completo` y el modal de detalle `.gd-*`.
 - Cada CSS de panel (`admin.css`, `profesor.css`, `estudiante.css`) tiene **un único bloque**
@@ -606,7 +689,8 @@ Todas las hojas de estilo comparten una paleta de variables CSS (`:root`) con te
 ## 11. Exportación de Reportes (`reportes.js`)
 
 Archivo compartido por los tres paneles. El archivo lo genera el backend
-(`GET /notas/exportar.php`); aquí solo se piden las opciones y se descarga.
+(`GET /notas/exportar.php`); aquí solo se piden las opciones y se descarga. La exportación
+**no depende del estado de los períodos**: funciona igual en trimestres cerrados.
 
 | Función | Qué hace |
 |---|---|
@@ -646,21 +730,25 @@ por caché agresiva del archivo estático.
 el parámetro de versión:
 ```html
 <link rel="stylesheet" href="css/ayuda.css?v=3.0" />
-<script src="js/admin.js?v=2"></script>
+<script src="js/admin.js?v=4"></script>
 ```
 Cada valor distinto de `?v=` fuerza al navegador a descargar el archivo de nuevo. Solo es
 necesario mientras se edita activamente el archivo.
 
-Estado actual del versionado:
+Estado del versionado (según los archivos entregados; todos llevan `?v=`):
 
 | Archivo | `?v=` |
 |---|---|
 | `ayuda.css` (en `ayuda.html`) | `?v=3.0` |
-| `admin.css` (en `admin.php`) | `?v=2` |
-| `estudiante.css` (en `estudiante.php`) | `?v=2` |
-| `profesor.css`, `login.css` y todos los `.js` | sin versión |
+| `ayuda.js` (en `ayuda.html`) | `?v=3` |
+| `admin.css` / `admin.js` (en `admin.php`) | `?v=3` |
+| `profesor.css` / `profesor.js` (en `profesor.php`) | `?v=3` |
+| `estudiante.css` / `estudiante.js` (en `estudiante.php`) | `?v=3` |
+| `login.css`, `login.js`, `api.js`, `reportes.js`, etc. | `?v=3` |
 
-Conviene unificar el criterio si el equipo sigue iterando.
+> **Tras los cambios de la v2.4.0 (períodos)** hay que subir el `?v=` de `admin.css`,
+> `admin.js`, `profesor.css`, `profesor.js` y `ayuda.js` (por ejemplo a `?v=5`) y recargar con
+> `Ctrl+F5`; de lo contrario el navegador puede seguir mostrando la versión anterior.
 
 ---
 
@@ -672,22 +760,24 @@ Conviene unificar el criterio si el equipo sigue iterando.
 | **Actividad reciente (admin)** | Solo en memoria (`activities` en `admin.js`); se pierde al recargar. Podría persistirse en backend. |
 | **Reglas `.modal` duplicadas entre archivos** | El mismo bloque está en `admin.css`, `profesor.css` y `estudiante.css`; consolidar en un CSS compartido. |
 | **Uso inconsistente de `apiGet`** | Las cargas principales de los paneles repiten `json.data ?? json` en vez de usar `apiGet`. |
-| **Versionado de caché `?v=`** | Falta en `profesor.css`, `login.css` y en todos los `.js` (ver sección 12). |
-| **Orden de scripts en `estudiante.php`** | Carga `reportes.js` antes de `api.js`; funciona, pero conviene igualar el orden de los otros paneles. |
-| **Código sin uso** | `calcularPromedioFinal` (`profesor.js`, `estudiante.js`), `openChangePasswordModal` (`admin.js`, el modal se abre con `openModal`) y `allStudentsCache` (`admin.js`). |
-| **Campo "Materias" del modal de profesor** | `<select multiple id="professorSubjects">` no se envía al backend (las materias se asignan desde Materias); quitarlo o dejarlo informativo. |
 | **Fuente `Quicksand`** | Se carga en el `<head>` de varias páginas pero no se usa; se puede eliminar el `<link>`. |
-| **Ayuda desactualizada** | Actualizar `ayuda.js`: Reportes del admin (filtro por sección, buscadores, vista previa), exportación por sección del profesor, y bloqueo de cuenta tras 5 intentos fallidos. |
 | **Admin: comentarios** | La matriz de permisos del backend permite al admin ver todos los comentarios, pero no hay vista. |
-| **Profesor: editar notas** | El backend tiene `PUT /notas/` (con auditoría en `nota_auditoria`), pero la interfaz solo permite agregar y eliminar. |
-| **Panel de períodos** | Pendiente en backend (tabla `periodo`). Al implementarse, el frontend de profesor deberá deshabilitar el alta de notas fuera del período activo. |
+| **Profesor: editar notas** | El backend tiene `PUT /notas/` (con auditoría en `nota_auditoria`), pero la interfaz solo permite agregar y eliminar. Si se implementa, deberá respetar `trimestreAbierto()` igual que el alta. |
+| **Estudiante: etiqueta de trimestre cerrado** | Opcional: mostrar "Trimestre cerrado" junto al encabezado de cada trimestre en `renderGradesReport()`. No es obligatorio. |
+| **Verificar código sin uso** | Confirmar que ya no queden `calcularPromedioFinal`, `openChangePasswordModal` en `admin.js` ni `allStudentsCache` (no aparecen en los archivos actuales). |
 
-**Resueltos desde la v2.2.1 (retirados de la lista):** diálogos de exportación unificados
-(trimestre → formato); selects de Matrículas y Materias que usaban solo la página actual
-(ahora usan búsqueda en servidor, `fetchAllPages` y cachés completas); HTML de `profesor.php`
-y duplicados de CSS/SweetAlert en `estudiante.php` y `admin.php`; `escapeHtml` ya escapa
-comillas y los textos con apóstrofos no rompen el modal de notas del estudiante; bloques
-`.modal` duplicados dentro de un mismo CSS.
+**Resueltos en la v2.4.0 (retirados de la lista):** panel de períodos (vista admin y
+bloqueo/aviso en profesor); ayuda actualizada (filtro por sección, buscadores, vista previa,
+exportación por sección del profesor, bloqueo de cuenta y períodos); versionado `?v=` presente
+en todos los archivos; orden de scripts de `estudiante.php` igualado al de los otros paneles;
+campo "Materias" del modal de profesor eliminado.
+
+**Resueltos desde la v2.2.1:** diálogos de exportación unificados (trimestre → formato);
+selects de Matrículas y Materias que usaban solo la página actual (ahora usan búsqueda en
+servidor, `fetchAllPages` y cachés completas); HTML de `profesor.php` y duplicados de
+CSS/SweetAlert en `estudiante.php` y `admin.php`; `escapeHtml` ya escapa comillas y los textos
+con apóstrofos no rompen el modal de notas del estudiante; bloques `.modal` duplicados dentro
+de un mismo CSS.
 
 **Resueltos en la v1.1:** fusión Estudiantes/Profesores en "Usuarios", vista Reportes del
 admin, reubicación del botón "Exportar Boletín", filtro de trimestre en el reporte grupal,

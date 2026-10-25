@@ -94,6 +94,7 @@ let studentTotal = 0;
 let professorTotal = 0;
 let subjectTotal = 0;
 let enrollmentTotal = 0;
+let periods = [];
 
 // ==================== UTILIDADES ====================
 function showToast(title, icon = 'success') {
@@ -959,6 +960,7 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
         }
         if (view === 'subjects') loadSubjectsPage();
         if (view === 'reports') loadReportsPage();
+        if (view === 'periods') loadPeriodsPage();
     });
 });
 
@@ -1253,4 +1255,84 @@ function actualizarVistaPreviaReporte() {
     else txt = 'Elige un estudiante o una materia para exportar';
 
     document.getElementById('reportPreview').textContent = txt;
+}
+async function loadPeriodsPage() {
+    const cont = document.getElementById('periodsList');
+    cont.innerHTML = '<div class="check-empty">Cargando períodos...</div>';
+    try {
+        periods = await apiGet('/periodos/');
+        renderPeriods();
+    } catch (error) {
+        cont.innerHTML = '<div class="check-empty">No se pudieron cargar los períodos</div>';
+        Swal.fire('Error', error.message, 'error');
+    }
+}
+
+function renderPeriods() {
+    const cont = document.getElementById('periodsList');
+    cont.innerHTML = periods.map(p => `
+        <div class="period-card ${p.abierto ? 'open' : 'closed'}">
+            <div class="period-card-header">
+                <span class="period-title"><i class="fas fa-calendar-alt"></i> ${escapeHtml(p.trimestre)}</span>
+                <span class="period-badge ${p.abierto ? 'open' : 'closed'}">${p.abierto ? 'Abierto' : 'Cerrado'}</span>
+            </div>
+            <div class="period-dates">
+                <div class="form-group">
+                    <label>Inicio</label>
+                    <input type="date" id="pInicio_${p.id}" value="${escapeHtml(p.fecha_inicio || '')}">
+                </div>
+                <div class="form-group">
+                    <label>Fin</label>
+                    <input type="date" id="pFin_${p.id}" value="${escapeHtml(p.fecha_fin || '')}">
+                </div>
+            </div>
+            <div class="period-actions">
+                <button class="btn-edit" onclick="guardarFechasPeriodo('${escapeHtml(p.trimestre)}', ${p.id})">
+                    <i class="fas fa-save"></i> Guardar fechas
+                </button>
+                <button class="${p.abierto ? 'btn-danger' : 'btn-primary'}" onclick="cambiarEstadoPeriodo('${escapeHtml(p.trimestre)}', ${p.abierto ? "'cerrado'" : "'abierto'"})">
+                    ${p.abierto ? '<i class="fas fa-lock"></i> Cerrar' : '<i class="fas fa-lock-open"></i> Abrir'}
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function actualizarPeriodo(payload, mensajeOk, actividad) {
+    try {
+        const res = await apiFetch('/periodos/', { method: 'PUT', body: JSON.stringify(payload) });
+        const json = await res.json();
+        if (res.ok) {
+            periods = json.data ?? json;
+            renderPeriods();
+            showToast(mensajeOk);
+            addActivity(actividad);
+        } else {
+            Swal.fire('Error', json.error || 'No se pudo actualizar el período', 'error');
+        }
+    } catch (error) { Swal.fire('Error', error.message, 'error'); }
+}
+
+async function cambiarEstadoPeriodo(trimestre, estado) {
+    if (estado === 'cerrado') {
+        const r = await Swal.fire({
+            title: `¿Cerrar ${trimestre}?`,
+            text: 'Los profesores no podrán registrar, editar ni eliminar notas de este trimestre.',
+            icon: 'warning', showCancelButton: true,
+            confirmButtonColor: '#8B0000', cancelButtonColor: '#aaa',
+            confirmButtonText: 'Sí, cerrar', cancelButtonText: 'Cancelar'
+        });
+        if (!r.isConfirmed) return;
+    }
+    await actualizarPeriodo({ trimestre, estado },
+        estado === 'cerrado' ? 'Trimestre cerrado' : 'Trimestre abierto',
+        `${estado === 'cerrado' ? 'Cerró' : 'Abrió'} el ${trimestre}`);
+}
+
+async function guardarFechasPeriodo(trimestre, id) {
+    const inicio = document.getElementById('pInicio_' + id).value;
+    const fin    = document.getElementById('pFin_' + id).value;
+    await actualizarPeriodo(
+        { trimestre, fecha_inicio: inicio || null, fecha_fin: fin || null },
+        'Fechas guardadas', `Actualizó fechas del ${trimestre}`);
 }
