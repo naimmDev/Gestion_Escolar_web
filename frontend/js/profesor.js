@@ -334,6 +334,7 @@ function renderStudentsByGrade() {
     const students    = getStudentsForSubject(currentSubjectId).filter(filterStudentSearch);
     const container   = document.getElementById('studentsByGrade');
     const gradesOrder = ['7°', '8°', '9°', '10°', '11°', '12°'];
+    const buscando     = Boolean(studentGradeSearch);
 
     if (students.length === 0) {
         container.innerHTML = `<div class="card" style="text-align:center; padding:40px;"><i class="fas fa-user-graduate"></i> ${studentGradeSearch ? 'No se encontraron estudiantes con ese criterio' : 'No hay estudiantes matriculados en esta materia'}</div>`;
@@ -376,7 +377,7 @@ function renderStudentsByGrade() {
             ? secciones['Sin sección'].map(s => renderStudentCard(s)).join('')
             : seccionesOrdenadas.map(sec => `
                 <div class="section-block">
-                    <div class="section-header" onclick="toggleSection(this)">
+                    <div class="section-header ${buscando ? '' : 'collapsed'}" onclick="toggleSection(this)">
                         <span><i class="fas fa-layer-group"></i> Sección ${escapeHtml(sec)} (${secciones[sec].length} estudiantes)</span>
                         <div class="section-header-actions">
                             <button class="btn-exportar-seccion"
@@ -388,7 +389,7 @@ function renderStudentsByGrade() {
                             <i class="fas fa-chevron-down"></i>
                         </div>
                     </div>
-                    <div class="section-students">
+                    <div class="section-students ${buscando ? '' : 'collapsed'}">
                         ${secciones[sec].map(s => renderStudentCard(s)).join('')}
                     </div>
                 </div>
@@ -396,7 +397,7 @@ function renderStudentsByGrade() {
 
         return `
             <div class="grade-section">
-                <div class="grade-header" onclick="toggleGradeSection(this)">
+                <div class="grade-header ${buscando ? '' : 'collapsed'}" onclick="toggleGradeSection(this)">
                     <span><i class="fas fa-graduation-cap"></i> Grado ${escapeHtml(grade)} (${totalGrado} estudiantes)</span>
                     <div style="display:flex; align-items:center; gap:14px;">
                         <button class="btn-exportar-grupo" data-grado="${escapeHtml(grade)}" onclick="event.stopPropagation(); exportarReporteGrupal(this.dataset.grado)">
@@ -405,7 +406,7 @@ function renderStudentsByGrade() {
                         <i class="fas fa-chevron-down"></i>
                     </div>
                 </div>
-                <div class="grade-students">
+                <div class="grade-students ${buscando ? '' : 'collapsed'}">
                     ${contenido}
                 </div>
             </div>
@@ -514,8 +515,10 @@ function renderTrimestreContent() {
         g.trimestre === currentTrimestre &&
         g.type === 'EXAMEN_TRIMESTRAL'
     );
+    const cerrado = currentTrimestre !== 'Todas' && !trimestreAbierto(currentTrimestre);
 
     container.innerHTML = `
+        ${cerrado ? '<div class="period-closed-banner"><i class="fas fa-lock"></i> Este trimestre está cerrado: solo lectura</div>' : ''}
         ${notaTrimestral !== null ? `
             <div class="period-avg">
                 <i class="fas fa-chart-line"></i> Nota Trimestral: <span>${notaTrimestral.toFixed(1)}</span>
@@ -613,8 +616,7 @@ function renderTrimestreContent() {
             </div>
         `;
     }
-}
-    const cerrado = currentTrimestre !== 'Todas' && !trimestreAbierto(currentTrimestre);
+
     if (cerrado) {
         const form = container.querySelector('.add-grade-section');
         if (form) {
@@ -624,10 +626,9 @@ function renderTrimestreContent() {
                 btn.disabled = true;
                 btn.title = 'Trimestre cerrado';
             }
-            form.insertAdjacentHTML('afterbegin',
-                '<div class="period-closed-banner"><i class="fas fa-lock"></i> Este trimestre está cerrado: solo lectura</div>');
         }
     }
+}
 function renderGradeHistoryItem(grade) {
     let nombreDisplay = grade.nombre;
     if (!nombreDisplay || nombreDisplay.trim() === '') {

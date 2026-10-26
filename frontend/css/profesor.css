@@ -668,6 +668,15 @@ body {
     border: 1px solid rgba(201,168,76,0.2);
 }
 
+.period-closed-banner {
+    margin-bottom: 12px;
+    padding: 12px 18px;
+    border: 1px solid rgba(139,0,0,0.25);
+    background: rgba(139,0,0,0.07);
+    color: var(--crimson-deep);
+    font-weight: 600;
+}
+
 .period-avg span {
     font-size: 26px;
     font-weight: 700;
@@ -680,6 +689,15 @@ body {
     padding: 28px;
     margin-bottom: 30px;
     border: 1px solid var(--parchment);
+}
+
+.add-grade-section input:disabled,
+.add-grade-section select:disabled {
+    background: #e8e5df;
+    border-color: #d2cfc8;
+    color: #77716a;
+    cursor: not-allowed;
+    box-shadow: none;
 }
 
 .add-grade-title {
@@ -726,6 +744,16 @@ body {
     background: linear-gradient(135deg, var(--crimson), var(--crimson-light));
     transform: translateY(-1px);
     box-shadow: 0 8px 18px rgba(92,0,0,0.3);
+}
+
+.btn-primary:disabled,
+.btn-primary:disabled:hover {
+    background: #d5d1ca;
+    border-color: #c5c0b7;
+    color: #77716a;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
 }
 
 .grades-history-title {

@@ -1,5 +1,5 @@
 # Documentación Frontend — Sistema de Gestión Escolar
-**Versión:** 2.4.0
+**Versión:** 2.4.1
 **Stack:** HTML5 · CSS3 · JavaScript (vanilla, sin frameworks) · SweetAlert2 · Font Awesome 6
 **Consumo de API:** `http://localhost/gestion_escolar/api` (ver `documentacion_backend.md`, v2.5.0)
 **Fecha:** Octubre 2026
@@ -7,6 +7,12 @@
 > Este documento complementa `documentacion_backend.md`. Cubre la estructura de
 > páginas, los scripts JS, el flujo de autenticación/primer ingreso, la exportación de
 > reportes, el **sistema de Ayuda** y el **panel de períodos**.
+>
+> **Cambios de la v2.4.0 a la v2.4.1:**
+> - Profesor → **Gestionar Notas**: al elegir una materia, los grados y sus secciones aparecen
+>   contraídos; al buscar, se despliegan únicamente los grados y secciones con resultados.
+> - El aviso de trimestre cerrado aparece antes del resumen/encabezado de notas registradas.
+>   Se documentan también los estilos visuales de los campos y del botón deshabilitados.
 >
 > **Cambios de la v2.3.0 a la v2.4.0:**
 > - Admin → nueva vista **Períodos**: abrir/cerrar trimestres y editar fechas informativas.
@@ -455,8 +461,11 @@ filtra en el cliente:
   - Los grados se ordenan 7° → 12° (los desconocidos, al final).
   - Las secciones se ordenan A, B, C… y **"Sin sección"** va al final. Si un grado solo tiene
     estudiantes sin sección, se listan directamente sin sub-bloques.
-  - Cada encabezado de grado y de sección es colapsable.
-  - Búsqueda local por nombre, email o sección (`studentGradeSearch`).
+  - Al elegir una materia, los grados aparecen contraídos; las secciones dentro de cada grado
+    también aparecen contraídas cuando el grado tiene sub-secciones. Cada encabezado se puede
+    expandir o contraer manualmente.
+  - La búsqueda local por nombre, email o sección (`studentGradeSearch`) filtra los resultados
+    y abre sus grados y secciones coincidentes; los grupos sin coincidencias no se muestran.
 - Estadísticas rápidas (`updateQuickStats`): total de estudiantes, promedio del grupo,
   aprobados y en proceso. Usan el **promedio simple** de las notas del estudiante en esa
   materia; un estudiante cuenta como "aprobado" solo si tiene examen trimestral registrado y
@@ -493,8 +502,9 @@ cerrado. El frontend solo evita que el profesor choque con ese error.
   **asume abierto** y el backend decide.
 - **Trimestre cerrado** (pestaña I, II o III): en `renderTrimestreContent()` el formulario
   "Agregar nueva evaluación" **sigue visible pero deshabilitado**: todos sus campos y el botón
-  **Guardar** quedan en gris (`disabled`, tooltip "Trimestre cerrado") y arriba aparece el
-  banner `.period-closed-banner` ("Este trimestre está cerrado: solo lectura").
+  **Guardar** quedan en gris (`disabled`, tooltip "Trimestre cerrado"). El banner
+  `.period-closed-banner` ("Este trimestre está cerrado: solo lectura") se muestra encima del
+  resumen trimestral o del encabezado "Notas registradas", antes del formulario.
 - **Botón Eliminar:** se decide **por nota** (`trimestreAbierto(grade.trimestre)` en
   `renderGradeHistoryItem`), no por la pestaña. Por eso la pestaña "Todas", que mezcla
   trimestres, solo muestra Eliminar en las notas de trimestres abiertos.
@@ -675,7 +685,10 @@ Todas las hojas de estilo comparten una paleta de variables CSS (`:root`) con te
   ícono `.fa-chevron-down`.
 - **Trimestre cerrado (profesor):** `.period-closed-banner` (aviso crimson con candado) y los
   estados `:disabled` de `.btn-primary` y de los campos de `.add-grade-section` (fondo gris,
-  `cursor: not-allowed`, sin sombra ni desplazamiento).
+  `cursor: not-allowed`, sin sombra; el botón tampoco se desplaza al pasar el cursor).
+- **Gestión de notas (profesor):** `.grade-header` y `.section-header` controlan el despliegue
+  de `.grade-students` y `.section-students`. Los grupos empiezan contraídos y la búsqueda
+  renderiza expandidos solo los grupos que contienen estudiantes coincidentes.
 - Componentes de **estudiante**: `.boletin-completo-card`, `.btn-exportar-boletin`,
   `.btn-exportar-boletin-completo` y el modal de detalle `.gd-*`.
 - Cada CSS de panel (`admin.css`, `profesor.css`, `estudiante.css`) tiene **un único bloque**
