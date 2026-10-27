@@ -11,6 +11,7 @@ let currentStudentForModal = null;
 let currentTrimestre       = 'I Trimestre';
 let studentGradeSearch     = '';
 let periodos = {};   // { 'I Trimestre': true/false, ... } (true = abierto)
+const seccionesAbiertas = new Set();   // claves de grados/secciones expandidos
 
 window.closeModal = function(modalId) {
     const modal = document.getElementById(modalId);
@@ -377,7 +378,7 @@ function renderStudentsByGrade() {
             ? secciones['Sin sección'].map(s => renderStudentCard(s)).join('')
             : seccionesOrdenadas.map(sec => `
                 <div class="section-block">
-                    <div class="section-header ${buscando ? '' : 'collapsed'}" onclick="toggleSection(this)">
+                    <div class="section-header ${buscando || seccionesAbiertas.has('s|' + grade + '|' + sec) ? '' : 'collapsed'}" data-key="s|${escapeHtml(grade)}|${escapeHtml(sec)}" onclick="toggleSection(this)">
                         <span><i class="fas fa-layer-group"></i> Sección ${escapeHtml(sec)} (${secciones[sec].length} estudiantes)</span>
                         <div class="section-header-actions">
                             <button class="btn-exportar-seccion"
@@ -389,7 +390,7 @@ function renderStudentsByGrade() {
                             <i class="fas fa-chevron-down"></i>
                         </div>
                     </div>
-                    <div class="section-students ${buscando ? '' : 'collapsed'}">
+                    <div class="section-students ${buscando || seccionesAbiertas.has('s|' + grade + '|' + sec) ? '' : 'collapsed'}">
                         ${secciones[sec].map(s => renderStudentCard(s)).join('')}
                     </div>
                 </div>
@@ -397,7 +398,7 @@ function renderStudentsByGrade() {
 
         return `
             <div class="grade-section">
-                <div class="grade-header ${buscando ? '' : 'collapsed'}" onclick="toggleGradeSection(this)">
+                <div class="grade-header ${buscando || seccionesAbiertas.has('g|' + grade) ? '' : 'collapsed'}" data-key="g|${escapeHtml(grade)}" onclick="toggleGradeSection(this)">
                     <span><i class="fas fa-graduation-cap"></i> Grado ${escapeHtml(grade)} (${totalGrado} estudiantes)</span>
                     <div style="display:flex; align-items:center; gap:14px;">
                         <button class="btn-exportar-grupo" data-grado="${escapeHtml(grade)}" onclick="event.stopPropagation(); exportarReporteGrupal(this.dataset.grado)">
@@ -406,7 +407,7 @@ function renderStudentsByGrade() {
                         <i class="fas fa-chevron-down"></i>
                     </div>
                 </div>
-                <div class="grade-students ${buscando ? '' : 'collapsed'}">
+                <div class="grade-students ${buscando || seccionesAbiertas.has('g|' + grade) ? '' : 'collapsed'}">
                     ${contenido}
                 </div>
             </div>
@@ -448,11 +449,20 @@ function renderStudentCard(student) {
 function toggleGradeSection(element) {
     element.classList.toggle('collapsed');
     element.nextElementSibling.classList.toggle('collapsed');
+    registrarSeccionAbierta(element);
 }
 
 function toggleSection(element) {
     element.classList.toggle('collapsed');
     element.nextElementSibling.classList.toggle('collapsed');
+    registrarSeccionAbierta(element);
+}
+
+function registrarSeccionAbierta(element) {
+    const key = element.dataset.key;
+    if (!key) return;
+    if (element.classList.contains('collapsed')) seccionesAbiertas.delete(key);
+    else seccionesAbiertas.add(key);
 }
 
 // ==================== MODAL DE NOTAS ====================

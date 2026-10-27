@@ -156,7 +156,7 @@
 </div>
 <script src="js/api.js?v=3"></script>
 <script src="js/reportes.js?v=4"></script>
-<script src="js/profesor.js?v=4"></script>  
+<script src="js/profesor.js?v=5"></script>  
 </body>
 </html>
 
