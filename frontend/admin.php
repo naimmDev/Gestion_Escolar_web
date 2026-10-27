@@ -11,7 +11,7 @@
     <!-- SweetAlert + Font Awesome para mejor UX -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-<link rel="stylesheet" href="css/admin.css?v=3">
+<link rel="stylesheet" href="css/admin.css?v=8">
 </head>
 
 <body>
@@ -216,50 +216,50 @@
                     <p class="reports-help" id="reportPreview">Elige un estudiante o una materia para exportar</p>
 
                     <div class="report-form">
-                       <div class="form-group">
-                          <label for="reportGradeSelect">Grado (filtra la lista y acota el reporte grupal)</label>
-                                <select id="reportGradeSelect">
-                                     <option value="">— Todos los grados —</option>
-                                     <option>7°</option>
-                                     <option>8°</option>
-                                     <option>9°</option>
-                                     <option>10°</option>
-                                     <option>11°</option>
-                                     <option>12°</option>
-                                </select>
-                               </div>
+                        <div class="form-group">
+                            <label for="reportGradeSelect">Grado (filtra la lista y acota el reporte grupal)</label>
+                            <select id="reportGradeSelect">
+                                <option value="">— Todos los grados —</option>
+                                <option>7°</option>
+                                <option>8°</option>
+                                <option>9°</option>
+                                <option>10°</option>
+                                <option>11°</option>
+                                <option>12°</option>
+                            </select>
+                        </div>
 
-                       <div class="form-group">
-                           <label for="reportSectionFilter">Sección</label>
-                                 <select id="reportSectionFilter">
-                                     <option value="">Todas las secciones</option>
-                                 </select>
-                                 </div>
+                        <div class="form-group">
+                            <label for="reportSectionFilter">Sección</label>
+                            <select id="reportSectionFilter">
+                                <option value="">Todas las secciones</option>
+                            </select>
+                        </div>
 
-                           <div class="form-group">
-                             <label for="reportStudentSearch">Estudiante (opcional)</label>
-                                  <div class="search-box">
-                                   <i class="fas fa-search"></i>
-                            <input type="text" id="reportStudentSearch" placeholder="Buscar por nombre o identificación..." autocomplete="off">
-                       </div>
-                           <select id="reportStudentSelect" class="student-list" size="6" title="Lista de estudiantes"></select>
-                  <small id="reportStudentCount" class="student-count"></small>
-                 </div>
+                        <div class="form-group">
+                            <label for="reportStudentSearch">Estudiante (opcional)</label>
+                            <div class="search-box">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="reportStudentSearch" placeholder="Buscar por nombre o identificación..." autocomplete="off">
+                            </div>
+                            <select id="reportStudentSelect" class="student-list" size="6" title="Lista de estudiantes"></select>
+                            <small id="reportStudentCount" class="student-count"></small>
+                        </div>
 
-                 <div class="form-group">
-                    <label for="reportSubjectSearch">Materia (opcional si eliges solo estudiante)</label>
-                    <div class="search-box">
-                        <i class="fas fa-search"></i>
-                        <input type="text" id="reportSubjectSearch" placeholder="Buscar por nombre o código..." autocomplete="off">
+                        <div class="form-group">
+                            <label for="reportSubjectSearch">Materia (opcional si eliges solo estudiante)</label>
+                            <div class="search-box">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="reportSubjectSearch" placeholder="Buscar por nombre o código..." autocomplete="off">
+                            </div>
+                            <select id="reportSubjectSelect" class="student-list" size="6" title="Lista de materias"></select>
+                        </div>
+
+                        <button type="button" class="btn-primary" onclick="exportarReporteAdmin()">
+                            <i class="fas fa-file-export"></i> Exportar
+                        </button>
                     </div>
-                    <select id="reportSubjectSelect" class="student-list" size="6" title="Lista de materias"></select>
-                 </div>
-
-    <button type="button" class="btn-primary" onclick="exportarReporteAdmin()">
-        <i class="fas fa-file-export"></i> Exportar
-    </button>
-</div>
-  </div>     
+                </div>
             </div> 
             <div id="periodsView" class="view">
     <h2 class="page-title"><i class="fas fa-calendar-check"></i> Períodos</h2>
@@ -467,6 +467,6 @@
 </main>
 <script src="js/api.js?v=3"></script>
 <script src="js/reportes.js?v=4"></script>
-<script src="js/admin.js?v=4"></script>
+<script src="js/admin.js?v=7"></script>
 </body>
 </html>

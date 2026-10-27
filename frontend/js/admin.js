@@ -11,6 +11,8 @@ if (!currentUser || currentUser.rol !== 'admin') {
     window.location.href = 'index.html';
 }
 
+window.Swal = window.Swal.mixin({ scrollbarPadding: false });
+
 // Forzar recarga si la página se restaura desde bfcache (botón Atrás/Adelante)
 window.addEventListener('pageshow', function (event) {
     if (event.persisted) {

@@ -22,6 +22,11 @@
     box-sizing: border-box;
 }
 
+html, body {
+    height: 100%;
+    overflow: hidden;
+}
+
 :root {
     --crimson:       #8B0000;
     --crimson-deep:  #5C0000;
@@ -40,13 +45,14 @@
 
 body {
     font-family: 'EB Garamond', Georgia, serif;
-    background: var(--ivory);
+    background: transparent;
     color: var(--ink);
 }
 
 .app-container {
     display: flex;
-    min-height: 100vh;
+    height: 100vh;
+    background: var(--ivory);
 }
 
 /* ========== SIDEBAR REALEZA ========== */
@@ -205,7 +211,8 @@ body {
     flex: 1;
     padding: 36px 40px;
     background: var(--ivory);
-    min-height: 100vh;
+    height: 100vh;
+    overflow-y: auto;
 }
 
 .page-title {
@@ -864,13 +871,24 @@ body {
 }
 
 .report-form {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    max-width: 420px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 24px;
+    max-width: 900px;
+    width: 100%;
+    margin: 0 auto;
 }
 /* ========== BUSCADOR DE ESTUDIANTES ========== */
-.report-form { max-width: 560px; }
+.report-form .btn-primary {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: 180px;
+    max-width: 100%;
+}
+
+@media (max-width: 900px) {
+    .report-form { grid-template-columns: minmax(0, 1fr); }
+}
 
 .search-box { position: relative; margin-bottom: 8px; }
 
@@ -942,7 +960,7 @@ body {
     color: #8a7055;
 }
 
-/* ========== PERÍODO S ========== */
+/* ========== PERIODOS ========== */
 .periods-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
 .period-card { background: white; border: 1px solid var(--parchment); border-top: 3px solid var(--crimson); border-radius: 2px; padding: 22px; box-shadow: 0 4px 16px rgba(26,5,5,0.05); }
 .period-card.open { border-top-color: #2a5c2a; }
@@ -953,4 +971,14 @@ body {
 .period-badge.open { background: rgba(46,92,46,0.1); color: #2a5c2a; border: 1px solid rgba(46,92,46,0.25); }
 .period-badge.closed { background: rgba(139,0,0,0.1); color: var(--crimson); border: 1px solid rgba(139,0,0,0.25); }
 .period-dates { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.period-actions { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+.period-actions { display: flex; gap: 10px; margin-top: 6px; }
+.period-actions button {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 40px;
+    margin: 0;
+    padding: 10px 8px;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+}
