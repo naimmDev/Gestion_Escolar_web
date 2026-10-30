@@ -1,5 +1,5 @@
 # Documentación Backend — Sistema de Gestión Escolar
-**Versión:** 2.5.0
+**Versión:** 2.6.0
 **Stack:** PHP 8.2 · MariaDB 10.4 · XAMPP
 **Fecha de inicio:** Junio 2026
 
@@ -59,6 +59,7 @@ gestion_escolar/
 │   │   ├── index.php                    # GET (listado/resumen) · POST · PUT · DELETE
 │   │   └── exportar.php                 # GET — exportación de reportes PDF/Excel
 │   ├── helpers/
+│   │   ├── nombres.php                 # validación y composición de firstName/lastName
 │   │   ├── periodos.php                 # exigirTrimestreAbierto() — regla de período para notas
 │   │   ├── notas_calculo.php            # cálculo de resumen por trimestre — única fuente de verdad
 │   │   ├── reporte_data.php             # consultas a BD para armar reportes (individual/boletín/grupal)
@@ -69,6 +70,7 @@ gestion_escolar/
 │       └── index.php                    # GET · POST
 ├── database/
 │   ├── schema.sql                       # estructura de las tablas (volcado de phpMyAdmin)
+│   ├── datos_iniciales.sql              # preguntas de seguridad y cuenta de administrador
 │   └── migraciones/                     # scripts SQL para bases ya existentes (ej. 2026-10-22_periodos.sql)
 ├── docs/                                # documentación del proyecto (este archivo, frontend, instalación de Composer)
 └── frontend/
@@ -93,7 +95,7 @@ gestion_escolar/
 | email | VARCHAR(100) UNIQUE | Correo de acceso |
 | password_hash | VARCHAR(255) | bcrypt (cost 12) |
 | rol | ENUM('admin','profesor','estudiante') | Rol del usuario |
-| nombre | VARCHAR(100) | Nombre completo |
+| nombre | VARCHAR(100) | Nombre completo ("Nombre Apellido"); lo compone el backend y se sincroniza al editar |
 | id_referencia | INT NULL | FK a `estudiante.id` o `profesor.id` (NULL para admin) |
 | password_cambiada | TINYINT(1) DEFAULT 0 | 1 si ya cambió su contraseña inicial |
 | preguntas_configuradas | TINYINT(1) DEFAULT 0 | 1 si ya configuró sus 3 preguntas de seguridad |
@@ -116,7 +118,8 @@ gestion_escolar/
 | Campo | Tipo | Descripción |
 |---|---|---|
 | id | INT PK AUTO | Identificador |
-| nombre | VARCHAR(100) | Nombre completo |
+| nombre | VARCHAR(100) NOT NULL | Nombre(s) |
+| apellido | VARCHAR(100) NOT NULL | Apellido(s) |
 | email | VARCHAR(100) UNIQUE | Correo |
 | identificacion | VARCHAR(20) UNIQUE | Cédula o código |
 | grado | VARCHAR(10) NULL | Ej: 10°, 11° |
@@ -127,7 +130,8 @@ gestion_escolar/
 | Campo | Tipo | Descripción |
 |---|---|---|
 | id | INT PK AUTO | Identificador |
-| nombre | VARCHAR(100) | Nombre completo |
+| nombre | VARCHAR(100) NOT NULL | Nombre(s) |
+| apellido | VARCHAR(100) NOT NULL | Apellido(s) |
 | email | VARCHAR(100) UNIQUE | Correo |
 | identificacion | VARCHAR(20) UNIQUE | Cédula |
 | especialidad | VARCHAR(100) NULL | Área académica |
@@ -387,13 +391,14 @@ GET /api/estudiantes/?secciones=1[&grado=10°]
 Devuelve un array con las secciones existentes (en mayúsculas, sin vacías, ordenadas), opcionalmente solo las de un grado: `["A", "B", "C"]`. No es paginado.
 
 **POST:**
-- Requiere `name`, `email`, `identificacion`. Valida formato de email y que no exista otro estudiante ni otra cuenta con ese email/identificación (409).
+- Requiere `firstName`, `lastName`, `email`, `identificacion`. `firstName` y `lastName` se recortan con `trim`, no pueden quedar vacíos y admiten hasta 100 caracteres; si falta alguno, responde 400 con `details.campos`. Ya no se acepta `name`. Valida formato de email y que no exista otro estudiante ni otra cuenta con ese email/identificación (409).
 - `initialPassword` es opcional (mínimo 6 caracteres). **Si no se envía, la contraseña inicial es la identificación.**
+- El backend guarda `usuario.nombre` como `"firstName lastName"`, tanto al crear como al editar.
 - Responde 201 con `{ id, initialPassword, message }`.
 
 **PUT — Body:**
 ```json
-{ "id": 5, "name": "...", "email": "...", "identificacion": "...", "grade": "...", "seccion": "...", "initialPassword": "opcional" }
+{ "id": 5, "firstName": "...", "lastName": "...", "email": "...", "identificacion": "...", "grade": "...", "seccion": "...", "initialPassword": "opcional" }
 ```
 > Si se envía `initialPassword`, se regenera el hash en `usuario` y se resetean `password_cambiada = 0`, `preguntas_configuradas = 0`, además de borrarse sus `usuario_pregunta` (flujo de "restablecer acceso"). **No** cierra sesiones activas ni limpia `intentos_fallidos` / `bloqueado_hasta`.
 
@@ -406,7 +411,14 @@ Devuelve un array con las secciones existentes (en mayúsculas, sin vacías, ord
 Mismos endpoints y comportamiento de `initialPassword` en POST/PUT que Estudiantes (`/profesores/`, `/profesores/delete.php`), con estas diferencias:
 - GET solo admite `page`, `per_page` y `search` (sin filtros `grado`/`seccion` ni modo `secciones`).
 - Campo propio: `specialty` (`especialidad`).
+- También requiere `firstName` y `lastName` en POST/PUT, con la misma validación; ya no acepta `name`. `usuario.nombre` se compone como `"firstName lastName"` al crear y editar.
+- **PUT — Body:**
+```json
+{ "id": 5, "firstName": "...", "lastName": "...", "email": "...", "identificacion": "...", "specialty": "...", "initialPassword": "opcional" }
+```
 - DELETE: 409 si el profesor tiene notas registradas; no pide confirmación de comentarios. Deja `profesor_id = NULL` en sus materias, elimina su cuenta de `usuario` y el profesor, en transacción.
+
+En los GET de estudiantes y profesores, cada elemento incluye `name` (nombre completo `"Nombre Apellido"`), `firstName` y `lastName`. Se ordenan por apellido y luego nombre; `search` busca en nombre, apellido y la combinación `"nombre apellido"`.
 
 ### Materias
 | Método | Endpoint | Rol | Descripción |
@@ -424,6 +436,8 @@ Mismos endpoints y comportamiento de `initialPassword` en POST/PUT que Estudiant
 | GET | `/matriculas/` | admin, profesor, estudiante | Filtrado por rol; admin paginado |
 | POST | `/matriculas/` | admin | Asignar una o varias materias. Body: `{ "studentId", "subjectIds": [..] }` (también acepta `subjectId`). Máximo 50 materias por petición. Transacción: omite las ya matriculadas y responde `{ id, created, skipped }`; 409 si todas ya existían, 404 si el estudiante o una materia no existe |
 | DELETE | `/matriculas/` | admin | Eliminar matrícula |
+
+En GET, `studentName` contiene el nombre completo y `studentLastName` contiene el apellido. Los resultados se ordenan por apellido y luego nombre; `search` incluye el apellido.
 
 ### Períodos
 | Método | Endpoint | Rol | Descripción |
@@ -468,7 +482,7 @@ Ver sección 8 (Sistema de Notas).
 | **Admin** | `format` + `materia_id` (sin `estudiante_id`) | Grupal de cualquier materia (todos los grados) |
 | **Admin** | `format` + `materia_id` + `grado` [+ `seccion`] | Grupal de un grado (y sección) específico, de cualquier materia |
 
-> `grado` y `seccion` solo se aplican al reporte grupal; en reportes individuales o boletines se ignoran. El grupal sin filtro de trimestre incluye además la columna Estado (Aprobado / En proceso) y se ordena por grado, luego sección (las sin sección al final) y nombre.
+> `grado` y `seccion` solo se aplican al reporte grupal; en reportes individuales o boletines se ignoran. Los reportes individuales y boletines muestran el nombre como "Nombre Apellido"; el grupal como "Apellido, Nombre". El grupal sin filtro de trimestre incluye además la columna Estado (Aprobado / En proceso) y se ordena por grado, sección, apellido y nombre.
 
 **Reglas de permisos:**
 - Estudiante: solo puede exportar su propio reporte (`estudiante_id` se ignora y se fuerza al propio); si especifica `materia_id`, debe estar matriculado en ella (403 si no).
@@ -505,6 +519,8 @@ Separación deliberada: cambiar el formato de salida o agregar uno nuevo no requ
 |---|---|---|---|
 | GET | `/comentarios/` | admin, profesor, estudiante | Filtrado por rol |
 | POST | `/comentarios/` | estudiante | Enviar comentario (requiere matrícula en la materia; 403 si no está matriculado) |
+
+En GET `/notas/`, `estudiante_nombre` y `profesor_nombre`, y en GET `/comentarios/`, `estudiante_nombre`, contienen el nombre completo ("Nombre Apellido").
 
 ---
 
@@ -549,7 +565,7 @@ Separación deliberada: cambiar el formato de salida o agregar uno nuevo no requ
 
 ### Error con detalle (validación)
 ```json
-{ "success": false, "error": "Campos obligatorios faltantes", "code": 400, "details": { "campos": ["name", "email"] } }
+{ "success": false, "error": "Campos obligatorios faltantes", "code": 400, "details": { "campos": ["firstName", "email"] } }
 ```
 
 ### Códigos de estado usados
@@ -630,12 +646,16 @@ Body: { "estudiante_id", "materia_id", "tipo", "puntaje", "trimestre", "tipo_act
 ### Editar nota
 ```
 PUT /api/notas/
-Body: { "id", "puntaje", "tipo"?, "tipo_actividad"?, "trimestre"?, "nombre"?, "comentario"? }
+Body: { "id", "puntaje", "tipo_actividad"?, "nombre"?, "comentario"?, "tipo"?, "trimestre"? }
 ```
-- Solo el profesor propietario puede editar.
-- Genera un registro en `nota_auditoria` con el puntaje anterior y nuevo (`editor_id` = id del profesor).
+- `id` y `puntaje` son obligatorios; el puntaje debe estar entre 1.0 y 5.0.
+- `tipo_actividad`, `nombre` y `comentario`: si no vienen en el body se conserva el valor anterior; si vienen como `""` o `null`, se borran (quedan `NULL`).
+- Longitud máxima: `nombre` 100 y `comentario` 255 caracteres (400 si se excede).
+- Solo el profesor dueño de la nota puede editarla (403 si no).
 - Misma validación de unicidad de `EXAMEN_TRIMESTRAL` al cambiar tipo/trimestre.
-- El trimestre actual de la nota debe estar abierto; si además se mueve a otro trimestre (`trimestre` en el body), el destino también debe estar abierto.
+- El trimestre de la nota y el destino (si se cambia `trimestre`) deben estar abiertos; si no, responde 409 con `details.codigo = "TRIMESTRE_CERRADO"`.
+- Se inserta en `nota_auditoria` solo si cambia el puntaje (anterior vs. nuevo). Cambiar nombre, comentario o tipo de actividad no genera registro.
+- Responde 200 `{ "message": "Nota actualizada" }` (no devuelve la nota).
 
 ### Eliminar nota
 ```
@@ -655,6 +675,8 @@ Si un trimestre no tiene fila en `periodo`, se trata como cerrado (falla cerrado
 ---
 
 ## 9. Credenciales Iniciales
+
+Para instalar la base de datos vacía, importar `database/schema.sql` y después `database/datos_iniciales.sql`. El segundo archivo inserta las 8 preguntas de seguridad y el administrador `admin@escuela.edu` / `admin123`. La base de datos arranca sin estudiantes ni profesores. `schema.sql` ya incluye la columna `apellido` en `estudiante` y `profesor`; no hay migración para bases existentes, se debe recrear la base de datos.
 
 | Usuario | Email | Contraseña inicial |
 |---|---|---|

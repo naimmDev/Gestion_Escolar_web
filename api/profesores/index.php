@@ -1,6 +1,7 @@
 <?php
 require '../config/db.php';
 require '../config/auth_middleware.php';
+require '../helpers/nombres.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -16,7 +17,9 @@ if ($method === 'GET') {
     $params = [];
 
     if ($search !== '') {
-        $where[]  = "(p.nombre LIKE ? OR p.email LIKE ? OR p.especialidad LIKE ?)";
+        $where[]  = "(p.nombre LIKE ? OR p.apellido LIKE ? OR CONCAT_WS(' ', p.nombre, p.apellido) LIKE ? OR p.email LIKE ? OR p.especialidad LIKE ?)";
+        $params[] = "%$search%";
+        $params[] = "%$search%";
         $params[] = "%$search%";
         $params[] = "%$search%";
         $params[] = "%$search%";
@@ -30,12 +33,12 @@ if ($method === 'GET') {
 
     $stmt = $pdo->prepare("
     
-    SELECT p.id, p.nombre AS name, p.email, p.identificacion, p.especialidad AS specialty,
+    SELECT p.id, CONCAT_WS(' ', p.nombre, p.apellido) AS name, p.nombre AS firstName, p.apellido AS lastName, p.email, p.identificacion, p.especialidad AS specialty,
            CASE WHEN u.password_cambiada = 1 THEN NULL ELSE p.password_inicial END AS initialPassword
     FROM profesor p
     LEFT JOIN usuario u ON u.id_referencia = p.id AND u.rol = 'profesor'
     $whereSQL
-    ORDER BY p.nombre ASC
+    ORDER BY p.apellido ASC, p.nombre ASC
     LIMIT $perPage OFFSET $offset
 
     ");
@@ -53,7 +56,8 @@ if ($method === 'GET') {
 elseif ($method === 'POST') {
     requireRole($pdo, 'admin');
     $data = getJsonBody();
-    validateRequired($data, ['name', 'email', 'identificacion']);
+    validateRequired($data, ['email', 'identificacion']);
+    [$nombre, $apellido, $nombreCompleto] = leerNombreApellido($data);
 
     if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
         sendError("Email no válido", 400);
@@ -80,11 +84,11 @@ elseif ($method === 'POST') {
         : $data['identificacion'];
 
     $stmt = $pdo->prepare("
-        INSERT INTO profesor (nombre, email, identificacion, especialidad, password_inicial)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO profesor (nombre, apellido, email, identificacion, especialidad, password_inicial)
+        VALUES (?, ?, ?, ?, ?, ?)
     ");
     $stmt->execute([
-        $data['name'], $data['email'], $data['identificacion'],
+        $nombre, $apellido, $data['email'], $data['identificacion'],
         $data['specialty'] ?? null, $passwordPlain
     ]);
     $profesorId = $pdo->lastInsertId();
@@ -94,7 +98,7 @@ elseif ($method === 'POST') {
     $userCheck->execute([$data['email']]);
     if (!$userCheck->fetch()) {
         $pdo->prepare("INSERT INTO usuario (email, password_hash, rol, nombre, id_referencia) VALUES (?, ?, 'profesor', ?, ?)")
-            ->execute([$data['email'], $passwordHash, $data['name'], $profesorId]);
+            ->execute([$data['email'], $passwordHash, $nombreCompleto, $profesorId]);
     }
 
     sendCreated([
@@ -107,7 +111,8 @@ elseif ($method === 'POST') {
 elseif ($method === 'PUT') {
     requireRole($pdo, 'admin');
     $data = getJsonBody();
-    validateRequired($data, ['id', 'name', 'email', 'identificacion']);
+    validateRequired($data, ['id', 'email', 'identificacion']);
+    [$nombre, $apellido, $nombreCompleto] = leerNombreApellido($data);
 
     if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
         sendError("Email no válido", 400);
@@ -132,16 +137,16 @@ elseif ($method === 'PUT') {
     $passwordPlain = !empty($data['initialPassword']) ? $data['initialPassword'] : null;
 
     $pdo->prepare("
-        UPDATE profesor SET nombre=?, email=?, identificacion=?, especialidad=?,
+        UPDATE profesor SET nombre=?, apellido=?, email=?, identificacion=?, especialidad=?,
         password_inicial = COALESCE(?, password_inicial)
         WHERE id=?
     ")->execute([
-        $data['name'], $data['email'], $data['identificacion'],
+        $nombre, $apellido, $data['email'], $data['identificacion'],
         $data['specialty'] ?? null, $passwordPlain, $data['id']
     ]);
 
     $pdo->prepare("UPDATE usuario SET email=?, nombre=? WHERE id_referencia=? AND rol='profesor'")
-        ->execute([$data['email'], $data['name'], $data['id']]);
+        ->execute([$data['email'], $nombreCompleto, $data['id']]);
 
     if ($passwordPlain) {
     $newHash = password_hash($passwordPlain, PASSWORD_BCRYPT, ['cost' => 12]);

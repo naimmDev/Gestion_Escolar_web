@@ -11,7 +11,7 @@
     <!-- SweetAlert + Font Awesome para mejor UX -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-<link rel="stylesheet" href="css/admin.css?v=8">
+<link rel="stylesheet" href="css/admin.css?v=9">
 </head>
 
 <body>
@@ -284,8 +284,12 @@
                                     class="btn-pass-edit" onclick="togglePasswordEdit('studentPassword')"
                                     title="Editar manualmente"><i class="fas fa-pencil-alt"></i></button></div>
                         </div>
-                        <div class="form-group"><label for="studentName">Nombre</label><input id="studentName"
-                                placeholder="Ej: Juan Pérez" required></div>
+                        <div class="form-row">
+                            <div class="form-group"><label for="studentFirstName">Nombre</label>
+                                <input id="studentFirstName" placeholder="Ej: Mei" maxlength="100" required></div>
+                            <div class="form-group"><label for="studentLastName">Apellido</label>
+                                <input id="studentLastName" placeholder="Ej: Pérez" maxlength="100" required></div>
+                        </div>
                         <div class="form-group"><label for="studentEmail">Email</label><input type="email"
                                 id="studentEmail" placeholder="ejemplo@correo.com" required></div>
                         <div class="form-group"><label for="studentGrade">Grado</label>
@@ -333,10 +337,11 @@
                             </div>
                         </div>
 
-                        <div class="form-group">
-                            <label for="professorName">Nombre</label>
-                            <input id="professorName" placeholder="Ej: María López" title="Nombre completo del profesor"
-                                required>
+                        <div class="form-row">
+                            <div class="form-group"><label for="professorFirstName">Nombre</label>
+                                <input id="professorFirstName" placeholder="Ej: Pedro" maxlength="100" required></div>
+                            <div class="form-group"><label for="professorLastName">Apellido</label>
+                                <input id="professorLastName" placeholder="Ej: López" maxlength="100" required></div>
                         </div>
 
                         <div class="form-group">
@@ -467,6 +472,6 @@
 </main>
 <script src="js/api.js?v=3"></script>
 <script src="js/reportes.js?v=4"></script>
-<script src="js/admin.js?v=7"></script>
+<script src="js/admin.js?v=8"></script>
 </body>
 </html>

@@ -8,7 +8,7 @@ function calcularResumenEstudiante(PDO $pdo, int $estudianteId, int $materiaId):
 }
 
 function obtenerEstudiante(PDO $pdo, int $estudianteId): ?array {
-    $stmt = $pdo->prepare("SELECT id, nombre, identificacion, grado, seccion FROM estudiante WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT id, CONCAT_WS(' ', nombre, apellido) AS nombre, nombre AS nombre_pila, apellido, CONCAT_WS(', ', apellido, nombre) AS nombre_lista, identificacion, grado, seccion FROM estudiante WHERE id = ?");
     $stmt->execute([$estudianteId]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     return $row ?: null;
@@ -23,7 +23,7 @@ function obtenerMateria(PDO $pdo, int $materiaId): ?array {
 
 /** Estudiantes matriculados en una materia, filtrados opcionalmente por grado y sección ('Sin grado' / 'Sin sección' = vacío). */
 function obtenerEstudiantesMatriculados(PDO $pdo, int $materiaId, ?string $grado = null, ?string $seccion = null): array {
-    $sql = "SELECT e.id, e.nombre, e.identificacion, e.grado, e.seccion
+    $sql = "SELECT e.id, CONCAT_WS(' ', e.nombre, e.apellido) AS nombre, e.nombre AS nombre_pila, e.apellido, CONCAT_WS(', ', e.apellido, e.nombre) AS nombre_lista, e.identificacion, e.grado, e.seccion
             FROM matricula m
             JOIN estudiante e ON m.estudiante_id = e.id
             WHERE m.materia_id = ?";
@@ -47,7 +47,7 @@ function obtenerEstudiantesMatriculados(PDO $pdo, int $materiaId, ?string $grado
         }
     }
 
-    $sql .= " ORDER BY e.nombre ASC";
+    $sql .= " ORDER BY e.apellido ASC, e.nombre ASC";
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
@@ -117,7 +117,8 @@ function armarReporteGrupal(PDO $pdo, int $materiaId, ?string $grado = null, ?st
         $gb = ((int)$b['grado']) ?: 99;
         return $ga <=> $gb
             ?: strcmp($claveSeccion($a), $claveSeccion($b))
-            ?: strcmp($a['nombre'], $b['nombre']);
+            ?: strcmp($a['apellido'], $b['apellido'])
+            ?: strcmp($a['nombre_pila'], $b['nombre_pila']);
     });
 
     $filas = [];

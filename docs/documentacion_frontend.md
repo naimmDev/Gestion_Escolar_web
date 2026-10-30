@@ -1,12 +1,18 @@
 # Documentación Frontend — Sistema de Gestión Escolar
-**Versión:** 2.4.1
+**Versión:** 2.5.0
 **Stack:** HTML5 · CSS3 · JavaScript (vanilla, sin frameworks) · SweetAlert2 · Font Awesome 6
-**Consumo de API:** `http://localhost/gestion_escolar/api` (ver `documentacion_backend.md`, v2.5.0)
+**Consumo de API:** `http://localhost/gestion_escolar/api` (ver `documentacion_backend.md`, v2.6.0)
 **Fecha:** Octubre 2026
 
 > Este documento complementa `documentacion_backend.md`. Cubre la estructura de
 > páginas, los scripts JS, el flujo de autenticación/primer ingreso, la exportación de
 > reportes, el **sistema de Ayuda** y el **panel de períodos**.
+>
+> **Cambios de la v2.4.1 a la v2.5.0:**
+> - Admin → formularios de estudiantes y profesores: separar el nombre y el apellido, con
+>   campos obligatorios de hasta 100 caracteres. Al enviar, se usan `firstName` y `lastName`;
+>   las tablas siguen mostrando el nombre completo que devuelve `name`.
+> - El formulario de usuarios se adapta a una columna en pantallas estrechas.
 >
 > **Cambios de la v2.4.0 a la v2.4.1:**
 > - Profesor → **Gestionar Notas**: al elegir una materia, los grados y sus secciones aparecen
@@ -305,6 +311,11 @@ antes de que empiece la siguiente. Una vista anidada dentro de otra (por ejemplo
 - **Columnas:** Estudiantes → N°, Identificación, Contraseña Inicial, Nombre, Email, Grado,
   Sección, Acciones. Profesores → N°, Identificación, Contraseña Inicial, Nombre, Email,
   Especialidad, Materias, Acciones.
+- **Nombre y apellido:** los formularios de alta/edición tienen campos separados (`firstName`
+  y `lastName`), obligatorios y con máximo de 100 caracteres. Al editar se precargan desde la
+  respuesta del backend; al guardar se envían recortados con `trim`. El backend compone
+  `usuario.nombre` como `"firstName lastName"`. En tablas y demás interfaces se conserva
+  `name` como el nombre completo ("Nombre Apellido").
 - **Contraseña Inicial:** el backend solo la devuelve mientras el usuario no haya cambiado su
   contraseña; después llega `null` y la tabla muestra `......`.
 - **Columna "Materias" (profesores):** se calcula con la lista **completa** de materias

@@ -58,7 +58,7 @@ if ($method === 'GET') {
     $whereSQL = count($where) > 0 ? "WHERE " . implode(" AND ", $where) : "";
 
     $stmt = $pdo->prepare("
-        SELECT n.*, e.nombre AS estudiante_nombre, m.nombre AS materia_nombre, p.nombre AS profesor_nombre
+        SELECT n.*, CONCAT_WS(' ', e.nombre, e.apellido) AS estudiante_nombre, m.nombre AS materia_nombre, CONCAT_WS(' ', p.nombre, p.apellido) AS profesor_nombre
         FROM nota n
         JOIN estudiante e ON n.estudiante_id = e.id
         JOIN materia    m ON n.materia_id    = m.id
@@ -84,6 +84,9 @@ elseif ($method === 'POST') {
     if ($tipoActividad !== null && !in_array($tipoActividad, TIPOS_ACTIVIDAD_VALIDOS)) {
         sendError("Tipo de actividad no válido", 400);
     }
+
+    if (mb_strlen((string)($data['nombre'] ?? '')) > 100) sendError("El nombre de la actividad no puede superar 100 caracteres", 400);
+    if (mb_strlen((string)($data['comentario'] ?? '')) > 255) sendError("El comentario no puede superar 255 caracteres", 400);
 
     $profesorId = $authUser['id_referencia'];
 
@@ -130,10 +133,24 @@ elseif ($method === 'PUT') {
     $tipo = $data['tipo'] ?? $anterior['tipo'];
     if (!in_array($tipo, TIPOS_VALIDOS)) sendError("Tipo de evaluación no válido", 400);
 
-    $tipoActividad = $data['tipo_actividad'] ?? $anterior['tipo_actividad'];
+    // tipo_actividad / nombre / comentario: si NO vienen en el body se conserva el valor anterior;
+    // si vienen vacíos ('' o null) se borran.
+    $tipoActividad = array_key_exists('tipo_actividad', $data)
+        ? (($data['tipo_actividad'] === null || $data['tipo_actividad'] === '') ? null : $data['tipo_actividad'])
+        : $anterior['tipo_actividad'];
     if ($tipoActividad !== null && !in_array($tipoActividad, TIPOS_ACTIVIDAD_VALIDOS)) {
         sendError("Tipo de actividad no válido", 400);
     }
+
+    $nombre = array_key_exists('nombre', $data)
+        ? (trim((string)$data['nombre']) === '' ? null : trim((string)$data['nombre']))
+        : $anterior['nombre'];
+    $comentario = array_key_exists('comentario', $data)
+        ? (trim((string)$data['comentario']) === '' ? null : trim((string)$data['comentario']))
+        : $anterior['comentario'];
+
+    if ($nombre !== null && mb_strlen($nombre) > 100) sendError("El nombre de la actividad no puede superar 100 caracteres", 400);
+    if ($comentario !== null && mb_strlen($comentario) > 255) sendError("El comentario no puede superar 255 caracteres", 400);
 
     $trimestre = $data['trimestre'] ?? $anterior['trimestre'];
         if (!in_array($trimestre, TRIMESTRES_VALIDOS)) sendError("Trimestre no válido", 400);
@@ -154,13 +171,15 @@ elseif ($method === 'PUT') {
         $pdo->prepare("UPDATE nota SET puntaje=?, tipo=?, tipo_actividad=?, nombre=?, comentario=?, trimestre=? WHERE id=?")
             ->execute([
                 $puntaje, $tipo, $tipoActividad,
-                $data['nombre'] ?? $anterior['nombre'],
-                $data['comentario'] ?? $anterior['comentario'],
+                $nombre, $comentario,
                 $trimestre, $data['id']
             ]);
 
-        $pdo->prepare("INSERT INTO nota_auditoria (nota_id, editor_id, puntaje_anterior, puntaje_nuevo, fecha_cambio) VALUES (?, ?, ?, ?, NOW())")
-            ->execute([$data['id'], $authUser['id_referencia'], $anterior['puntaje'], $puntaje]);
+        // La auditoría registra cambios de puntaje: no se inserta si solo cambió nombre/comentario/etc.
+        if ((float)$anterior['puntaje'] !== $puntaje) {
+            $pdo->prepare("INSERT INTO nota_auditoria (nota_id, editor_id, puntaje_anterior, puntaje_nuevo, fecha_cambio) VALUES (?, ?, ?, ?, NOW())")
+                ->execute([$data['id'], $authUser['id_referencia'], $anterior['puntaje'], $puntaje]);
+        }
 
         $pdo->commit();
     } catch (Exception $e) {

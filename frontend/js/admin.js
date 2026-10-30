@@ -405,7 +405,8 @@ function editStudent(id) {
     document.getElementById('studentPassword').value = originalStudentPassword;
     document.getElementById('studentPassword').readOnly = true;
     document.getElementById('studentPassword').classList.remove('password-editable');
-    document.getElementById('studentName').value = s.name;
+    document.getElementById('studentFirstName').value = s.firstName || '';
+    document.getElementById('studentLastName').value = s.lastName || '';
     document.getElementById('studentEmail').value = s.email;
     document.getElementById('studentGrade').value = s.grade;
     document.getElementById('studentSeccion').value = s.seccion || '';
@@ -486,7 +487,8 @@ document.getElementById('studentForm')?.addEventListener('submit', async functio
 
     const student = {
         ...(id ? { id: parseInt(id) } : {}),
-        name: document.getElementById('studentName').value,
+        firstName: document.getElementById('studentFirstName').value.trim(),
+        lastName: document.getElementById('studentLastName').value.trim(),
         email: document.getElementById('studentEmail').value,
         identificacion: document.getElementById('studentIdentificacion').value.trim(),
         grade: document.getElementById('studentGrade').value,
@@ -497,7 +499,7 @@ document.getElementById('studentForm')?.addEventListener('submit', async functio
         const res = await apiFetch('/estudiantes/', { method: id ? 'PUT' : 'POST', body: JSON.stringify(student) });
         if (res.ok) {
             showToast(id ? 'Estudiante actualizado' : 'Estudiante creado');
-            addActivity(id ? `Editó ${student.name}` : `Agregó ${student.name}`);
+            addActivity(id ? `Editó ${student.firstName} ${student.lastName}` : `Agregó ${student.firstName} ${student.lastName}`);
             await loadStudentsPage();
             closeModal('studentModal');
         } else {
@@ -558,7 +560,8 @@ function editTeacher(id) {
     document.getElementById('professorPassword').value = originalTeacherPassword;
     document.getElementById('professorPassword').readOnly = true;
     document.getElementById('professorPassword').classList.remove('password-editable');
-    document.getElementById('professorName').value = t.name;
+    document.getElementById('professorFirstName').value = t.firstName || '';
+    document.getElementById('professorLastName').value = t.lastName || '';
     document.getElementById('professorEmail').value = t.email;
     document.getElementById('professorSpecialty').value = t.specialty;
     openModal('professorModal');
@@ -632,7 +635,8 @@ document.getElementById('professorForm')?.addEventListener('submit', async funct
 
     const teacher = {
         ...(id ? { id: parseInt(id) } : {}),
-        name: document.getElementById('professorName').value,
+        firstName: document.getElementById('professorFirstName').value.trim(),
+        lastName: document.getElementById('professorLastName').value.trim(),
         email: document.getElementById('professorEmail').value,
         identificacion: document.getElementById('professorIdentificacion').value.trim(),
         specialty: document.getElementById('professorSpecialty').value,
@@ -643,7 +647,7 @@ document.getElementById('professorForm')?.addEventListener('submit', async funct
         if (res.ok) {
             invalidateTeachersCache();
             showToast(id ? 'Profesor actualizado' : 'Profesor creado');
-            addActivity(id ? `Editó ${teacher.name}` : `Agregó ${teacher.name}`);
+            addActivity(id ? `Editó ${teacher.firstName} ${teacher.lastName}` : `Agregó ${teacher.firstName} ${teacher.lastName}`);
             await loadProfessorsPage();
             closeModal('professorModal');
         } else {

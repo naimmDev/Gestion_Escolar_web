@@ -22,7 +22,7 @@ if ($method === 'GET') {
 
     $stmt = $pdo->prepare("
         SELECT c.id, c.estudiante_id, c.materia_id, c.comentario, c.fecha,
-               e.nombre AS estudiante_nombre, m.nombre AS materia_nombre
+               CONCAT_WS(' ', e.nombre, e.apellido) AS estudiante_nombre, m.nombre AS materia_nombre
         FROM comentario c
         JOIN estudiante e ON c.estudiante_id = e.id
         JOIN materia    m ON c.materia_id    = m.id

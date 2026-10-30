@@ -24,7 +24,9 @@ if ($method === 'GET') {
     if ($authUser['rol'] === 'admin') {
         $search = trim($_GET['search'] ?? '');
         if ($search !== '') {
-            $where[]  = "(e.nombre LIKE ? OR s.nombre LIKE ?)";
+            $where[]  = "(e.nombre LIKE ? OR e.apellido LIKE ? OR CONCAT_WS(' ', e.nombre, e.apellido) LIKE ? OR s.nombre LIKE ?)";
+            $params[] = "%$search%";
+            $params[] = "%$search%";
             $params[] = "%$search%";
             $params[] = "%$search%";
         }
@@ -43,7 +45,7 @@ if ($method === 'GET') {
     $selectFields = "
         SELECT m.id, m.estudiante_id AS studentId, m.materia_id AS subjectId,
            m.fecha_asignacion AS enrollmentDate,
-           e.nombre AS studentName, e.grado AS studentGrade, e.email AS studentEmail,
+           CONCAT_WS(' ', e.nombre, e.apellido) AS studentName, e.apellido AS studentLastName, e.grado AS studentGrade, e.email AS studentEmail,
            e.seccion AS studentSeccion,
            s.nombre AS subjectName, s.codigo AS subjectCode,
            p.nombre AS teacherName
@@ -51,7 +53,7 @@ if ($method === 'GET') {
 
     // Profesor y estudiante reciben todo sin paginar
     if ($authUser['rol'] !== 'admin') {
-        $stmt = $pdo->prepare("$selectFields $baseQuery ORDER BY e.nombre ASC");
+        $stmt = $pdo->prepare("$selectFields $baseQuery ORDER BY e.apellido ASC, e.nombre ASC");
         $stmt->execute($params);
         sendSuccess($stmt->fetchAll(PDO::FETCH_ASSOC));
     }
@@ -64,7 +66,7 @@ if ($method === 'GET') {
     $countStmt->execute($params);
     $total = (int) $countStmt->fetchColumn();
 
-    $stmt = $pdo->prepare("$selectFields $baseQuery ORDER BY e.nombre ASC LIMIT $perPage OFFSET $offset");
+    $stmt = $pdo->prepare("$selectFields $baseQuery ORDER BY e.apellido ASC, e.nombre ASC LIMIT $perPage OFFSET $offset");
     $stmt->execute($params);
 
     sendSuccess([

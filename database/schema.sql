@@ -44,6 +44,7 @@ CREATE TABLE `comentario` (
 CREATE TABLE `estudiante` (
   `id` int(11) NOT NULL,
   `nombre` varchar(100) NOT NULL,
+  `apellido` varchar(100) NOT NULL,
   `email` varchar(100) NOT NULL,
   `identificacion` varchar(20) NOT NULL,
   `grado` varchar(10) DEFAULT NULL,
@@ -148,6 +149,7 @@ CREATE TABLE `pregunta_seguridad` (
 CREATE TABLE `profesor` (
   `id` int(11) NOT NULL,
   `nombre` varchar(100) NOT NULL,
+  `apellido` varchar(100) NOT NULL,
   `email` varchar(100) NOT NULL,
   `identificacion` varchar(20) NOT NULL,
   `especialidad` varchar(100) DEFAULT NULL,

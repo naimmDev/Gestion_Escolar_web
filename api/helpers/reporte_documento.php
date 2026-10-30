@@ -107,10 +107,10 @@ function documentoGrupal(PDO $pdo, int $materiaId, ?string $grado, ?string $trim
 
         if ($trimestre !== null) {
             $d = $res[$trimestre];
-            $filas[] = [$est['nombre'], textoGrupo($est), fmtNota($d['promedio_parciales']), fmtNota($d['promedio_apreciacion']),
+            $filas[] = [$est['nombre_lista'], textoGrupo($est), fmtNota($d['promedio_parciales']), fmtNota($d['promedio_apreciacion']),
                         fmtNota($d['examen_trimestral']), fmtNota($d['nota_trimestral'])];
         } else {
-            $filas[] = [$est['nombre'], textoGrupo($est),
+            $filas[] = [$est['nombre_lista'], textoGrupo($est),
                         ...array_map(fn($t) => fmtNota($res[$t]['nota_trimestral']), TRIMESTRES_REPORTE),
                         fmtNota($res['promedio_final']), estadoNota($res['promedio_final'])];
         }
