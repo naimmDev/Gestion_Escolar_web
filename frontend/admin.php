@@ -98,7 +98,7 @@
                 class="btn-primary" onclick="openStudentModal()">+ Agregar</button>
         </div>
         <div class="search-bar"><input type="text" id="searchStudent"
-                placeholder="Buscar por nombre, email o identificación..."></div>
+                placeholder="Buscar por nombre, apellido, email o identificación..."></div>
         <div class="table-container">
             <table class="data-table">
                 <thead>
@@ -125,7 +125,7 @@
                 class="btn-primary" onclick="openProfessorModal()">+ Agregar</button>
         </div>
         <div class="search-bar"><input type="text" id="searchProfessor"
-                placeholder="Buscar por nombre, email o especialidad..."></div>
+                placeholder="Buscar por nombre, apellido, email o especialidad..."></div>
         <div class="table-container">
             <table class="data-table">
                 <thead>
@@ -240,7 +240,7 @@
                             <label for="reportStudentSearch">Estudiante (opcional)</label>
                             <div class="search-box">
                                 <i class="fas fa-search"></i>
-                                <input type="text" id="reportStudentSearch" placeholder="Buscar por nombre o identificación..." autocomplete="off">
+                                <input type="text" id="reportStudentSearch" placeholder="Buscar por nombre, apellido o identificación..." autocomplete="off">
                             </div>
                             <select id="reportStudentSelect" class="student-list" size="6" title="Lista de estudiantes"></select>
                             <small id="reportStudentCount" class="student-count"></small>
@@ -386,7 +386,7 @@
     <div class="search-box">
         <i class="fas fa-search"></i>
         <input type="text" id="subjectTeacherSearch"
-               placeholder="Buscar por nombre, identificación o especialidad..."
+               placeholder="Buscar por nombre, apellido, identificación o especialidad..."
                autocomplete="off">
     </div>
     <select id="subjectTeacher" class="student-list" size="6" title="Seleccione un profesor">
@@ -425,7 +425,7 @@
                 <label for="enrollmentStudentSearch">Estudiante</label>
                 <div class="search-box">
                     <i class="fas fa-search"></i>
-                    <input type="text" id="enrollmentStudentSearch" placeholder="Buscar por nombre o identificación..." autocomplete="off">
+                    <input type="text" id="enrollmentStudentSearch" placeholder="Buscar por nombre, apellido o identificación..." autocomplete="off">
                 </div>
                 <select id="enrollmentStudent" class="student-list" size="6" title="Seleccione un estudiante"></select>
                 <small id="enrollmentStudentCount" class="student-count"></small>
@@ -472,6 +472,6 @@
 </main>
 <script src="js/api.js?v=3"></script>
 <script src="js/reportes.js?v=4"></script>
-<script src="js/admin.js?v=8"></script>
+<script src="js/admin.js?v=9"></script>
 </body>
 </html>

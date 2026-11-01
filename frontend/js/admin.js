@@ -452,8 +452,9 @@ async function resetStudentAccess(id) {
     if (!result.isConfirmed) return;
 
     const newPassword = generatePassword();
-    const payload = {
-        id: s.id, name: s.name, email: s.email, identificacion: s.identificacion,
+      const payload = {
+        id: s.id, firstName: s.firstName, lastName: s.lastName,
+        email: s.email, identificacion: s.identificacion,
         grade: s.grade, seccion: s.seccion, initialPassword: newPassword
     };
 
@@ -600,11 +601,11 @@ async function resetTeacherAccess(id) {
     if (!result.isConfirmed) return;
 
     const newPassword = generatePassword();
-    const payload = {
-        id: t.id, name: t.name, email: t.email, identificacion: t.identificacion,
+      const payload = {
+        id: t.id, firstName: t.firstName, lastName: t.lastName,
+        email: t.email, identificacion: t.identificacion,
         specialty: t.specialty, initialPassword: newPassword
     };
-
     try {
         const res = await apiFetch('/profesores/', { method: 'PUT', body: JSON.stringify(payload) });
         if (res.ok) {

@@ -57,6 +57,7 @@ function normalizeEnrollment(e) {
         studentId:    parseInt(e.studentId),
         subjectId:    parseInt(e.subjectId),
         studentName:  e.studentName  || '',
+        studentLastName: e.studentLastName || '',
         studentGrade: e.studentGrade || '',
         studentEmail: e.studentEmail || '',
         studentSeccion: e.studentSeccion || '',
@@ -113,6 +114,7 @@ async function loadData() {
                 studentMap[e.studentId] = {
                     id: e.studentId,
                     name: e.studentName,
+                    lastName: e.studentLastName || '',
                     grade: e.studentGrade,
                     email: e.studentEmail,
                     seccion: e.studentSeccion || ''
@@ -342,7 +344,9 @@ function renderStudentsByGrade() {
         return;
     }
 
-    students.sort((a, b) => a.name.localeCompare(b.name));
+       students.sort((a, b) =>
+        (a.lastName || '').localeCompare(b.lastName || '', 'es') ||
+        a.name.localeCompare(b.name, 'es'));
 
     // Agrupar grado → sección
     const grouped = {};
