@@ -146,7 +146,31 @@ window.volverAlPanel = function () {
     window.location.href = routes[role] || 'index.html';
 };
 
+// ==================== CONTACTO CON EL ADMINISTRADOR ====================
+async function cargarContactoAdmin(role) {
+    if (role === 'admin') return;
+    let c = {};
+    try { c = await apiGet('/contacto/admin.php'); } catch (e) { /* usa el texto genérico */ }
+
+    const filas = [];
+    if (c.correo)   filas.push(`<strong>Correo:</strong> <a href="mailto:${escapeHtmlAyuda(c.correo)}">${escapeHtmlAyuda(c.correo)}</a>`);
+    if (c.telefono) filas.push(`<strong>Teléfono:</strong> ${escapeHtmlAyuda(c.telefono)}`);
+    if (c.horario)  filas.push(`<strong>Horario:</strong> ${escapeHtmlAyuda(c.horario)}`);
+
+    const detalle = filas.length
+        ? filas.join('<br>')
+        : 'Comuníquese directamente con el administrador de su institución.';
+
+    AYUDA_COMUN.unshift({
+        q: '¿Cómo contacto al administrador?',
+        a: 'Puede comunicarse con el administrador para restablecer su acceso, desbloquear su cuenta, reportar un cambio que no esperaba o corregir notas de un trimestre cerrado.<br><br>' + detalle
+    });
+}
+
 // ==================== INICIALIZAR ====================
 const role = getCurrentRole();
-allSectionsCache = buildSections(role);
-renderAyuda(allSectionsCache);
+(async () => {
+    await cargarContactoAdmin(role);
+    allSectionsCache = buildSections(role);
+    renderAyuda(allSectionsCache);
+})();

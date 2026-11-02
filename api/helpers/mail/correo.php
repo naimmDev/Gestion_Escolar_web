@@ -57,30 +57,34 @@ function enviarCorreo(PDO $pdo, string $evento, ?string $destinatario, array $pl
         return 'fallido';
     }
 
+    static $mail = null;   // conexión SMTP reutilizada entre envíos de la misma petición
     try {
         require_once $autoload;
-        $mail = new PHPMailer(true);
-        $mail->isSMTP();
-        $mail->Host    = $cfg['host'];
-        $mail->Port    = (int)$cfg['puerto'];
-        $mail->Timeout = 8;
-        $mail->CharSet = 'UTF-8';
-
-        $mail->SMTPAuth = $cfg['usuario'] !== '';
-        if ($mail->SMTPAuth) {
-            $mail->Username = $cfg['usuario'];
-            $mail->Password = $cfg['clave'];
-        }
-        if ($cfg['seguridad'] === 'tls') {
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        } elseif ($cfg['seguridad'] === 'ssl') {
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+        if ($mail === null) {
+            $mail = new PHPMailer(true);
+            $mail->isSMTP();
+            $mail->Host          = $cfg['host'];
+            $mail->Port          = (int)$cfg['puerto'];
+            $mail->Timeout       = 8;
+            $mail->CharSet       = 'UTF-8';
+            $mail->SMTPKeepAlive = true;
+            $mail->SMTPAuth      = $cfg['usuario'] !== '';
+            if ($mail->SMTPAuth) {
+                $mail->Username = $cfg['usuario'];
+                $mail->Password = $cfg['clave'];
+            }
+            if ($cfg['seguridad'] === 'tls') {
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            } elseif ($cfg['seguridad'] === 'ssl') {
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+            } else {
+                $mail->SMTPSecure = '';
+                $mail->SMTPAutoTLS = false;
+            }
+            $mail->setFrom($cfg['remitente'] ?: $cfg['usuario'], $cfg['nombre_remitente']);
         } else {
-            $mail->SMTPSecure = '';
-            $mail->SMTPAutoTLS = false;
+            $mail->clearAllRecipients();
         }
-
-        $mail->setFrom($cfg['remitente'] ?: $cfg['usuario'], $cfg['nombre_remitente']);
 
         if ($cfg['desvio'] !== '') {
             $mail->addAddress($cfg['desvio']);
@@ -98,7 +102,28 @@ function enviarCorreo(PDO $pdo, string $evento, ?string $destinatario, array $pl
         registrarCorreo($pdo, $evento, $destinatario, $plantilla['asunto'], 'enviado');
         return 'enviado';
     } catch (Throwable $e) {
+        if ($mail !== null) { try { $mail->smtpClose(); } catch (Throwable $x) {} }
         registrarCorreo($pdo, $evento, $destinatario, $plantilla['asunto'], 'fallido', $e->getMessage());
         return 'fallido';
     }
+}
+
+/** Encola el correo y lo envía DESPUÉS de responder al navegador (no retrasa la acción del usuario). */
+function enviarCorreoDiferido(PDO $pdo, string $evento, ?string $destinatario, array $plantilla): void {
+    if (empty(configCorreo()['activo'])) return;
+    if (!isset($GLOBALS['__colaCorreos'])) {
+        $GLOBALS['__colaCorreos'] = [];
+        register_shutdown_function(function () {
+            ignore_user_abort(true);
+            set_time_limit(120);
+            foreach ($GLOBALS['__colaCorreos'] as [$pdo, $ev, $dest, $pl]) {
+                enviarCorreo($pdo, $ev, $dest, $pl);
+            }
+        });
+    }
+    $GLOBALS['__colaCorreos'][] = [$pdo, $evento, $destinatario, $plantilla];
+}
+
+function hayCorreosPendientes(): bool {
+    return !empty($GLOBALS['__colaCorreos']);
 }

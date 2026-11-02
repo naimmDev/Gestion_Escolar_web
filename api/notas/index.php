@@ -120,9 +120,9 @@ elseif ($method === 'POST') {
     $dest = $pdo->prepare("SELECT CONCAT_WS(' ', e.nombre, e.apellido) AS nombre, e.email, m.nombre AS materia
                            FROM estudiante e, materia m WHERE e.id = ? AND m.id = ?");
     $dest->execute([$data['estudiante_id'], $data['materia_id']]);
-    if ($d = $dest->fetch(PDO::FETCH_ASSOC)) {
-        enviarCorreo($pdo, 'nota_nueva', $d['email'],
-            plantillaNotaNueva($d['nombre'], $d['materia'], $data['tipo'], $puntaje, $data['trimestre'], $data['nombre'] ?? null));
+        if ($d = $dest->fetch(PDO::FETCH_ASSOC)) {
+        enviarCorreoDiferido($pdo, 'nota_nueva', $d['email'],
+        plantillaNotaNueva($d['nombre'], $d['materia'], $data['tipo'], $data['trimestre'], $data['nombre'] ?? null));
     }
 
     sendCreated(["id" => $notaId]);

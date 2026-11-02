@@ -68,7 +68,7 @@ elseif ($method === 'PUT') {
     if (($cambios['estado'] ?? null) === 'cerrado' && $actual['estado'] === 'abierto') {
         $profes = $pdo->query("SELECT CONCAT_WS(' ', nombre, apellido) AS nombre, email FROM profesor")->fetchAll(PDO::FETCH_ASSOC);
         foreach ($profes as $p) {
-            enviarCorreo($pdo, 'trimestre_cerrado', $p['email'], plantillaTrimestreCerrado($p['nombre'], $data['trimestre']));
+            enviarCorreoDiferido($pdo, 'trimestre_cerrado', $p['email'], plantillaTrimestreCerrado($p['nombre'], $data['trimestre']));
         }
     }
 

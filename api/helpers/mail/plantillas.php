@@ -29,6 +29,20 @@ function marcoCorreo(string $titulo, string $contenidoHtml, bool $boton = true):
         . '</div></body></html>';
 }
 
+function contactoAdmin(): array {
+    $cred = require __DIR__ . '/../../config/credenciales.php';
+    return is_array($cred['contacto_admin'] ?? null) ? $cred['contacto_admin'] : [];
+}
+
+function lineaContactoAdmin(): string {
+    $c = contactoAdmin();
+    $partes = [];
+    if (!empty($c['correo']))   $partes[] = '<a href="mailto:' . h($c['correo']) . '">' . h($c['correo']) . '</a>';
+    if (!empty($c['telefono'])) $partes[] = h($c['telefono']);
+    $detalle = $partes ? ': ' . implode(' · ', $partes) : '';
+    return '<p>Puedes contactar al administrador' . $detalle . '. También encontrarás esta información en la sección <strong>Ayuda</strong> del sistema.</p>';
+}
+
 function filaDato(string $etiqueta, string $valor): string {
     // Etiqueta arriba y valor debajo (apilado): no se desborda en pantallas angostas aunque el valor sea largo.
     return '<div style="margin:0 0 12px;">'
@@ -50,45 +64,49 @@ function plantillaAccesoRestablecido(string $nombre, string $email, string $pass
     $html = marcoCorreo('Tu acceso fue restablecido',
         '<p>Hola <strong>' . h($nombre) . '</strong>, el administrador restableció tu acceso al sistema.</p>'
         . '<div style="margin:12px 0;">' . filaDato('Usuario (correo)', $email) . filaDato('Nueva contraseña inicial', $password) . '</div>'
-        . '<p>Deberás <strong>cambiarla</strong> y configurar de nuevo tus preguntas de seguridad en tu próximo ingreso. Si no esperabas este cambio, avisa al administrador.</p>');
+        . '<p>Deberás <strong>cambiarla</strong> y configurar de nuevo tus preguntas de seguridad en tu próximo ingreso.</p>'
+        . '<p><strong>¿No esperabas este cambio?</strong> Avisa al administrador cuanto antes.</p>'
+        . lineaContactoAdmin());
+    $c = contactoAdmin();
     return ['asunto' => 'Tu acceso fue restablecido', 'html' => $html,
-        'texto' => "Hola $nombre, el administrador restableció tu acceso.\nUsuario: $email\nNueva contraseña inicial: $password\nCámbiala en tu próximo ingreso.\n" . urlSistema()];
+        'texto' => "Hola $nombre, el administrador restableció tu acceso.\nUsuario: $email\nNueva contraseña inicial: $password\nCámbiala en tu próximo ingreso. Si no esperabas este cambio, avisa al administrador" . (!empty($c['correo']) ? " ({$c['correo']})" : '') . ".\n" . urlSistema()];
 }
 
-function plantillaNotaNueva(string $estudiante, string $materia, string $tipo, float $puntaje, string $trimestre, ?string $actividad): array {
+function plantillaNotaNueva(string $estudiante, string $materia, string $tipo, string $trimestre, ?string $actividad): array {
     $tipos = ['PARCIAL' => 'Parcial', 'EXAMEN_TRIMESTRAL' => 'Examen trimestral', 'APRECIACION' => 'Apreciación'];
     $tipoTxt = $tipos[$tipo] ?? $tipo;
-    $nota = number_format($puntaje, 1);
     $filas = filaDato('Materia', $materia) . filaDato('Evaluación', $tipoTxt)
         . (($actividad !== null && $actividad !== '') ? filaDato('Actividad', $actividad) : '')
-        . filaDato('Trimestre', $trimestre) . filaDato('Nota', $nota);
+        . filaDato('Trimestre', $trimestre);
     $html = marcoCorreo('Nueva nota registrada',
-        '<p>Hola <strong>' . h($estudiante) . '</strong>, tu profesor registró una nueva nota.</p><div style="margin:12px 0;">' . $filas . '</div>');
-    return ['asunto' => "Nueva nota en $materia: $nota", 'html' => $html,
-        'texto' => "Hola $estudiante, se registró una nueva nota en $materia ($tipoTxt, $trimestre): $nota.\n" . urlSistema()];
+        '<p>Hola <strong>' . h($estudiante) . '</strong>, tu profesor registró una nueva nota. Ingresa al sistema para consultarla.</p>'
+        . '<div style="margin:12px 0;">' . $filas . '</div>');
+    return ['asunto' => "Nueva nota en $materia", 'html' => $html,
+        'texto' => "Hola $estudiante, se registró una nueva nota en $materia ($tipoTxt, $trimestre). Ingresa al sistema para consultarla.\n" . urlSistema()];
 }
 
 function plantillaTrimestreCerrado(string $profesor, string $trimestre): array {
     $html = marcoCorreo('Trimestre cerrado',
-        '<p>Hola <strong>' . h($profesor) . '</strong>, el administrador cerró el <strong>' . h($trimestre) . '</strong>.</p>'
-        . '<p>A partir de ahora no es posible registrar, editar ni eliminar notas de ese trimestre. Si necesitas hacer una corrección, contacta al administrador para que lo abra de nuevo.</p>');
+        '<p>Hola <strong>' . h($profesor) . '</strong>, el <strong>' . h($trimestre) . '</strong> ha cerrado.</p>'
+        . '<p>Ya no es posible registrar, editar ni eliminar notas en ese trimestre.</p>'
+        . lineaContactoAdmin());
     return ['asunto' => "$trimestre cerrado", 'html' => $html,
-        'texto' => "Hola $profesor, el administrador cerró el $trimestre. Ya no se pueden registrar, editar ni eliminar notas de ese trimestre.\n" . urlSistema()];
+        'texto' => "Hola $profesor, el $trimestre ha cerrado. Ya no es posible registrar, editar ni eliminar notas en ese trimestre.\n" . urlSistema()];
 }
 
-function plantillaComentarioNuevo(string $profesor, string $estudiante, string $materia, string $comentario): array {
-    $extracto = mb_strlen($comentario) > 300 ? mb_substr($comentario, 0, 300) . '…' : $comentario;
+function plantillaComentarioNuevo(string $profesor, string $estudiante, string $materia): array {
     $html = marcoCorreo('Nuevo comentario de un estudiante',
-        '<p>Hola <strong>' . h($profesor) . '</strong>, <strong>' . h($estudiante) . '</strong> dejó un comentario en <strong>' . h($materia) . '</strong>:</p>'
-        . '<blockquote style="margin:12px 0;padding:10px 16px;border-left:3px solid #c9a84c;background:#faf6ee;">' . nl2br(h($extracto)) . '</blockquote>');
+        '<p>Hola <strong>' . h($profesor) . '</strong>, <strong>' . h($estudiante) . '</strong> dejó un comentario en <strong>' . h($materia) . '</strong>.</p>'
+        . '<p>Ingresa al sistema, sección <strong>Comentarios</strong>, para leerlo.</p>');
     return ['asunto' => "Nuevo comentario en $materia", 'html' => $html,
-        'texto' => "Hola $profesor, $estudiante dejó un comentario en $materia:\n\n$extracto\n\n" . urlSistema()];
+        'texto' => "Hola $profesor, $estudiante dejó un comentario en $materia. Ingresa al sistema (sección Comentarios) para leerlo.\n" . urlSistema()];
 }
 
 function plantillaCuentaBloqueada(string $nombre, int $minutos): array {
     $html = marcoCorreo('Tu cuenta fue bloqueada temporalmente',
         '<p>Hola <strong>' . h($nombre) . '</strong>, detectamos varios intentos fallidos de ingreso a tu cuenta, por lo que la bloqueamos durante <strong>' . $minutos . ' minutos</strong>.</p>'
-        . '<p>Si fuiste tú, espera ese tiempo e intenta de nuevo (o usa "Olvidé mi contraseña"). Si no fuiste tú, avisa al administrador.</p>', false);
+        . '<p>Si fuiste tú, espera ese tiempo e intenta de nuevo (o usa "¿Olvidaste tu contraseña?"). <strong>Si no fuiste tú</strong>, avisa al administrador.</p>'
+        . lineaContactoAdmin(), false);
     return ['asunto' => 'Tu cuenta fue bloqueada temporalmente', 'html' => $html,
         'texto' => "Hola $nombre, tu cuenta fue bloqueada $minutos minutos por varios intentos fallidos de ingreso. Si no fuiste tú, avisa al administrador."];
 }

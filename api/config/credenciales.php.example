@@ -22,4 +22,10 @@ return [
         // Enlace que aparece en el botón de los correos.
         'url_sistema'      => 'http://localhost/gestion_escolar/frontend/index.html',
     ],
+
+    'contacto_admin' => [
+        'correo'   => 'admin@escuela.edu',
+        'telefono' => '',          // opcional
+        'horario'  => '',          // opcional, ej. 'Lunes a viernes, 8:00 a.m. - 4:00 p.m.'
+    ],
 ];

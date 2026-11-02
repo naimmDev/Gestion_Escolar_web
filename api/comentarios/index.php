@@ -55,9 +55,9 @@ elseif ($method === 'POST') {
                                   (SELECT CONCAT_WS(' ', nombre, apellido) FROM estudiante WHERE id = ?) AS estudiante
                            FROM materia m JOIN profesor p ON p.id = m.profesor_id WHERE m.id = ?");
     $dest->execute([$authUser['id_referencia'], $data['materia_id']]);
-    if ($d = $dest->fetch(PDO::FETCH_ASSOC)) {
-        enviarCorreo($pdo, 'comentario_nuevo', $d['email'],
-            plantillaComentarioNuevo($d['profesor'], $d['estudiante'] ?? 'Un estudiante', $d['materia'], $data['comentario']));
+        if ($d = $dest->fetch(PDO::FETCH_ASSOC)) {
+        enviarCorreoDiferido($pdo, 'comentario_nuevo', $d['email'],
+            plantillaComentarioNuevo($d['profesor'], $d['estudiante'] ?? 'Un estudiante', $d['materia']));
     }
 
     sendCreated(["id" => $comentarioId]);

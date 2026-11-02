@@ -47,7 +47,7 @@ if (!$valid) {
             $bloqueadoHasta = date('Y-m-d H:i:s', strtotime('+' . MINUTOS_BLOQUEO . ' minutes'));
             $pdo->prepare("UPDATE usuario SET intentos_fallidos = 0, bloqueado_hasta = ? WHERE id = ?")
                 ->execute([$bloqueadoHasta, $user['id']]);
-            enviarCorreo($pdo, 'cuenta_bloqueada', $user['email'], plantillaCuentaBloqueada((string)$user['nombre'], MINUTOS_BLOQUEO));
+            enviarCorreoDiferido($pdo, 'cuenta_bloqueada', $user['email'], plantillaCuentaBloqueada((string)$user['nombre'], MINUTOS_BLOQUEO));
         } else {
             $pdo->prepare("UPDATE usuario SET intentos_fallidos = ? WHERE id = ?")
                 ->execute([$intentos, $user['id']]);
