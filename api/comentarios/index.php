@@ -1,6 +1,7 @@
 <?php
 require '../config/db.php';
 require '../config/auth_middleware.php';
+require '../helpers/mail/correo.php';
 
 //para que el analizador y editor de código reconozca la variable $authUser y su tipo, se agrega esta anotación:
 /** @var array{usuario_id: int, rol: string, id_referencia: int|null} $authUser */
@@ -47,8 +48,19 @@ elseif ($method === 'POST') {
 
     $pdo->prepare("INSERT INTO comentario (estudiante_id, materia_id, comentario, fecha) VALUES (?, ?, ?, NOW())")
         ->execute([$authUser['id_referencia'], $data['materia_id'], $data['comentario']]);
+    $comentarioId = $pdo->lastInsertId();
 
-    sendCreated(["id" => $pdo->lastInsertId()]);
+    // Aviso al profesor de la materia (si el correo falla, el comentario igual queda guardado)
+    $dest = $pdo->prepare("SELECT CONCAT_WS(' ', p.nombre, p.apellido) AS profesor, p.email, m.nombre AS materia,
+                                  (SELECT CONCAT_WS(' ', nombre, apellido) FROM estudiante WHERE id = ?) AS estudiante
+                           FROM materia m JOIN profesor p ON p.id = m.profesor_id WHERE m.id = ?");
+    $dest->execute([$authUser['id_referencia'], $data['materia_id']]);
+    if ($d = $dest->fetch(PDO::FETCH_ASSOC)) {
+        enviarCorreo($pdo, 'comentario_nuevo', $d['email'],
+            plantillaComentarioNuevo($d['profesor'], $d['estudiante'] ?? 'Un estudiante', $d['materia'], $data['comentario']));
+    }
+
+    sendCreated(["id" => $comentarioId]);
 }
 
 else {

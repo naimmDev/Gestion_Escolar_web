@@ -38,6 +38,22 @@ CREATE TABLE `comentario` (
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `correo_log`
+--
+
+CREATE TABLE `correo_log` (
+  `id` int(11) NOT NULL,
+  `evento` varchar(40) NOT NULL,
+  `destinatario` varchar(100) NOT NULL,
+  `asunto` varchar(200) DEFAULT NULL,
+  `estado` enum('enviado','fallido') NOT NULL,
+  `error` varchar(255) DEFAULT NULL,
+  `fecha` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `estudiante`
 --
 
@@ -249,6 +265,14 @@ ALTER TABLE `nota`
   ADD KEY `profesor_id` (`profesor_id`);
 
 --
+-- Indices de la tabla `correo_log`
+--
+ALTER TABLE `correo_log`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_correo_log_fecha` (`fecha`),
+  ADD KEY `idx_correo_log_estado` (`estado`);
+
+--
 -- Indices de la tabla `nota_auditoria`
 --
 ALTER TABLE `nota_auditoria`
@@ -335,6 +359,12 @@ ALTER TABLE `matricula`
 -- AUTO_INCREMENT de la tabla `nota`
 --
 ALTER TABLE `nota`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT de la tabla `correo_log`
+--
+ALTER TABLE `correo_log`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --

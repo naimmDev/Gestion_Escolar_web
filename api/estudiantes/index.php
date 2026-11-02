@@ -2,6 +2,7 @@
 require '../config/db.php';
 require '../config/auth_middleware.php';
 require '../helpers/nombres.php';
+require '../helpers/mail/correo.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -132,9 +133,12 @@ elseif ($method === 'POST') {
             ->execute([$data['email'], $passwordHash, $nombreCompleto, $estudianteId]);
     }
 
+    $correo = enviarCorreo($pdo, 'usuario_creado', $data['email'], plantillaUsuarioCreado($nombreCompleto, 'estudiante', $data['email'], $passwordPlain));
+
     sendCreated([
         "id"              => $estudianteId,
         "initialPassword" => $passwordPlain,
+        "correo"          => $correo,   // enviado | fallido | desactivado
         "message"         => "Estudiante creado. Contraseña inicial: $passwordPlain"
     ]);
 }
@@ -192,7 +196,12 @@ elseif ($method === 'PUT') {
         }
     }
 
-    sendSuccess(["message" => "Estudiante actualizado"]);
+    $correo = 'no_aplica';
+    if ($passwordPlain) {
+        $correo = enviarCorreo($pdo, 'acceso_restablecido', $data['email'], plantillaAccesoRestablecido($nombreCompleto, $data['email'], $passwordPlain));
+    }
+
+    sendSuccess(["message" => "Estudiante actualizado", "correo" => $correo]);
 }
 
 else {

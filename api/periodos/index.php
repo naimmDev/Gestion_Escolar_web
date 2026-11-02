@@ -2,6 +2,7 @@
 require '../config/db.php';
 require '../config/auth_middleware.php';
 require '../helpers/periodos.php';
+require '../helpers/mail/correo.php';
 /** @var array{usuario_id: int, rol: string, id_referencia: int|null} $authUser */
 
 $method = $_SERVER['REQUEST_METHOD'];
@@ -48,7 +49,7 @@ elseif ($method === 'PUT') {
     }
     if (count($cambios) === 0) sendError("No hay campos para actualizar", 400);
 
-    $stmt = $pdo->prepare("SELECT fecha_inicio, fecha_fin FROM periodo WHERE trimestre = ?");
+    $stmt = $pdo->prepare("SELECT fecha_inicio, fecha_fin, estado FROM periodo WHERE trimestre = ?");
     $stmt->execute([$data['trimestre']]);
     $actual = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$actual) sendError("El período no existe", 404);
@@ -62,6 +63,14 @@ elseif ($method === 'PUT') {
     $set = implode(', ', array_map(fn($c) => "$c = ?", array_keys($cambios)));
     $pdo->prepare("UPDATE periodo SET $set WHERE trimestre = ?")
         ->execute([...array_values($cambios), $data['trimestre']]);
+
+    // Al pasar de abierto a cerrado, se avisa a los profesores (los fallos de correo no afectan el cierre)
+    if (($cambios['estado'] ?? null) === 'cerrado' && $actual['estado'] === 'abierto') {
+        $profes = $pdo->query("SELECT CONCAT_WS(' ', nombre, apellido) AS nombre, email FROM profesor")->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($profes as $p) {
+            enviarCorreo($pdo, 'trimestre_cerrado', $p['email'], plantillaTrimestreCerrado($p['nombre'], $data['trimestre']));
+        }
+    }
 
     sendSuccess(listarPeriodos($pdo));
 }

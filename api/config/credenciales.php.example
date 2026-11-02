@@ -4,4 +4,22 @@ return [
     'db'   => 'gestion_escolar',
     'user' => 'root',
     'pass' => '',
+
+    // Notificaciones por correo (opcional). Si falta este bloque o 'activo' es false,
+    // el sistema funciona igual pero no envía correos.
+    'correo' => [
+        'activo'           => false,
+        'host'             => 'smtp.gmail.com',
+        'puerto'           => 587,
+        'seguridad'        => 'tls',          // 'tls' (587), 'ssl' (465) o '' (sin cifrado, solo pruebas locales)
+        'usuario'          => 'tu_cuenta@gmail.com',
+        'clave'            => 'contraseña de aplicación de Google (16 caracteres)',
+        'remitente'        => 'tu_cuenta@gmail.com',
+        'nombre_remitente' => 'Sistema de Gestión Escolar',
+        // Si tiene valor, TODOS los correos se envían a esta dirección (modo pruebas);
+        // el destinatario real se indica en el asunto. Dejar vacío en producción/demo.
+        'desvio'           => '',
+        // Enlace que aparece en el botón de los correos.
+        'url_sistema'      => 'http://localhost/gestion_escolar/frontend/index.html',
+    ],
 ];

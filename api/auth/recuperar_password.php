@@ -1,5 +1,6 @@
 <?php
 require '../config/db.php';
+require '../helpers/mail/correo.php';
 
 // Forzar respuesta JSON incluso en errores fatales
 error_reporting(E_ALL);
@@ -34,11 +35,11 @@ $errorGenerico = "Identificación, pregunta o respuesta incorrecta";
 
 // Buscar usuario por identificación
 $stmt = $pdo->prepare("
-    SELECT u.id, u.intentos_fallidos, u.bloqueado_hasta FROM usuario u
+    SELECT u.id, u.email, u.nombre, u.intentos_fallidos, u.bloqueado_hasta FROM usuario u
     JOIN estudiante e ON u.id_referencia = e.id AND u.rol = 'estudiante'
     WHERE e.identificacion = ?
     UNION
-    SELECT u.id, u.intentos_fallidos, u.bloqueado_hasta FROM usuario u
+    SELECT u.id, u.email, u.nombre, u.intentos_fallidos, u.bloqueado_hasta FROM usuario u
     JOIN profesor p ON u.id_referencia = p.id AND u.rol = 'profesor'
     WHERE p.identificacion = ?
 ");
@@ -77,6 +78,7 @@ if (!$respuestaValida) {
         $bloqueadoHasta = date('Y-m-d H:i:s', strtotime('+' . MINUTOS_BLOQUEO . ' minutes'));
         $pdo->prepare("UPDATE usuario SET intentos_fallidos = 0, bloqueado_hasta = ? WHERE id = ?")
             ->execute([$bloqueadoHasta, $user['id']]);
+        enviarCorreo($pdo, 'cuenta_bloqueada', $user['email'], plantillaCuentaBloqueada((string)$user['nombre'], MINUTOS_BLOQUEO));
     } else {
         $pdo->prepare("UPDATE usuario SET intentos_fallidos = ? WHERE id = ?")
             ->execute([$intentos, $user['id']]);

@@ -3,6 +3,7 @@ require '../config/db.php';
 require '../config/auth_middleware.php';
 require '../helpers/notas_calculo.php';
 require '../helpers/periodos.php';
+require '../helpers/mail/correo.php';
 //para que el analizador y editor de código reconozca la variable $authUser y su tipo, se agrega esta anotación:
 /** @var array{usuario_id: int, rol: string, id_referencia: int|null} $authUser */
 
@@ -113,8 +114,18 @@ elseif ($method === 'POST') {
             $data['tipo'], $tipoActividad, $data['nombre'] ?? null,
             $puntaje, $data['trimestre'], $data['comentario'] ?? null
         ]);
+    $notaId = $pdo->lastInsertId();
 
-    sendCreated(["id" => $pdo->lastInsertId()]);
+    // Aviso al estudiante (si el correo falla, la nota igual queda guardada)
+    $dest = $pdo->prepare("SELECT CONCAT_WS(' ', e.nombre, e.apellido) AS nombre, e.email, m.nombre AS materia
+                           FROM estudiante e, materia m WHERE e.id = ? AND m.id = ?");
+    $dest->execute([$data['estudiante_id'], $data['materia_id']]);
+    if ($d = $dest->fetch(PDO::FETCH_ASSOC)) {
+        enviarCorreo($pdo, 'nota_nueva', $d['email'],
+            plantillaNotaNueva($d['nombre'], $d['materia'], $data['tipo'], $puntaje, $data['trimestre'], $data['nombre'] ?? null));
+    }
+
+    sendCreated(["id" => $notaId]);
 }
 
 elseif ($method === 'PUT') {
