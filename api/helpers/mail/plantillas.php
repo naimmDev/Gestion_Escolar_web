@@ -18,25 +18,29 @@ function marcoCorreo(string $titulo, string $contenidoHtml, bool $boton = true):
     $btn = ($boton && $url !== '')
         ? '<p style="text-align:center;margin:28px 0 8px;"><a href="' . h($url) . '" style="background:#8B0000;color:#f5e6b8;padding:12px 28px;text-decoration:none;border-radius:2px;font-family:Georgia,serif;letter-spacing:1px;">Ir al sistema</a></p>'
         : '';
-    return '<!DOCTYPE html><html><body style="margin:0;padding:24px;background:#f4efe3;font-family:Georgia,serif;color:#2b2118;">'
-        . '<div style="max-width:560px;margin:0 auto;background:#ffffff;border-top:4px solid #c9a84c;border-radius:2px;">'
-        . '<div style="background:#8B0000;color:#f5e6b8;padding:18px 28px;font-size:18px;letter-spacing:1px;">Sistema de Gestión Escolar</div>'
-        . '<div style="padding:28px;">'
+    return '<!DOCTYPE html><html><body style="margin:0;padding:12px;background:#f4efe3;font-family:Georgia,serif;color:#2b2118;">'
+        . '<div style="max-width:560px;width:100%;margin:0 auto;background:#ffffff;border-top:4px solid #c9a84c;border-radius:2px;">'
+        . '<div style="background:#8B0000;color:#f5e6b8;padding:16px 20px;font-size:18px;letter-spacing:1px;">Sistema de Gestión Escolar</div>'
+        . '<div style="padding:22px 20px;">'
         . '<h2 style="margin:0 0 16px;font-size:20px;color:#8B0000;">' . h($titulo) . '</h2>'
         . $contenidoHtml . $btn
         . '</div>'
-        . '<div style="padding:14px 28px;background:#faf6ee;font-size:12px;color:#8a7055;">Este es un mensaje automático, por favor no respondas a este correo.</div>'
+        . '<div style="padding:14px 20px;background:#faf6ee;font-size:12px;color:#8a7055;">Este es un mensaje automático, por favor no respondas a este correo.</div>'
         . '</div></body></html>';
 }
 
 function filaDato(string $etiqueta, string $valor): string {
-    return '<tr><td style="padding:6px 12px 6px 0;color:#8a7055;">' . h($etiqueta) . '</td><td style="padding:6px 0;"><strong>' . h($valor) . '</strong></td></tr>';
+    // Etiqueta arriba y valor debajo (apilado): no se desborda en pantallas angostas aunque el valor sea largo.
+    return '<div style="margin:0 0 12px;">'
+        . '<div style="font-size:13px;color:#8a7055;">' . h($etiqueta) . '</div>'
+        . '<div style="font-size:16px;font-weight:bold;word-break:break-all;overflow-wrap:anywhere;">' . h($valor) . '</div>'
+        . '</div>';
 }
 
 function plantillaUsuarioCreado(string $nombre, string $rol, string $email, string $password): array {
     $html = marcoCorreo('Tu cuenta fue creada',
         '<p>Hola <strong>' . h($nombre) . '</strong>, el administrador creó tu cuenta de ' . h($rol) . '.</p>'
-        . '<table style="border-collapse:collapse;margin:12px 0;">' . filaDato('Usuario (correo)', $email) . filaDato('Contraseña inicial', $password) . '</table>'
+        . '<div style="margin:12px 0;">' . filaDato('Usuario (correo)', $email) . filaDato('Contraseña inicial', $password) . '</div>'
         . '<p>Por seguridad, el sistema te pedirá <strong>cambiar esta contraseña</strong> en tu primer ingreso. No la compartas con nadie.</p>');
     return ['asunto' => 'Tu cuenta fue creada', 'html' => $html,
         'texto' => "Hola $nombre, el administrador creó tu cuenta de $rol.\nUsuario: $email\nContraseña inicial: $password\nCámbiala en tu primer ingreso.\n" . urlSistema()];
@@ -45,7 +49,7 @@ function plantillaUsuarioCreado(string $nombre, string $rol, string $email, stri
 function plantillaAccesoRestablecido(string $nombre, string $email, string $password): array {
     $html = marcoCorreo('Tu acceso fue restablecido',
         '<p>Hola <strong>' . h($nombre) . '</strong>, el administrador restableció tu acceso al sistema.</p>'
-        . '<table style="border-collapse:collapse;margin:12px 0;">' . filaDato('Usuario (correo)', $email) . filaDato('Nueva contraseña inicial', $password) . '</table>'
+        . '<div style="margin:12px 0;">' . filaDato('Usuario (correo)', $email) . filaDato('Nueva contraseña inicial', $password) . '</div>'
         . '<p>Deberás <strong>cambiarla</strong> y configurar de nuevo tus preguntas de seguridad en tu próximo ingreso. Si no esperabas este cambio, avisa al administrador.</p>');
     return ['asunto' => 'Tu acceso fue restablecido', 'html' => $html,
         'texto' => "Hola $nombre, el administrador restableció tu acceso.\nUsuario: $email\nNueva contraseña inicial: $password\nCámbiala en tu próximo ingreso.\n" . urlSistema()];
@@ -59,7 +63,7 @@ function plantillaNotaNueva(string $estudiante, string $materia, string $tipo, f
         . (($actividad !== null && $actividad !== '') ? filaDato('Actividad', $actividad) : '')
         . filaDato('Trimestre', $trimestre) . filaDato('Nota', $nota);
     $html = marcoCorreo('Nueva nota registrada',
-        '<p>Hola <strong>' . h($estudiante) . '</strong>, tu profesor registró una nueva nota.</p><table style="border-collapse:collapse;margin:12px 0;">' . $filas . '</table>');
+        '<p>Hola <strong>' . h($estudiante) . '</strong>, tu profesor registró una nueva nota.</p><div style="margin:12px 0;">' . $filas . '</div>');
     return ['asunto' => "Nueva nota en $materia: $nota", 'html' => $html,
         'texto' => "Hola $estudiante, se registró una nueva nota en $materia ($tipoTxt, $trimestre): $nota.\n" . urlSistema()];
 }
