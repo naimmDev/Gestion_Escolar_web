@@ -472,6 +472,6 @@
 </main>
 <script src="js/api.js?v=3"></script>
 <script src="js/reportes.js?v=4"></script>
-<script src="js/admin.js?v=9"></script>
+<script src="js/admin.js?v=10"></script>
 </body>
 </html>

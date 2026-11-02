@@ -122,7 +122,7 @@ async function loadData() {
             }
         });
         myStudents = Object.values(studentMap);
-                await cargarPeriodos();
+        await cargarPeriodos();
 
         updateDashboard();
         renderSubjects();
@@ -344,7 +344,7 @@ function renderStudentsByGrade() {
         return;
     }
 
-       students.sort((a, b) =>
+    students.sort((a, b) =>
         (a.lastName || '').localeCompare(b.lastName || '', 'es') ||
         a.name.localeCompare(b.name, 'es'));
 
@@ -561,24 +561,14 @@ function renderTrimestreContent() {
                 <div class="form-group" style="flex:1;">
                     <label>Tipo de actividad (opcional)</label>
                     <select id="newGradeTipoActividad" class="grade-type-select">
-                        <option value="">-- Seleccionar --</option>
-                        <option value="Quiz">Quiz</option>
-                        <option value="Parcial">Parcial</option>
-                        <option value="Taller">Taller</option>
-                        <option value="Tarea">Tarea</option>
-                        <option value="Proyecto">Proyecto</option>
-                        <option value="Investigacion">Investigación</option>
-                        <option value="Exposicion">Exposición</option>
-                        <option value="Laboratorio">Laboratorio</option>
-                        <option value="Participacion">Participación</option>
-                        <option value="Otro">Otro</option>
+                        ${opcionesTipoActividad()}
                     </select>
                 </div>
             </div>
             <div class="grade-form-row">
                 <div class="form-group" style="flex:1;">
                     <label>Nombre de la actividad (opcional)</label>
-                    <input type="text" id="newGradeNombre" placeholder="Ej: Quiz #1">
+                    <input type="text" id="newGradeNombre" maxlength="100" placeholder="Ej: Quiz #1">
                 </div>
                 <div class="form-group" style="flex:1;">
                     <label>Nota (1.0 - 5.0)</label>
@@ -588,7 +578,7 @@ function renderTrimestreContent() {
             <div class="grade-form-row">
                 <div class="form-group" style="flex:2;">
                     <label>Comentario</label>
-                    <input type="text" id="newGradeComment" placeholder="Descripción...">
+                    <input type="text" id="newGradeComment" maxlength="255" placeholder="Descripción...">
                 </div>
                 <div class="form-group" style="flex:0;">
                     <button class="btn-primary" onclick="addNewGrade()" style="margin-top:22px;">
@@ -683,6 +673,9 @@ function renderGradeHistoryItem(grade) {
             </div>
             ${trimestreAbierto(grade.trimestre) ? `
             <div class="grade-actions">
+                <button class="edit-grade-btn" onclick="editGrade(${grade.id})">
+                    <i class="fas fa-pen"></i> Editar
+                </button>
                 <button class="delete-grade-btn" onclick="deleteGrade(${grade.id})">
                     <i class="fas fa-trash"></i> Eliminar
                 </button>
@@ -698,6 +691,27 @@ function changeTrimestre(trimestre) {
         tab.classList.toggle('active', tab.dataset.trimestre === trimestre);
     });
     renderTrimestreContent();
+}
+
+// Tipos de actividad (mismos valores que valida el backend). Usado en el alta y en la edición.
+const TIPOS_ACTIVIDAD = [
+    { value: 'Quiz',          label: 'Quiz' },
+    { value: 'Parcial',       label: 'Parcial' },
+    { value: 'Taller',        label: 'Taller' },
+    { value: 'Tarea',         label: 'Tarea' },
+    { value: 'Proyecto',      label: 'Proyecto' },
+    { value: 'Investigacion', label: 'Investigación' },
+    { value: 'Exposicion',    label: 'Exposición' },
+    { value: 'Laboratorio',   label: 'Laboratorio' },
+    { value: 'Participacion', label: 'Participación' },
+    { value: 'Otro',          label: 'Otro' }
+];
+
+function opcionesTipoActividad(seleccionado = '') {
+    return '<option value="">-- Seleccionar --</option>' +
+        TIPOS_ACTIVIDAD.map(t =>
+            `<option value="${t.value}" ${t.value === seleccionado ? 'selected' : ''}>${t.label}</option>`
+        ).join('');
 }
 
 // ==================== AGREGAR NOTA ====================
@@ -775,6 +789,91 @@ async function addNewGrade() {
         Swal.fire('Error', error.message, 'error');
     }
 }
+// ==================== EDITAR NOTA ====================
+const TIPO_EVALUACION_LABEL = {
+    'PARCIAL': 'Parcial',
+    'EXAMEN_TRIMESTRAL': 'Examen Trimestral',
+    'APRECIACION': 'Apreciación'
+};
+
+async function editGrade(gradeId) {
+    const grade = myGrades.find(g => g.id === gradeId);
+    if (!grade) return;
+
+    if (!trimestreAbierto(grade.trimestre)) {
+        Swal.fire('Trimestre cerrado', 'Este trimestre está cerrado: solo lectura.', 'info');
+        return;
+    }
+
+    const result = await Swal.fire({
+        title: 'Editar nota',
+        html: `
+            <div style="text-align:left; font-size:13px; color:var(--ink-soft); margin-bottom:10px;">
+                <i class="fas fa-tag"></i> ${escapeHtml(TIPO_EVALUACION_LABEL[grade.type] || grade.type)}
+                &nbsp;|&nbsp; <i class="fas fa-calendar-alt"></i> ${escapeHtml(grade.trimestre)}
+            </div>
+            <div style="text-align:left;">
+                <label for="editGradeScore">Nota (1.0 - 5.0)</label>
+                <input id="editGradeScore" class="swal2-input" type="number" step="0.1" min="1" max="5" value="${grade.score.toFixed(1)}" style="width:100%; margin:4px 0 12px;">
+                <label for="editGradeTipoActividad">Tipo de actividad</label>
+                <select id="editGradeTipoActividad" class="swal2-select" style="width:100%; margin:4px 0 12px;">${opcionesTipoActividad(grade.tipoActividad)}</select>
+                <label for="editGradeNombre">Nombre de la actividad</label>
+                <input id="editGradeNombre" class="swal2-input" type="text" maxlength="100" value="${escapeHtml(grade.nombre)}" style="width:100%; margin:4px 0 12px;">
+                <label for="editGradeComment">Comentario</label>
+                <input id="editGradeComment" class="swal2-input" type="text" maxlength="255" value="${escapeHtml(grade.comment)}" style="width:100%; margin:4px 0 0;">
+            </div>`,
+        showCancelButton: true,
+        confirmButtonText: 'Guardar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#8B0000',
+        focusConfirm: false,
+        preConfirm: () => {
+            const raw = parseFloat(document.getElementById('editGradeScore').value);
+            if (isNaN(raw) || raw < 1 || raw > 5) {
+                Swal.showValidationMessage('La nota debe ser un número entre 1.0 y 5.0');
+                return false;
+            }
+            return {
+                puntaje: Math.round(raw * 10) / 10,
+                tipo_actividad: document.getElementById('editGradeTipoActividad').value,
+                nombre: document.getElementById('editGradeNombre').value.trim(),
+                comentario: document.getElementById('editGradeComment').value.trim()
+            };
+        }
+    });
+
+    if (!result.isConfirmed) return;
+    const cambios = result.value;
+
+    const sinCambios =
+        cambios.puntaje === Math.round(grade.score * 10) / 10 &&
+        cambios.tipo_actividad === grade.tipoActividad &&
+        cambios.nombre === grade.nombre.trim() &&
+        cambios.comentario === grade.comment.trim();
+    if (sinCambios) {
+        Swal.fire({ title: 'Sin cambios', icon: 'info', timer: 1200, showConfirmButton: false });
+        return;
+    }
+
+    // Importante: no se envían "tipo" ni "trimestre". "" borra un campo opcional.
+    try {
+        const res = await apiFetch('/notas/', {
+            method: 'PUT',
+            body: JSON.stringify({ id: gradeId, ...cambios })
+        });
+        if (res.ok) {
+            Swal.fire({ title: 'Nota actualizada', icon: 'success', timer: 1500, showConfirmButton: false, toast: true, position: 'top-end' });
+            await reloadGradesAndRefresh();
+        } else {
+            const error = await res.json().catch(() => ({}));
+            if (await manejarTrimestreCerrado(error)) return;
+            Swal.fire('Error', error.error || 'No se pudo actualizar la nota', 'error');
+        }
+    } catch (error) {
+        Swal.fire('Error', error.message, 'error');
+    }
+}
+
 // ==================== ELIMINAR NOTA ====================
 async function deleteGrade(gradeId) {
     const result = await Swal.fire({

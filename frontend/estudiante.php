@@ -9,7 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link rel="stylesheet" href="css/estudiante.css?v=3">
+    <link rel="stylesheet" href="css/estudiante.css?v=4">
 </head>
 <body>
     <div class="app-container">
@@ -132,6 +132,6 @@
 
     <script src="js/api.js?v=3"></script>
     <script src="js/reportes.js?v=3"></script>
-    <script src="js/estudiante.js?v=3"></script>
+    <script src="js/estudiante.js?v=4"></script>
 </body>
 </html>

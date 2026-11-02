@@ -818,6 +818,31 @@ body {
     color: var(--gold-pale);
 }
 
+.grade-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.edit-grade-btn {
+    background: rgba(201,168,76,0.12);
+    border: 1px solid rgba(201,168,76,0.4);
+    padding: 8px 18px;
+    border-radius: 2px;
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--crimson-deep);
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.edit-grade-btn:hover {
+    background: var(--gold);
+    color: var(--crimson-deep);
+}
+
 /* Comments section */
 .comments-list {
     display: flex;

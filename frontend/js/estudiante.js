@@ -5,6 +5,7 @@ let myGrades       = [];
 let mySubjects     = [];
 
 const TRIMESTRES = ['I Trimestre', 'II Trimestre', 'III Trimestre'];
+let periodos = {};   // { 'I Trimestre': true/false, ... } (true = abierto)
 
 // Función global para cerrar modal
 window.closeModal = function(modalId) {
@@ -67,6 +68,8 @@ async function loadData() {
         const enrolledSubjectIds = myEnrollments.map(e => parseInt(e.subjectId));
         mySubjects = mySubjects.filter(s => enrolledSubjectIds.includes(parseInt(s.id)));
 
+        await cargarPeriodos();
+
         updateDashboard();
         renderGradesReport();
         loadCommentSubjects();
@@ -75,6 +78,20 @@ async function loadData() {
     } catch (error) {
         console.error(error);
         Swal.fire('Error', 'No se pudieron cargar los datos: ' + error.message, 'error');
+    }
+}
+
+// ==================== PERÍODOS ====================
+// Solo informativo: si falla la carga, no se muestra ninguna etiqueta.
+async function cargarPeriodos() {
+    try {
+        const res = await apiFetch('/periodos/');
+        if (!res.ok) return;
+        const json = await res.json();
+        const lista = json.data ?? json;
+        lista.forEach(p => { periodos[p.trimestre] = p.abierto; });
+    } catch (e) {
+        console.warn('No se pudieron cargar los períodos', e);
     }
 }
 
@@ -247,7 +264,7 @@ function renderTrimestreSection(trimestre) {
     return `
         <div class="trimestre-container">
             <div class="trimestre-header">
-                <div class="trimestre-title"><i class="fas fa-calendar-alt"></i> ${trimestre}</div>
+                <div class="trimestre-title"><i class="fas fa-calendar-alt"></i> ${trimestre}${periodos[trimestre] === false ? ' <span class="trimestre-closed-badge"><i class="fas fa-lock"></i> Cerrado</span>' : ''}</div>
                 <div class="trimestre-header-actions">
                     <div class="trimestre-average">
                         ${trimestreAvg !== null
