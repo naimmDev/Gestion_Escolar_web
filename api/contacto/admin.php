@@ -1,5 +1,7 @@
 <?php
 require '../config/db.php';
+require '../config/auth_middleware.php';
+requireRole($pdo, ['admin', 'profesor', 'estudiante']);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     sendError("Método no permitido", 405);

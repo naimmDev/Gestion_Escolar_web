@@ -43,6 +43,12 @@ function lineaContactoAdmin(): string {
     return '<p>Puedes contactar al administrador' . $detalle . '. También encontrarás esta información en la sección <strong>Ayuda</strong> del sistema.</p>';
 }
 
+function textoContactoAdmin(): string {
+    $c = contactoAdmin();
+    $partes = array_filter([$c['correo'] ?? '', $c['telefono'] ?? '']);
+    return $partes ? ' Contacto del administrador: ' . implode(' · ', $partes) . '.' : '';
+}
+
 function filaDato(string $etiqueta, string $valor): string {
     // Etiqueta arriba y valor debajo (apilado): no se desborda en pantallas angostas aunque el valor sea largo.
     return '<div style="margin:0 0 12px;">'
@@ -91,7 +97,7 @@ function plantillaTrimestreCerrado(string $profesor, string $trimestre): array {
         . '<p>Ya no es posible registrar, editar ni eliminar notas en ese trimestre.</p>'
         . lineaContactoAdmin());
     return ['asunto' => "$trimestre cerrado", 'html' => $html,
-        'texto' => "Hola $profesor, el $trimestre ha cerrado. Ya no es posible registrar, editar ni eliminar notas en ese trimestre.\n" . urlSistema()];
+        'texto' => "Hola $profesor, el $trimestre ha cerrado. Ya no es posible registrar, editar ni eliminar notas en ese trimestre." . textoContactoAdmin() . "\n" . urlSistema()];
 }
 
 function plantillaComentarioNuevo(string $profesor, string $estudiante, string $materia): array {
@@ -108,5 +114,5 @@ function plantillaCuentaBloqueada(string $nombre, int $minutos): array {
         . '<p>Si fuiste tú, espera ese tiempo e intenta de nuevo (o usa "¿Olvidaste tu contraseña?"). <strong>Si no fuiste tú</strong>, avisa al administrador.</p>'
         . lineaContactoAdmin(), false);
     return ['asunto' => 'Tu cuenta fue bloqueada temporalmente', 'html' => $html,
-        'texto' => "Hola $nombre, tu cuenta fue bloqueada $minutos minutos por varios intentos fallidos de ingreso. Si no fuiste tú, avisa al administrador."];
+        'texto' => "Hola $nombre, tu cuenta fue bloqueada $minutos minutos por varios intentos fallidos de ingreso. Si no fuiste tú, avisa al administrador." . textoContactoAdmin()];
 }

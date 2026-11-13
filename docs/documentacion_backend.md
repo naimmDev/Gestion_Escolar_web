@@ -1,5 +1,5 @@
 # Documentación Backend — Sistema de Gestión Escolar
-**Versión:** 2.6.0
+**Versión:** 2.7.0
 **Stack:** PHP 8.2 · MariaDB 10.4 · XAMPP
 **Fecha de inicio:** Junio 2026
 
@@ -17,6 +17,7 @@
 9. [Credenciales Iniciales](#9-credenciales-iniciales)
 10. [Pendiente](#10-pendiente)
 11. [Decisiones registradas](#11-decisiones-registradas)
+12. [Notificaciones por correo](#12-notificaciones-por-correo)
 
 ---
 
@@ -25,15 +26,17 @@
 ```
 gestion_escolar/
 ├── api/
-│   ├── composer.json / composer.lock    # dompdf/dompdf ^3.1 · phpoffice/phpspreadsheet ^5.9
+│   ├── composer.json / composer.lock    # dompdf/dompdf ^3.1 · phpoffice/phpspreadsheet ^5.9 · phpmailer/phpmailer ^6.9
 │   ├── config/
 │   │   ├── db.php                       # conexión PDO, cabeceras JSON, CORS, manejador de excepciones
 │   │   ├── cors.php                     # lista blanca de orígenes + aplicarCORS()
-│   │   ├── credenciales.php             # host/db/user/pass — NO se sube a Git (.gitignore)
+│   │   ├── credenciales.php             # credenciales de BD, correo y contacto — NO se sube a Git (.gitignore)
 │   │   ├── credenciales.php.example     # plantilla de credenciales.php
 │   │   ├── auth_middleware.php
 │   │   ├── verificar_sesion_pagina.php  # gate de sesión para páginas .php del frontend
 │   │   └── response.php
+│   ├── contacto/
+│   │   └── admin.php                    # GET — datos de contacto del administrador
 │   ├── auth/
 │   │   ├── login.php                    # POST
 │   │   ├── logout.php                   # POST
@@ -62,6 +65,9 @@ gestion_escolar/
 │   │   ├── nombres.php                 # validación y composición de firstName/lastName
 │   │   ├── periodos.php                 # exigirTrimestreAbierto() — regla de período para notas
 │   │   ├── notas_calculo.php            # cálculo de resumen por trimestre — única fuente de verdad
+│   │   ├── mail/
+│   │   │   ├── correo.php               # configuración, envío SMTP, desvío de pruebas y registro
+│   │   │   └── plantillas.php           # plantillas HTML y texto plano
 │   │   ├── reporte_data.php             # consultas a BD para armar reportes (individual/boletín/grupal)
 │   │   ├── reporte_documento.php        # construye el documento genérico (título, info, columnas, filas, pie)
 │   │   ├── pdf_reporte.php              # renderiza el documento genérico a PDF (DomPDF, con escape HTML)
@@ -71,7 +77,7 @@ gestion_escolar/
 ├── database/
 │   ├── schema.sql                       # estructura de las tablas (volcado de phpMyAdmin)
 │   ├── datos_iniciales.sql              # preguntas de seguridad y cuenta de administrador
-│   └── migraciones/                     # scripts SQL para bases ya existentes (ej. 2026-10-22_periodos.sql)
+│   └── migrations/                      # scripts SQL para bases ya existentes (ej. 2026-10-22_periodos.sql, 2026-11-02_correo_log.sql)
 ├── docs/                                # documentación del proyecto (este archivo, frontend, instalación de Composer)
 └── frontend/
     (documentación a cargo de otro integrante del equipo)
@@ -224,6 +230,19 @@ gestion_escolar/
 
 > Restricción única: `(usuario_id, pregunta_id)`. Cada usuario configura exactamente 3 filas.
 
+#### `correo_log`
+| Campo | Tipo | Descripción |
+|---|---|---|
+| id | INT PK AUTO | Identificador |
+| evento | VARCHAR(40) | Evento que originó el correo |
+| destinatario | VARCHAR(100) | Dirección destinataria |
+| asunto | VARCHAR(200) NULL | Asunto del correo |
+| estado | ENUM('enviado','fallido') | Resultado del envío |
+| error | VARCHAR(255) NULL | Error del proveedor, si el envío falló |
+| fecha | DATETIME DEFAULT CURRENT_TIMESTAMP | Fecha del intento |
+
+> No guarda contraseñas ni el cuerpo del correo. Está definida en `database/schema.sql`; para bases existentes ejecutar `database/migrations/2026-11-02_correo_log.sql`.
+
 ---
 
 ## 3. Autenticación y Flujo de Primer Ingreso
@@ -371,8 +390,10 @@ Las páginas internas (`admin.php`, `profesor.php`, `estudiante.php`, `cambiar_p
 | POST | `/auth/configurar_preguntas.php` | Sí | Configurar 3 preguntas de seguridad |
 | GET | `/auth/preguntas_usuario.php?identificacion=` | No | Obtener una pregunta de seguridad (al azar) de un usuario |
 | POST | `/auth/recuperar_password.php` | No | Recuperar contraseña respondiendo pregunta de seguridad (sujeto a bloqueo) |
+| GET | `/contacto/admin.php` | Sí (cualquier rol) | Obtener correo, teléfono y horario de contacto del administrador |
 
 > "Sí" en Auth significa: requiere la cookie `sesion_token` válida (ver sección 3).
+> `GET /contacto/admin.php` requiere sesión de admin, profesor o estudiante y devuelve `{ "correo": ..., "telefono": ..., "horario": ... }`; los valores no definidos son `null`. La página de Ayuda lo usa para mostrar «¿Cómo contacto al administrador?» a profesores y estudiantes.
 
 ### Estudiantes
 | Método | Endpoint | Rol | Descripción |
@@ -394,13 +415,14 @@ Devuelve un array con las secciones existentes (en mayúsculas, sin vacías, ord
 - Requiere `firstName`, `lastName`, `email`, `identificacion`. `firstName` y `lastName` se recortan con `trim`, no pueden quedar vacíos y admiten hasta 100 caracteres; si falta alguno, responde 400 con `details.campos`. Ya no se acepta `name`. Valida formato de email y que no exista otro estudiante ni otra cuenta con ese email/identificación (409).
 - `initialPassword` es opcional (mínimo 6 caracteres). **Si no se envía, la contraseña inicial es la identificación.**
 - El backend guarda `usuario.nombre` como `"firstName lastName"`, tanto al crear como al editar.
-- Responde 201 con `{ id, initialPassword, message }`.
+- Responde 201 con `{ id, initialPassword, message, correo }`, donde `data.correo` indica `enviado`, `fallido` o `desactivado`.
 
 **PUT — Body:**
 ```json
 { "id": 5, "firstName": "...", "lastName": "...", "email": "...", "identificacion": "...", "grade": "...", "seccion": "...", "initialPassword": "opcional" }
 ```
 > Si se envía `initialPassword`, se regenera el hash en `usuario` y se resetean `password_cambiada = 0`, `preguntas_configuradas = 0`, además de borrarse sus `usuario_pregunta` (flujo de "restablecer acceso"). **No** cierra sesiones activas ni limpia `intentos_fallidos` / `bloqueado_hasta`.
+> La respuesta incluye `data.correo` (`enviado`, `fallido` o `desactivado`); si es PUT sin `initialPassword`, devuelve `no_aplica`.
 
 **DELETE — Body:** `{ "id", "confirmar_comentarios"? }`
 - 409 si el estudiante tiene notas registradas (no hay forma de forzarlo).
@@ -691,7 +713,7 @@ Para instalar la base de datos vacía, importar `database/schema.sql` y después
 
 | Funcionalidad | Descripción |
 |---|---|
-| **Resto de la Propuesta de Mejoras** | Notificaciones por correo (6.2), PWA (6.4) y migración a HTTPS en servidor de producción (6.1). El panel de períodos (6.3) quedó implementado en la v2.5.0. |
+| **Resto de la Propuesta de Mejoras** | PWA (6.4) y migración a HTTPS en servidor de producción (6.1). Notificaciones por correo (6.2) implementadas en la v2.7.0; el panel de períodos (6.3) quedó implementado en la v2.5.0. |
 
 ---
 
@@ -705,6 +727,55 @@ Para que quede constancia del porqué, sin que se reabra la discusión más adel
 | **Exportación en formato CSV** | No se implementará | Es funcionalmente redundante con la exportación a Excel ya existente; no aporta un caso de uso distinto. |
 | **Exportación desde el panel de admin** | Implementada (backend + vista Reportes) | Se agregó `admin` a `requireRole` en `exportar.php` con una rama de permisos propia, sin restricción de materia (a diferencia de profesor). Las funciones de armado de datos y renderizado no se tocaron — solo se agregó la rama de permisos. El panel de admin ya tiene la vista Reportes que consume el endpoint. |
 | **Registro de derechos de autor (DIGERPI)** | No se hará | Fuera del alcance del proyecto como entrega académica. |
+
+---
+
+## 12. Notificaciones por correo
+
+El envío utiliza **PHPMailer** (`phpmailer/phpmailer ^6.9`) por SMTP. `api/helpers/mail/correo.php` gestiona la configuración, envío, desvío de pruebas y registro en `correo_log`; `api/helpers/mail/plantillas.php` contiene las plantillas HTML y de texto plano de cada correo.
+
+### Configuración
+
+La configuración se define en `api/config/credenciales.php`, archivo no versionado; el modelo está en `api/config/credenciales.php.example`:
+
+```php
+'correo' => [
+    'activo' => false,
+    'host' => 'smtp.gmail.com',
+    'puerto' => 587,
+    'seguridad' => 'tls', // tls | ssl | ''
+    'usuario' => '...',
+    'clave' => '...', // contraseña de aplicación de Google
+    'remitente' => '...',
+    'nombre_remitente' => '...',
+    'desvio' => '',
+    'url_sistema' => '...'
+],
+'contacto_admin' => [
+    'correo' => '...',
+    'telefono' => '...', // opcional
+    'horario' => '...' // opcional
+]
+```
+
+Sin el bloque `correo` o con `activo = false`, el sistema funciona sin enviar correos. Si `desvio` contiene una dirección, todos los correos se envían a esa dirección de pruebas y el destinatario real se indica en el asunto; dejarlo vacío en producción o demo. `contacto_admin` se muestra en los correos de acceso restablecido, trimestre cerrado y cuenta bloqueada, y en la sección Ayuda. Si falta, se presenta un texto genérico.
+
+### Eventos y destinatarios
+
+| Evento | Destinatario | Envío |
+|---|---|---|
+| Usuario creado | El propio usuario | Inmediato; incluye su contraseña inicial |
+| Acceso restablecido | El propio usuario | Inmediato; incluye su contraseña inicial |
+| Nota nueva | Estudiante | Diferido |
+| Comentario nuevo | Profesor de la materia | Diferido |
+| Trimestre cerrado | Todos los profesores | Diferido; solo al cambiar de abierto a cerrado |
+| Cuenta bloqueada (5 intentos fallidos) | Dueño de la cuenta | Diferido; desde login y recuperar_password |
+
+No se envía correo al editar notas ni al reabrir un trimestre. Los correos de nota nueva y comentario nuevo no incluyen el puntaje ni el texto del comentario: solo avisan la materia, tipo de evaluación, actividad y trimestre, o el estudiante y la materia, respectivamente, y piden ingresar al sistema para ver el detalle. La nota puede editarse después y el comentario es información del sistema.
+
+Un fallo de correo nunca revierte la acción. `enviarCorreo()` no lanza excepciones y devuelve `enviado`, `fallido` o `desactivado`. En POST y PUT de `/estudiantes/` y `/profesores/`, la respuesta incluye `data.correo` con uno de esos estados; PUT sin `initialPassword` devuelve `no_aplica`.
+
+El correo de usuario creado y acceso restablecido se envía durante la petición HTTP. Por eso la respuesta incluye `data.correo`. Nota nueva, comentario nuevo, trimestre cerrado y cuenta bloqueada usan `enviarCorreoDiferido()`: primero se entrega la respuesta HTTP y después se envían los correos mediante una función `shutdown`. `response.php` (`emitirJson`) cierra la conexión con `Content-Length` y `Connection: close`, y usa `fastcgi_finish_request()` cuando está disponible.
 
 ---
 
