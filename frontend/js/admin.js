@@ -103,6 +103,25 @@ function showToast(title, icon = 'success') {
     Swal.fire({ title, icon, timer: 1500, showConfirmButton: false, toast: true, position: 'top-end' });
 }
 
+// Texto según el resultado del correo (data.correo del backend):
+// 'enviado' | 'fallido' | 'desactivado' | 'no_aplica'
+function notaCorreo(correo) {
+    if (correo === 'enviado') return '<br><small><i class="fas fa-envelope"></i> Se envió un correo al usuario.</small>';
+    if (correo === 'fallido') return '<br><small><i class="fas fa-triangle-exclamation"></i> No se pudo enviar el correo: entrega la contraseña manualmente.</small>';
+    return '';
+}
+
+// Si el correo falló, la acción igual se guardó: solo se avisa al admin.
+async function avisarFalloCorreo(correo) {
+    if (correo !== 'fallido') return;
+    await Swal.fire({
+        title: 'Guardado, pero el correo no se envió',
+        html: 'El usuario quedó registrado, pero no se pudo enviar el correo.<br>Entrega la contraseña inicial manualmente.',
+        icon: 'warning',
+        confirmButtonColor: '#8B0000'
+    });
+}
+
 async function confirmDelete(message) {
     const result = await Swal.fire({
         title: '¿Estás seguro?', text: message, icon: 'warning',
@@ -461,11 +480,13 @@ async function resetStudentAccess(id) {
     try {
         const res = await apiFetch('/estudiantes/', { method: 'PUT', body: JSON.stringify(payload) });
         if (res.ok) {
+            const json = await res.json().catch(() => ({}));
+            const correo = json.data?.correo;
             addActivity(`Restableció acceso de ${s.name}`);
             await loadStudentsPage();
             Swal.fire({
                 title: 'Acceso restablecido',
-                html: `Nueva contraseña inicial:<br><span class="password-display-full">${escapeHtml(newPassword)}</span>`,
+                html: `Nueva contraseña inicial:<br><span class="password-display-full">${escapeHtml(newPassword)}</span>${notaCorreo(correo)}`,
                 icon: 'success',
                 confirmButtonColor: '#8B0000'
             });
@@ -499,10 +520,13 @@ document.getElementById('studentForm')?.addEventListener('submit', async functio
     try {
         const res = await apiFetch('/estudiantes/', { method: id ? 'PUT' : 'POST', body: JSON.stringify(student) });
         if (res.ok) {
-            showToast(id ? 'Estudiante actualizado' : 'Estudiante creado');
+            const json = await res.json().catch(() => ({}));
+            const correo = json.data?.correo;
+            showToast((id ? 'Estudiante actualizado' : 'Estudiante creado') + (correo === 'enviado' ? ' · correo enviado' : ''));
             addActivity(id ? `Editó ${student.firstName} ${student.lastName}` : `Agregó ${student.firstName} ${student.lastName}`);
             await loadStudentsPage();
             closeModal('studentModal');
+            await avisarFalloCorreo(correo);
         } else {
             const json = await res.json();
             Swal.fire('Error', json.error || 'No se pudo guardar', 'error');
@@ -609,11 +633,13 @@ async function resetTeacherAccess(id) {
     try {
         const res = await apiFetch('/profesores/', { method: 'PUT', body: JSON.stringify(payload) });
         if (res.ok) {
+            const json = await res.json().catch(() => ({}));
+            const correo = json.data?.correo;
             addActivity(`Restableció acceso de ${t.name}`);
             await loadProfessorsPage();
             Swal.fire({
                 title: 'Acceso restablecido',
-                html: `Nueva contraseña inicial:<br><span class="password-display-full">${escapeHtml(newPassword)}</span>`,
+                html: `Nueva contraseña inicial:<br><span class="password-display-full">${escapeHtml(newPassword)}</span>${notaCorreo(correo)}`,
                 icon: 'success',
                 confirmButtonColor: '#8B0000'
             });
@@ -646,11 +672,14 @@ document.getElementById('professorForm')?.addEventListener('submit', async funct
     try {
         const res = await apiFetch('/profesores/', { method: id ? 'PUT' : 'POST', body: JSON.stringify(teacher) });
         if (res.ok) {
+            const json = await res.json().catch(() => ({}));
+            const correo = json.data?.correo;
             invalidateTeachersCache();
-            showToast(id ? 'Profesor actualizado' : 'Profesor creado');
+            showToast((id ? 'Profesor actualizado' : 'Profesor creado') + (correo === 'enviado' ? ' · correo enviado' : ''));
             addActivity(id ? `Editó ${teacher.firstName} ${teacher.lastName}` : `Agregó ${teacher.firstName} ${teacher.lastName}`);
             await loadProfessorsPage();
             closeModal('professorModal');
+            await avisarFalloCorreo(correo);
         } else {
             const json = await res.json();
             Swal.fire('Error', json.error || 'No se pudo guardar', 'error');

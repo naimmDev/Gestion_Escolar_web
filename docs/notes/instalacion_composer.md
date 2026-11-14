@@ -1,6 +1,6 @@
 # Instalación de Composer — Guía para el equipo
 
-Composer es necesario para las librerías de exportación (DomPDF y PhpSpreadsheet). Esta guía es para quien no lo tenga instalado todavía.
+Composer es necesario para las librerías de exportación (DomPDF y PhpSpreadsheet) y PHPMailer (`phpmailer/phpmailer`). El envío de correo es opcional: si no se configura o se desactiva en `api/config/credenciales.php`, el sistema funciona sin enviar correos. Esta guía es para quien no tenga Composer instalado todavía.
 
 ---
 
@@ -78,7 +78,7 @@ XAMPP trae la extensión `gd` pero **desactivada por defecto**. Sin ella, `phpof
    ```
    composer install
    ```
-   Esto lee `composer.json` y `composer.lock`, y genera automáticamente la carpeta `vendor/` con las versiones exactas de DomPDF y PhpSpreadsheet ya usadas en el proyecto.
+   Esto lee `composer.json` y `composer.lock`, y genera automáticamente la carpeta `vendor/` con las versiones exactas de DomPDF, PhpSpreadsheet y PHPMailer ya usadas en el proyecto. PHPMailer (`phpmailer/phpmailer ^6.9`) se instala como parte de `composer install`; no es necesario habilitar el envío de correo para usar el resto del sistema.
 
 ---
 

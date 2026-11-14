@@ -4,25 +4,32 @@
  * Todos los endpoints lo usan en lugar de echo json_encode() directo.
  */
 
-function sendSuccess($data = [], int $code = 200): void {
+function emitirJson(array $body, int $code): void {
     http_response_code($code);
-    echo json_encode([
-        "success" => true,
-        "data"    => $data
-    ]);
+    $json = json_encode($body);
+    if (function_exists('hayCorreosPendientes') && hayCorreosPendientes()) {
+        // Cierra la conexión con el navegador; los correos se envían después (shutdown function)
+        ignore_user_abort(true);
+        header('Content-Length: ' . strlen($json));
+        header('Connection: close');
+        echo $json;
+        while (ob_get_level() > 0) ob_end_flush();
+        flush();
+        if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();
+    } else {
+        echo $json;
+    }
     exit;
 }
 
+function sendSuccess($data = [], int $code = 200): void {
+    emitirJson(["success" => true, "data" => $data], $code);
+}
+
 function sendError(string $message, int $code = 400, array $details = []): void {
-    http_response_code($code);
-    $body = [
-        "success" => false,
-        "error"   => $message,
-        "code"    => $code
-    ];
+    $body = ["success" => false, "error" => $message, "code" => $code];
     if (!empty($details)) $body["details"] = $details;
-    echo json_encode($body);
-    exit;
+    emitirJson($body, $code);
 }
 
 function sendCreated($data = []): void {
