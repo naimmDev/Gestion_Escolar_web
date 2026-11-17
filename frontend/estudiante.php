@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Estudiante — Gestión Escolar</title>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/base.css?v=1">
     <link rel="stylesheet" href="css/shell.css?v=1">
     <link rel="stylesheet" href="css/components.css?v=2">
@@ -16,7 +16,7 @@
     <div class="app-container">
         <aside class="sidebar">
             <div class="sidebar-header">
-                <div class="logo"><i class="fas fa-graduation-cap"></i>Estudiante</div>
+               <div class="logo"><i class="fas fa-graduation-cap"></i> Estudiante</div>
                 <div class="user-info">
                     <span class="user-avatar"><i class="fas fa-user-graduate"></i></span>
                     <span id="studentName">Estudiante</span>
@@ -33,7 +33,7 @@
                 <a href="ayuda.html" class="btn-cambiar-pass" style="text-decoration:none;">
                 <i class="fas fa-circle-question"></i> <span> Ayuda</span>
                 </a>
-                <button class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> <span> Cerrar sesión</span></button>
+                <button class="logout-btn" onclick="logout()"><i class="fas fa-right-from-bracket"></i> <span> Cerrar sesión</span></button>
         </aside>
 
         <main class="main-content">

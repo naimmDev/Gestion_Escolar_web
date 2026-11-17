@@ -6,7 +6,7 @@
  *  3. Solo responde a peticiones GET.
  * Para publicar una versión nueva, cambiar VERSION.
  */
-const VERSION = 'sge-v1';
+const VERSION = 'sge-v2';
 const CACHE_PROPIO  = `${VERSION}-propio`;
 const CACHE_EXTERNO = `${VERSION}-externo`;
 

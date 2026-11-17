@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin — Gestión Escolar</title>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/base.css?v=1">
     <link rel="stylesheet" href="css/shell.css?v=1">
     <link rel="stylesheet" href="css/components.css?v=2">
@@ -17,7 +17,7 @@
     <div class="app-container">
         <aside class="sidebar">
             <div class="sidebar-header">
-                <div class="logo"> Administrador</div>
+               <div class="logo"><i class="fas fa-user-tie"></i> Administrador</div>
                 <div class="user-info">
                     <span class="user-avatar"><i class="fas fa-user-tie"></i></span>
                     <span id="adminName">Admin</span>
@@ -33,11 +33,11 @@
 </nav>
 
             <!-- Botón de cambiar contraseña: SIN clase nav-btn para no interferir con la navegación -->
-            <button class="btn-cambiar-pass" onclick="openModal('changePasswordModal')">
-                <i class="fas fa-key"></i> <span> Cambiar contraseña</span> </button>
+          <button class="btn-cambiar-pass" onclick="openChangePasswordModal()">
+    <i class="fas fa-key"></i> <span> Cambiar contraseña</span> </button>
             <a href="ayuda.html" class="btn-cambiar-pass" style="text-decoration:none;">
                 <i class="fas fa-circle-question"></i> <span> Ayuda</span></a>
-            <button class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> <span> Cerrar
+            <button class="logout-btn" onclick="logout()"><i class="fas fa-right-from-bracket"></i> <span> Cerrar
                     sesión</span></button>
         </aside>
 
@@ -195,7 +195,7 @@
                                 <th><i class="fas fa-user-graduate"></i> Estudiante</th>
                                 <th><i class="fas fa-book"></i> Materia</th>
                                 <th><i class="fas fa-chalkboard-user"></i> Profesor</th>
-                                <th><i class="fas fa-calendar-alt"></i> Fecha</th>
+                                <th><i class="fas fa-calendar-days"></i> Fecha</th>
                                 <th><i class="fas fa-cog"></i> Acciones</th>
                             </tr>
                         </thead>
@@ -279,9 +279,9 @@
                             <div class="password-field-group"><input id="studentPassword" class="password-input"
                                     readonly placeholder="Se generará automáticamente"><button type="button"
                                     class="btn-pass-regen" onclick="regenPassword('studentPassword')"
-                                    title="Regenerar"><i class="fas fa-sync-alt"></i></button><button type="button"
+                                    title="Regenerar"><i class="fas fa-arrows-rotate"></i></button><button type="button"
                                     class="btn-pass-edit" onclick="togglePasswordEdit('studentPassword')"
-                                    title="Editar manualmente"><i class="fas fa-pencil-alt"></i></button></div>
+                                    title="Editar manualmente"><i class="fas fa-pencil"></i></button></div>
                         </div>
                         <div class="form-row">
                             <div class="form-group"><label for="studentFirstName">Nombre</label>
@@ -329,10 +329,10 @@
                                     placeholder="Se generará automáticamente">
                                 <button type="button" class="btn-pass-regen"
                                     onclick="regenPassword('professorPassword')" title="Regenerar"><i
-                                        class="fas fa-sync-alt"></i></button>
+                                        class="fas fa-arrows-rotate"></i></button>
                                 <button type="button" class="btn-pass-edit"
                                     onclick="togglePasswordEdit('professorPassword')" title="Editar manualmente"><i
-                                        class="fas fa-pencil-alt"></i></button>
+                                        class="fas fa-pencil"></i></button>
                             </div>
                         </div>
 

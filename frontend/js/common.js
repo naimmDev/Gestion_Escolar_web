@@ -41,11 +41,13 @@
 
     // Esc y clic fuera cierran cualquier .modal visible
     document.addEventListener('keydown', (e) => {
-        if (e.key !== 'Escape') return;
-        document.querySelectorAll('.modal').forEach(m => {
-            if (m.id && getComputedStyle(m).display !== 'none') closeModal(m.id);
-        });
-    });
+    if (e.key !== 'Escape') return;
+    // Si SweetAlert está abierto, dejamos que lo maneje él
+    if (document.querySelector('.swal2-container')) return;
+    const visibles = [...document.querySelectorAll('.modal')]
+        .filter(m => m.id && getComputedStyle(m).display !== 'none');
+    if (visibles.length) closeModal(visibles[visibles.length - 1].id);
+});
 
     window.addEventListener('click', (e) => {
         if (e.target.classList && e.target.classList.contains('modal') && e.target.id) closeModal(e.target.id);

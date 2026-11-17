@@ -20,9 +20,14 @@ async function loadData() {
     }
 
     if (!currentStudent.password_cambiada && !currentStudent.password_skipped) {
-        window.location.href = 'cambiar_password.php';
-        return;
-    }
+    window.location.href = 'cambiar_password.php';
+    return;
+}
+
+if (!currentStudent.preguntas_configuradas) {
+    window.location.href = 'configurar_preguntas.php';
+    return;
+}
 
     document.getElementById('studentName').textContent = currentStudent.nombre || 'Estudiante';
     document.getElementById('welcomeName').textContent = currentStudent.nombre || 'Estudiante';
@@ -544,6 +549,12 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
         if (view === 'grades')   renderGradesReport();
         if (view === 'comments') { loadCommentSubjects(); renderMyComments(); }
     });
+});
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && document.getElementById('gradesDetailOverlay')) {
+        closeGradesDetailModal(null);
+    }
 });
 
 // ==================== INICIALIZAR ====================

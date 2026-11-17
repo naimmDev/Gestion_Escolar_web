@@ -56,11 +56,16 @@ async function loadData() {
         return;
     }
 
-    if (!currentTeacher.password_cambiada && !currentTeacher.password_skipped) {
-        window.location.href = 'cambiar_password.php';
-        return;
-    }
+  if (!currentTeacher.password_cambiada && !currentTeacher.password_skipped) {
+    window.location.href = 'cambiar_password.php';
+    return;
+}
 
+
+if (!currentTeacher.preguntas_configuradas) {
+    window.location.href = 'configurar_preguntas.php';
+    return;
+}
     document.getElementById('teacherName').textContent = currentTeacher.nombre || 'Profesor';
     document.getElementById('welcomeName').textContent = currentTeacher.nombre || 'Profesor';
 
@@ -583,25 +588,12 @@ function renderTrimestreContent() {
             </div>
         </div>
     `;
-
-    const resumen = generarResumenTrimestre(currentStudentForModal.id, currentSubjectId, currentTrimestre);
-    if (resumen && grades.length > 0) {
-        container.innerHTML += `
-            <div style="margin-top: 20px; border-top: 2px solid var(--parchment); padding-top: 16px;">
-                <h4 style="font-family: 'Cinzel', serif; color: var(--crimson-deep);">Resumen del Trimestre</h4>
-                <table style="width:100%; border-collapse:collapse; max-width:420px; margin:0 auto;">
-                    <tr><td style="padding:6px 0; color:var(--ink-soft);"><strong>Promedio Parciales</strong></td><td style="text-align:right; font-family:'Cinzel',serif; color:var(--crimson);">${resumen.promParciales !== null ? resumen.promParciales.toFixed(1) : 'Sin datos'}</td></tr>
-                    <tr><td style="padding:6px 0; color:var(--ink-soft);"><strong>Promedio Apreciación</strong></td><td style="text-align:right; font-family:'Cinzel',serif; color:var(--crimson);">${resumen.promApreciacion !== null ? resumen.promApreciacion.toFixed(1) : 'Sin datos'}</td></tr>
-                    <tr><td style="padding:6px 0; color:var(--ink-soft);"><strong>Examen Trimestral</strong></td><td style="text-align:right; font-family:'Cinzel',serif; color:var(--crimson);">${resumen.examen !== null ? resumen.examen.toFixed(1) : 'Sin registrar'}</td></tr>
-                    <tr style="font-weight:bold; border-top:2px solid var(--crimson);">
-                        <td style="padding:10px 0; font-family:'Cinzel',serif; color:var(--crimson-deep);">Nota Trimestral</td>
-                        <td style="text-align:right; font-family:'Cinzel',serif; font-size:18px; color:var(--crimson-deep);">${resumen.notaTrimestral !== null ? resumen.notaTrimestral.toFixed(1) : '<span style="color:#8a7055; font-size:14px;">En curso</span>'}</td>
-                    </tr>
-                </table>
-            </div>
-        `;
-    }
-
+const resumen = currentTrimestre === 'Todas'
+    ? null
+    : generarResumenTrimestre(currentStudentForModal.id, currentSubjectId, currentTrimestre);
+if (resumen && grades.length > 0) {
+    container.innerHTML += `...`;
+}
     if (cerrado) {
         const form = container.querySelector('.add-grade-section');
         if (form) {
@@ -725,15 +717,16 @@ async function addNewGrade() {
             g.trimestre === trimestre &&
             g.type === 'EXAMEN_TRIMESTRAL'
         );
-        if (existing) {
-            Swal.fire({
-                title: 'nota de examen final existente',
-                icon: 'info',
-                timer: 2000,
-                showConfirmButton: false
-            });
-            return;
-        }
+      if (existing) {
+    Swal.fire({
+        title: 'Examen ya registrado',
+        text: 'Ya existe un Examen Trimestral para este estudiante en este trimestre.',
+        icon: 'info',
+        timer: 2200,
+        showConfirmButton: false
+    });
+    return;
+}
     }
 
     const payload = {

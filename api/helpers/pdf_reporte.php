@@ -20,19 +20,47 @@ function generarPdfDocumento(array $doc): string {
 
 function estiloInstitucional(): string {
     return "
-        body { font-family: Arial, sans-serif; font-size: 11px; color: #000; }
-        .inst { text-align: center; font-size: 14px; font-weight: bold; margin: 0; }
-        .tit  { text-align: center; font-size: 12px; font-weight: bold; margin: 4px 0 14px; }
-        .sub  { text-align: center; font-size: 12px; font-weight: bold; margin: 0 0 6px; }
+        @page { margin: 40px 40px; }
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #1A0A0A; }
+        
+        /* Encabezados */
+        .inst { text-align: center; font-size: 16px; font-weight: bold; color: #8B0000; margin: 0 0 5px 0; text-transform: uppercase; letter-spacing: 1px; }
+        .tit  { text-align: center; font-size: 13px; font-weight: bold; margin: 4px 0 18px; color: #5C0000; }
+        .sub  { text-align: center; font-size: 12px; font-weight: bold; margin: 0 0 10px 0; color: #8B0000; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        /* Tablas generales */
         table { width: 100%; border-collapse: collapse; }
-        table.info { border: 1px solid #000; margin-bottom: 14px; }
-        table.info td { border: 1px solid #000; padding: 6px 8px; width: 50%; }
-        table.datos th, table.datos td { border: 1px solid #000; padding: 6px 8px; text-align: center; }
-        table.datos th { font-weight: bold; }
-        table.datos td.izq { text-align: left; font-weight: bold; }
+        
+        /* Tabla de Información (Materia, Grupo, etc) */
+        table.info { margin-bottom: 20px; background-color: #FAF6EE; border: 1px solid #C9A84C; }
+        table.info td { border: 1px solid #C9A84C; padding: 8px 10px; width: 50%; color: #3B1A1A; }
+        
+        /* Tabla de Datos (Notas) */
+        table.datos { margin-bottom: 15px; }
+        table.datos th, table.datos td { 
+            border: 1px solid #E8DEC6; 
+            padding: 8px 6px; 
+            text-align: center; 
+            vertical-align: middle;
+        }
+        table.datos th { 
+            background-color: #8B0000; 
+            color: #F5E6B8; 
+            font-weight: bold; 
+            text-transform: uppercase;
+            font-size: 10px;
+            letter-spacing: 0.5px;
+        }
+        table.datos td.izq { text-align: left; font-weight: bold; color: #5C0000; }
+        
+        /* Zebra striping (filas alternas) */
+        table.datos tbody tr:nth-child(even) { background-color: #FAF6EE; }
+        
+        /* Pie de página */
+        .pie { margin-top: 20px; padding-top: 10px; border-top: 2px solid #C9A84C; font-weight: bold; color: #5C0000; }
+        
         thead { display: table-header-group; }
         tr { page-break-inside: avoid; }
-        .pie { margin-top: 12px; font-weight: bold; }
     ";
 }
 
