@@ -1,3 +1,6 @@
+// escapeHtml, openModal/closeModal, openChangePasswordModal, logout, pageshow,
+// cambio de contraseña y cierre de modales por Esc/clic fuera viven en common.js.
+
 // ==================== VARIABLES GLOBALES ====================
 let currentTeacher        = null;
 let mySubjects            = [];
@@ -12,26 +15,6 @@ let currentTrimestre       = 'I Trimestre';
 let studentGradeSearch     = '';
 let periodos = {};   // { 'I Trimestre': true/false, ... } (true = abierto)
 const seccionesAbiertas = new Set();   // claves de grados/secciones expandidos
-
-window.closeModal = function(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.style.display = 'none';
-        document.body.style.overflow = '';
-    }
-};
-
-// Forzar recarga si la página se restaura desde bfcache (botón Atrás/Adelante)
-window.addEventListener('pageshow', function (event) {
-    if (event.persisted) {
-        window.location.reload();
-    }
-});
-window.openChangePasswordModal = function() {
-    document.getElementById('changePasswordForm').reset();
-    document.getElementById('changePasswordModal').style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-};
 
 // ==================== NORMALIZACIÓN ====================
 function normalizeGrade(g) {
@@ -158,6 +141,7 @@ async function manejarTrimestreCerrado(error) {
     renderTrimestreContent();
     return true;
 }
+
 // ==================== DASHBOARD ====================
 function updateDashboard() {
     const uniqueStudentIds = [...new Set(myEnrollments.map(e => e.studentId))];
@@ -305,7 +289,6 @@ function updateQuickStats() {
             g.subjectId === currentSubjectId &&
             g.type === 'EXAMEN_TRIMESTRAL'
         );
-        const hasAnyNote = myGrades.some(g => g.studentId === s.id && g.subjectId === currentSubjectId);
         const avg = calcularPromedioSimple(s.id, currentSubjectId);
 
         if (hasExam) {
@@ -475,13 +458,11 @@ async function openStudentGradesModal(studentId) {
     if (!currentStudentForModal) return;
     await cargarPeriodos();
     renderStudentModal();
-    document.getElementById('studentGradesModal').style.display = 'flex';
-    document.body.style.overflow = 'hidden';
+    openModal('studentGradesModal');
 }
 
 function closeStudentModal() {
-    document.getElementById('studentGradesModal').style.display = 'none';
-    document.body.style.overflow = '';
+    closeModal('studentGradesModal');
 }
 
 function renderStudentModal() {
@@ -633,6 +614,7 @@ function renderTrimestreContent() {
         }
     }
 }
+
 function renderGradeHistoryItem(grade) {
     let nombreDisplay = grade.nombre;
     if (!nombreDisplay || nombreDisplay.trim() === '') {
@@ -657,7 +639,7 @@ function renderGradeHistoryItem(grade) {
         'EXAMEN_TRIMESTRAL': '<i class="fas fa-star"></i> Examen Trimestral',
         'APRECIACION': '<i class="fas fa-hand-peace"></i> Apreciación'
     };
-       return `
+    return `
         <div class="grade-history-item ${grade.type}">
             <div class="grade-info">
                 <div>
@@ -683,7 +665,6 @@ function renderGradeHistoryItem(grade) {
         </div>
     `;
 }
-
 
 function changeTrimestre(trimestre) {
     currentTrimestre = trimestre;
@@ -789,6 +770,7 @@ async function addNewGrade() {
         Swal.fire('Error', error.message, 'error');
     }
 }
+
 // ==================== EDITAR NOTA ====================
 const TIPO_EVALUACION_LABEL = {
     'PARCIAL': 'Parcial',
@@ -892,7 +874,7 @@ async function deleteGrade(gradeId) {
             if (res.ok) {
                 Swal.fire({ title: 'Nota eliminada', icon: 'success', timer: 1200, showConfirmButton: false });
                 await reloadGradesAndRefresh();
-                        } else {
+            } else {
                 const error = await res.json().catch(() => ({}));
                 if (await manejarTrimestreCerrado(error)) return;
                 Swal.fire('Error', error.error || 'No se pudo eliminar', 'error');
@@ -924,7 +906,6 @@ async function exportarReporteGrupal(grado, seccion = null) {
         return;
     }
 
-    // ✅ FIX: la sección "Sin sección" se compara correctamente
     const estudiantesFiltrados = getStudentsForSubject(currentSubjectId).filter(s => {
         if ((s.grade || 'Sin grado') !== grado) return false;
         if (seccion) {
@@ -993,41 +974,6 @@ function renderComments() {
     `).join('');
 }
 
-document.getElementById('changePasswordForm')?.addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const actual    = document.getElementById('cpActual').value;
-    const nueva     = document.getElementById('cpNueva').value;
-    const confirmar = document.getElementById('cpConfirmar').value;
-
-    if (nueva !== confirmar) {
-        Swal.fire('Error', 'Las contraseñas nuevas no coinciden', 'error');
-        return;
-    }
-    if (nueva.length < 6) {
-        Swal.fire('Error', 'La nueva contraseña debe tener al menos 6 caracteres', 'error');
-        return;
-    }
-
-    try {
-        const res  = await apiFetch('/auth/cambiar_password.php', {
-            method: 'POST',
-            body: JSON.stringify({ password_actual: actual, password_nueva: nueva })
-        });
-        const json = await res.json();
-        if (res.ok) {
-            const user = JSON.parse(localStorage.getItem('currentUser'));
-            user.password_cambiada = true;
-            localStorage.setItem('currentUser', JSON.stringify(user));
-            closeModal('changePasswordModal');
-            Swal.fire({ title: '¡Contraseña actualizada!', icon: 'success', timer: 1500, showConfirmButton: false });
-        } else {
-            Swal.fire('Error', json.error || 'No se pudo actualizar', 'error');
-        }
-    } catch (err) {
-        Swal.fire('Error', err.message, 'error');
-    }
-});
-
 // ==================== NAVEGACIÓN ====================
 document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', function () {
@@ -1043,33 +989,6 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
         if (view === 'comments')  renderComments();
     });
 });
-
-window.addEventListener('click', function (event) {
-    if (event.target.id === 'studentGradesModal') {
-        closeStudentModal();
-        return;
-    }
-    document.querySelectorAll('.modal').forEach(modal => {
-        if (event.target === modal && modal.id !== 'studentGradesModal') {
-            closeModal(modal.id);
-        }
-    });
-});
-
-// ==================== LOGOUT ====================
-async function logout() {
-    try { await apiFetch('/auth/logout.php', { method: 'POST' }); } catch (e) {}
-    localStorage.removeItem('currentUser');
-    window.location.href = 'index.html';
-}
-
-// ==================== UTILIDADES ====================
-function escapeHtml(str) {
-    if (str === null || str === undefined) return '';
-    return String(str).replace(/[&<>"']/g, m => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[m]));
-}
 
 // ==================== INICIALIZAR ====================
 loadData();

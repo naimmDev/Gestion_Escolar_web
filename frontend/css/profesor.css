@@ -1,1146 +1,243 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=Cinzel:wght@400;600;700;900&family=EB+Garamond:wght@400;500;600&display=swap');
+/*
+ * Paleta, reset, barra lateral, .page-title, estadísticas, .welcome-card,
+ * .btn-primary, formularios base, modales, comentarios y .view viven en
+ * base.css, shell.css y components.css. Aquí solo lo exclusivo del profesor.
+ */
 
-/* reset & base */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-:root {
-    --crimson:       #8B0000;
-    --crimson-deep:  #5C0000;
-    --crimson-mid:   #A00010;
-    --crimson-light: #B22222;
-    --gold:          #C9A84C;
-    --gold-light:    #E2C97E;
-    --gold-pale:     #F5E6B8;
-    --ivory:         #FAF6EE;
-    --ivory-dark:    #F0E8D5;
-    --parchment:     #E8DEC6;
-    --ink:           #1A0A0A;
-    --ink-soft:      #3B1A1A;
-}
-
-body {
-    font-family: 'EB Garamond', Georgia, serif;
-    background: var(--ivory);
-    color: var(--ink);
-}
-
-/* ---------- LAYOUT ---------- */
-.app-container {
-    display: flex;
-    min-height: 100vh;
-}
-
-/* ---------- SIDEBAR ---------- */
-.sidebar {
-    width: 280px;
-    background: linear-gradient(180deg, #1A0505 0%, #2E0808 60%, #1A0505 100%);
-    -webkit-backdrop-filter: blur(2px);
-    backdrop-filter: blur(2px);
-    padding: 32px 24px;
-    position: fixed;
-    height: 100vh;
-    box-shadow: 6px 0 24px rgba(0,0,0,0.4);
-    display: flex;
-    flex-direction: column;
-    border-right: 1px solid rgba(201,168,76,0.2);
-}
-
-.sidebar::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, var(--crimson-deep), var(--gold), var(--crimson-mid), var(--gold), var(--crimson-deep));
-}
-
-.sidebar-header {
-    text-align: left;
-    margin-bottom: 40px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid rgba(201,168,76,0.2);
-}
-
-.logo {
-    font-family: 'Cinzel', serif;
-    font-size: 19px;
-    font-weight: 700;
-    color: var(--gold-light);
-    letter-spacing: 0.1em;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.logo i {
-    color: var(--gold);
-    font-size: 22px;
-}
-
-.user-info {
-    margin-top: 20px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    background: rgba(201,168,76,0.08);
-    padding: 12px 16px;
-    border-radius: 2px;
-    border: 1px solid rgba(201,168,76,0.14);
-}
-
-.user-avatar {
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(201,168,76,0.12);
-    border-radius: 50%;
-    border: 1px solid rgba(201,168,76,0.25);
-}
-.user-avatar i {
-    font-size: 16px;
-    color: var(--gold-light);
-}
-
-.user-info span:not(.user-avatar) {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 14px;
-    font-style: italic;
-    color: var(--gold-pale);
-}
-
-.nav-menu {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    margin-top: 16px;
-    margin-bottom: 14px;
-}
-
-.nav-btn {
-    background: transparent;
-    border: none;
-    padding: 14px 18px;
-    text-align: left;
-    font-family: 'Cinzel', serif;
-    font-size: 12px;
-    font-weight: 400;
-    letter-spacing: 0.08em;
-    color: rgba(230,210,180,0.75);
-    border-radius: 2px;
-    cursor: pointer;
-    transition: all 0.22s ease;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    border-left: 2px solid transparent;
-}
-
-.nav-btn i {
-    width: 24px;
-    font-size: 16px;
-    color: var(--gold);
-    opacity: 0.55;
-    transition: 0.2s;
-}
-
-.nav-btn:hover {
-    background: rgba(201,168,76,0.08);
-    color: var(--gold-light);
-    border-left-color: rgba(201,168,76,0.4);
-    padding-left: 22px;
-}
-
-.nav-btn:hover i { opacity: 1; }
-
-.nav-btn.active {
-    background: linear-gradient(90deg, rgba(139,0,0,0.65), rgba(139,0,0,0.3));
-    color: var(--gold-pale);
-    border-left: 2px solid var(--gold);
-    box-shadow: 0 4px 14px rgba(92,0,0,0.2);
-}
-
-.nav-btn.active i { color: var(--gold-light); opacity: 1; }
-
-.logout-btn {
-    width: 100%;
-    padding: 12px;
-    background: transparent;
-    border: 1px solid rgba(139,0,0,0.5);
-    border-radius: 2px;
-    font-family: 'Cinzel', serif;
-    font-size: 12px;
-    letter-spacing: 0.1em;
-    color: rgba(230,180,180,0.7);
-    cursor: pointer;
-    margin-top: 24px;
-    transition: all 0.22s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    text-transform: uppercase;
-}
-
-.logout-btn:hover {
-    background: rgba(139,0,0,0.4);
-    color: var(--gold-pale);
-    border-color: var(--crimson);
-    transform: translateY(-1px);
-}
-
-/* ---------- MAIN CONTENT ---------- */
-.main-content {
-    margin-left: 280px;
-    flex: 1;
-    padding: 36px 44px;
-    background: var(--ivory);
-    min-height: 100vh;
-}
-
-.page-title {
-    font-family: 'Cinzel', serif;
-    font-size: 26px;
-    font-weight: 700;
-    color: var(--crimson-deep);
-    margin-bottom: 28px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    border-left: 5px solid var(--gold);
-    padding-left: 20px;
-}
-
-.page-title i {
-    color: var(--gold);
-    margin-right: 12px;
-    font-size: 24px;
-}
-
-/* ---------- STATS GRID ---------- */
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 24px;
-    margin-bottom: 36px;
-}
-
-.stat-card {
-    background: white;
-    border-radius: 2px;
-    padding: 24px 22px;
-    display: flex;
-    align-items: center;
-    gap: 18px;
-    box-shadow: 0 8px 24px rgba(26,5,5,0.07);
-    transition: all 0.25s ease;
-    border: 1px solid var(--parchment);
-    border-top: 3px solid var(--crimson);
-}
-
-.stat-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 16px 30px rgba(26,5,5,0.1);
-    border-top-color: var(--gold);
-}
-
-.stat-icon {
-    font-size: 40px;
-    background: var(--ivory-dark);
-    width: 70px;
-    height: 70px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 2px;
-    border: 1px solid rgba(201,168,76,0.18);
-    color: var(--crimson);
-}
-
-.stat-number {
-    font-family: 'Cinzel', serif;
-    font-size: 36px;
-    font-weight: 700;
-    color: var(--crimson-deep);
-    line-height: 1.1;
-}
-
-.stat-label {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--ink-soft);
-    letter-spacing: 0.04em;
-    margin-top: 4px;
-}
-
-/* Welcome Card */
-.welcome-card {
-    background: linear-gradient(125deg, #2E0808 0%, #1A0505 100%);
-    border-radius: 2px;
-    padding: 30px;
-    text-align: center;
-    border: 1px solid rgba(201,168,76,0.25);
-    margin-bottom: 24px;
-    position: relative;
-    overflow: hidden;
-}
-
-.welcome-card::before {
-    content: '♛';
-    position: absolute;
-    right: 20px;
-    top: 10px;
-    font-size: 60px;
-    color: rgba(201,168,76,0.07);
-}
-
-.welcome-card h3 {
-    font-family: 'Cinzel', serif;
-    color: var(--gold-light);
-    font-size: 22px;
-    font-weight: 700;
-    margin-bottom: 10px;
-    letter-spacing: 0.06em;
-}
-
-.welcome-card p {
-    font-family: 'Cormorant Garamond', serif;
-    font-style: italic;
-    color: rgba(245,230,184,0.6);
-    font-size: 15px;
-}
-
-/* ---------- SUBJECT GRID ---------- */
-.subjects-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 24px;
-}
-
+/* ---------- MIS MATERIAS ---------- */
+.subjects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 24px; }
 .subject-card {
-    background: white;
-    border-radius: 2px;
-    padding: 24px;
-    border: 1px solid var(--parchment);
-    border-top: 3px solid var(--gold);
-    transition: all 0.22s;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(26,5,5,0.04);
+    background: white; border-radius: 2px; padding: 24px;
+    border: 1px solid var(--parchment); border-top: 3px solid var(--gold);
+    transition: all 0.22s; cursor: pointer; box-shadow: 0 4px 12px rgba(26,5,5,0.04);
 }
-
-.subject-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 18px 28px rgba(26,5,5,0.1);
-    border-top-color: var(--crimson);
-}
-
+.subject-card:hover { transform: translateY(-5px); box-shadow: 0 18px 28px rgba(26,5,5,0.1); border-top-color: var(--crimson); }
 .subject-card h4 {
-    font-family: 'Cinzel', serif;
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--crimson-deep);
-    margin-bottom: 14px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    letter-spacing: 0.04em;
+    font-family: 'Cinzel', serif; font-size: 16px; font-weight: 700; color: var(--crimson-deep);
+    margin-bottom: 14px; display: flex; align-items: center; gap: 10px; letter-spacing: 0.04em;
 }
-
 .subject-card h4 i { color: var(--gold); }
-
-.subject-card p {
-    font-family: 'EB Garamond', serif;
-    margin: 8px 0;
-    color: var(--ink-soft);
-    font-size: 15px;
-}
+.subject-card p { font-family: 'EB Garamond', serif; margin: 8px 0; color: var(--ink-soft); font-size: 15px; }
 
 /* ---------- GESTIÓN DE NOTAS ---------- */
-.grades-panel, .card {
-    background: white;
-    border-radius: 2px;
-    padding: 28px;
-    margin-bottom: 32px;
-    border: 1px solid var(--parchment);
-    box-shadow: 0 4px 16px rgba(26,5,5,0.04);
+.grades-panel {
+    background: white; border-radius: 2px; padding: 28px; margin-bottom: 32px;
+    border: 1px solid var(--parchment); box-shadow: 0 4px 16px rgba(26,5,5,0.04);
 }
+.filter-bar { display: flex; gap: 20px; margin-bottom: 10px; flex-wrap: wrap; }
+.filter-bar .form-group { flex: 2; min-width: 200px; }
 
-.filter-bar {
-    display: flex;
-    gap: 20px;
-    margin-bottom: 10px;
-    flex-wrap: wrap;
-}
+/* En este panel los campos van con fondo blanco */
+.grades-panel .form-group select,
+.grades-panel .form-group input,
+.grade-type-select { background: white; }
 
-.filter-bar .form-group {
-    flex: 2;
-    min-width: 200px;
-}
-
-.form-group label {
-    font-family: 'Cinzel', serif;
-    font-weight: 600;
-    color: var(--crimson-deep);
-    margin-bottom: 8px;
-    display: block;
-    font-size: 11px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-}
-.form-group {
-    margin-bottom: 18px;
-}
-
-.form-group select,
-.form-group input,
-.grade-type-select {
-    width: 100%;
-    padding: 13px 16px;
-    border: 1px solid var(--parchment);
-    border-bottom: 2px solid var(--crimson);
-    border-radius: 2px;
-    font-family: 'EB Garamond', serif;
-    font-size: 15px;
-    background: white;
-    transition: all 0.2s;
-    color: var(--ink);
-    outline: none;
-}
-
-.form-group select:focus,
-.form-group input:focus,
-.grade-type-select:focus {
-    border-bottom-color: var(--gold);
-    box-shadow: 0 2px 0 rgba(201,168,76,0.25);
-}
-
-/* Quick stats */
-.quick-stats {
-    display: flex;
-    gap: 18px;
-    margin-bottom: 28px;
-    flex-wrap: wrap;
-}
-
+/* Resumen rápido */
+.quick-stats { display: flex; gap: 18px; margin-bottom: 28px; flex-wrap: wrap; }
 .quick-stat {
-    background: var(--ivory-dark);
-    border-radius: 2px;
-    padding: 16px 22px;
-    text-align: center;
-    flex: 1;
-    border: 1px solid var(--parchment);
-    border-top: 2px solid var(--crimson);
+    flex: 1 1 140px; padding: 16px 22px; text-align: center;
+    background: var(--ivory-dark); border-radius: 2px;
+    border: 1px solid var(--parchment); border-top: 2px solid var(--crimson);
 }
+.quick-stat .number { font-family: 'Cinzel', serif; font-size: 28px; font-weight: 700; color: var(--crimson-deep); }
+.quick-stat .label { font-family: 'Cormorant Garamond', serif; font-size: 13px; color: var(--ink-soft); font-style: italic; }
 
-.quick-stat .number {
-    font-family: 'Cinzel', serif;
-    font-size: 28px;
-    font-weight: 700;
-    color: var(--crimson-deep);
-}
-
-.quick-stat .label {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 13px;
-    color: var(--ink-soft);
-    font-style: italic;
-}
-
-/* Grade sections */
+/* Grados y secciones */
 .students-by-grade { margin-top: 10px; }
-
-.grade-section {
-    background: white;
-    border-radius: 2px;
-    margin-bottom: 20px;
-    overflow: hidden;
-    border: 1px solid var(--parchment);
-}
-
+.grade-section { background: white; border-radius: 2px; margin-bottom: 20px; overflow: hidden; border: 1px solid var(--parchment); }
 .grade-header {
-    background: var(--ivory-dark);
-    padding: 16px 22px;
-    font-family: 'Cinzel', serif;
-    font-weight: 700;
-    font-size: 15px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--crimson-deep);
-    cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: 0.2s;
-    border-bottom: 1px solid var(--parchment);
+    background: var(--ivory-dark); padding: 16px 22px;
+    font-family: 'Cinzel', serif; font-weight: 700; font-size: 15px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--crimson-deep); cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center;
+    transition: 0.2s; border-bottom: 1px solid var(--parchment);
 }
-
 .grade-header:hover { background: var(--parchment); }
-
-/* ✅ FIX: se eliminó aquí el bloque viejo:
-   .grade-header i { color: var(--gold); transition: transform 0.3s; }
-   .grade-header.collapsed i { transform: rotate(-90deg); }
-   porque rotaba TODOS los <i> del header (graduación + botón exportar).
-   La versión correcta está al final del archivo apuntando solo a .fa-chevron-down */
-
-.grade-students {
-    padding: 16px 20px;
-    background: var(--ivory);
-}
-
+.grade-students { padding: 16px 20px; background: var(--ivory); }
 .grade-students.collapsed { display: none; }
 
-/* Student Card */
+/* Tarjeta de estudiante */
 .student-grade-card {
-    background: white;
-    border-radius: 2px;
-    padding: 18px 20px;
-    margin-bottom: 12px;
-    border: 1px solid var(--parchment);
-    border-left: 4px solid var(--crimson);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 20px;
-    transition: all 0.2s;
-    cursor: pointer;
+    background: white; border-radius: 2px; padding: 18px 20px; margin-bottom: 12px;
+    border: 1px solid var(--parchment); border-left: 4px solid var(--crimson);
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;
+    transition: all 0.2s; cursor: pointer;
 }
-
-.student-grade-card:hover {
-    background: var(--ivory-dark);
-    transform: translateX(5px);
-    box-shadow: 0 6px 14px rgba(26,5,5,0.06);
-    border-left-color: var(--gold);
-}
-
+.student-grade-card:hover { background: var(--ivory-dark); transform: translateX(5px); box-shadow: 0 6px 14px rgba(26,5,5,0.06); border-left-color: var(--gold); }
 .student-info { flex: 2; min-width: 180px; }
-
-.student-name {
-    font-family: 'Cinzel', serif;
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--ink);
-    letter-spacing: 0.04em;
-}
-
-.student-email {
-    font-family: 'EB Garamond', serif;
-    font-size: 13px;
-    color: var(--ink-soft);
-    margin-top: 4px;
-}
-
+.student-name { font-family: 'Cinzel', serif; font-size: 14px; font-weight: 700; color: var(--ink); letter-spacing: 0.04em; }
+.student-email { font-family: 'EB Garamond', serif; font-size: 13px; color: var(--ink-soft); margin-top: 4px; overflow-wrap: anywhere; }
 .current-grade {
-    background: var(--ivory-dark);
-    padding: 6px 16px;
-    border-radius: 2px;
-    font-family: 'Cinzel', serif;
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--crimson-deep);
+    background: var(--ivory-dark); padding: 6px 16px; border-radius: 2px;
+    font-family: 'Cinzel', serif; font-size: 14px; font-weight: 700; color: var(--crimson-deep);
     border: 1px solid var(--parchment);
 }
-
 .grade-badge {
-    background: var(--parchment);
-    color: var(--ink-soft);
-    padding: 4px 12px;
-    border-radius: 2px;
-    font-family: 'Cinzel', serif;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
+    background: var(--parchment); color: var(--ink-soft); padding: 4px 12px; border-radius: 2px;
+    font-family: 'Cinzel', serif; font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
 }
+.grade-badge.low { background: rgba(139,0,0,0.1); color: var(--crimson); border: 1px solid rgba(139,0,0,0.2); }
 
-.grade-badge.low {
-    background: rgba(139,0,0,0.1);
-    color: var(--crimson);
-    border: 1px solid rgba(139,0,0,0.2);
-}
-
+/* ---------- MODAL DEL ESTUDIANTE ---------- */
+#studentGradesModal { z-index: 1050; }
 .student-modal .modal-content {
-    max-width: 880px;
-    width: 92%;
-    max-height: 85vh;
-    overflow-y: auto;
-    background: var(--ivory);
-    border-radius: 2px;
-    padding: 36px 40px;
-    position: relative;
-    box-shadow: 0 40px 60px rgba(0,0,0,0.4);
-    border: 1px solid var(--gold);
+    --modal-w: 880px;
+    max-height: 85vh; max-height: 85dvh;
+    padding: 36px 40px; background: var(--ivory); border-radius: 2px;
+    border: 1px solid var(--gold); box-shadow: 0 40px 60px rgba(0,0,0,0.4);
 }
-
 .student-modal .modal-content::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
     background: linear-gradient(90deg, var(--crimson-deep), var(--gold), var(--crimson-mid), var(--gold), var(--crimson-deep));
 }
-
-.close {
-    position: absolute;
-    top: 20px;
-    right: 24px;
-    font-size: 30px;
-    cursor: pointer;
-    color: var(--gold);
-    transition: 0.2s;
-    font-family: 'Cormorant Garamond', serif;
-    font-weight: 300;
-    line-height: 1;
-}
-
-.close:hover { color: var(--crimson); }
-
-.student-header {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    margin-bottom: 24px;
-    padding-bottom: 18px;
-    border-bottom: 1px solid var(--parchment);
-}
-
+.student-header { display: flex; align-items: center; gap: 20px; margin-bottom: 24px; padding-bottom: 18px; border-bottom: 1px solid var(--parchment); }
 .student-avatar { font-size: 50px; }
+.student-details { min-width: 0; }
+.student-details h3 { font-family: 'Cinzel', serif; font-size: 20px; font-weight: 700; color: var(--crimson-deep); margin-bottom: 8px; letter-spacing: 0.06em; }
+.student-details p { font-family: 'EB Garamond', serif; color: var(--ink-soft); font-size: 15px; overflow-wrap: anywhere; }
 
-.student-details h3 {
-    font-family: 'Cinzel', serif;
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--crimson-deep);
-    margin-bottom: 8px;
-    letter-spacing: 0.06em;
-}
-
-.student-details p {
-    font-family: 'EB Garamond', serif;
-    color: var(--ink-soft);
-    font-size: 15px;
-}
-
-.trimestre-tabs {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 28px;
-    flex-wrap: wrap;
-}
-
+.trimestre-tabs { display: flex; gap: 10px; margin-bottom: 28px; flex-wrap: wrap; }
 .trimestre-tab {
-    background: var(--ivory-dark);
-    border: 1px solid var(--parchment);
-    padding: 10px 22px;
-    border-radius: 2px;
-    font-family: 'Cinzel', serif;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--ink-soft);
-    cursor: pointer;
-    transition: 0.2s;
+    background: var(--ivory-dark); border: 1px solid var(--parchment); padding: 10px 22px; border-radius: 2px;
+    font-family: 'Cinzel', serif; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--ink-soft); cursor: pointer; transition: 0.2s;
 }
-
-.trimestre-tab.active {
-    background: var(--crimson);
-    color: var(--gold-pale);
-    border-color: var(--crimson);
-    box-shadow: 0 4px 12px rgba(92,0,0,0.25);
-}
+.trimestre-tab.active { background: var(--crimson); color: var(--gold-pale); border-color: var(--crimson); box-shadow: 0 4px 12px rgba(92,0,0,0.25); }
 
 .period-avg {
-    background: linear-gradient(95deg, var(--ivory-dark), var(--parchment));
-    border-radius: 2px;
-    padding: 16px 24px;
-    text-align: center;
-    margin-bottom: 28px;
-    font-family: 'Cinzel', serif;
-    border: 1px solid rgba(201,168,76,0.2);
+    background: linear-gradient(95deg, var(--ivory-dark), var(--parchment)); border-radius: 2px;
+    padding: 16px 24px; text-align: center; margin-bottom: 28px;
+    font-family: 'Cinzel', serif; border: 1px solid rgba(201,168,76,0.2);
 }
-
+.period-avg span { font-size: 26px; font-weight: 700; color: var(--crimson-deep); }
 .period-closed-banner {
-    margin-bottom: 12px;
-    padding: 12px 18px;
-    border: 1px solid rgba(139,0,0,0.25);
-    background: rgba(139,0,0,0.07);
-    color: var(--crimson-deep);
-    font-weight: 600;
+    margin-bottom: 12px; padding: 12px 18px; font-weight: 600;
+    border: 1px solid rgba(139,0,0,0.25); background: rgba(139,0,0,0.07); color: var(--crimson-deep);
 }
 
-.period-avg span {
-    font-size: 26px;
-    font-weight: 700;
-    color: var(--crimson-deep);
-}
-
-.add-grade-section {
-    background: var(--ivory-dark);
-    border-radius: 2px;
-    padding: 28px;
-    margin-bottom: 30px;
-    border: 1px solid var(--parchment);
-}
-
+.add-grade-section { background: var(--ivory-dark); border-radius: 2px; padding: 28px; margin-bottom: 30px; border: 1px solid var(--parchment); }
 .add-grade-section input:disabled,
-.add-grade-section select:disabled {
-    background: #e8e5df;
-    border-color: #d2cfc8;
-    color: #77716a;
-    cursor: not-allowed;
-    box-shadow: none;
-}
-
-.add-grade-title {
-    font-family: 'Cinzel', serif;
-    font-weight: 700;
-    color: var(--crimson-deep);
-    margin-bottom: 20px;
-    font-size: 14px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
-
-.grade-form-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 18px;
-    align-items: flex-end;
-    margin-bottom: 18px;
-}
-
-.grade-form-row .form-group {
-    flex: 1;
-    min-width: 140px;
-    margin-bottom: 0;
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, var(--crimson-deep), var(--crimson));
-    border: 1px solid var(--gold);
-    padding: 13px 28px;
-    border-radius: 2px;
-    color: var(--gold-pale);
-    font-family: 'Cinzel', serif;
-    font-weight: 600;
-    font-size: 12px;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: 0.2s;
-    box-shadow: 0 4px 12px rgba(92,0,0,0.25);
-}
-
-.btn-primary:hover {
-    background: linear-gradient(135deg, var(--crimson), var(--crimson-light));
-    transform: translateY(-1px);
-    box-shadow: 0 8px 18px rgba(92,0,0,0.3);
-}
+.add-grade-section select:disabled { background: #e8e5df; border-color: #d2cfc8; color: #77716a; cursor: not-allowed; box-shadow: none; }
+.add-grade-title { font-family: 'Cinzel', serif; font-weight: 700; color: var(--crimson-deep); margin-bottom: 20px; font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase; }
+.grade-form-row { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-end; margin-bottom: 18px; }
+.grade-form-row .form-group { flex: 1; min-width: 140px; margin-bottom: 0; }
 
 .btn-primary:disabled,
-.btn-primary:disabled:hover {
-    background: #d5d1ca;
-    border-color: #c5c0b7;
-    color: #77716a;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-}
+.btn-primary:disabled:hover { background: #d5d1ca; border-color: #c5c0b7; color: #77716a; cursor: not-allowed; transform: none; box-shadow: none; }
 
-.grades-history-title {
-    font-family: 'Cinzel', serif;
-    font-weight: 700;
-    font-size: 16px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--crimson-deep);
-    margin-bottom: 18px;
-}
-
+/* Historial */
+.grades-history-title { font-family: 'Cinzel', serif; font-weight: 700; font-size: 16px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--crimson-deep); margin-bottom: 18px; }
 .grade-history-item {
-    background: white;
-    border-radius: 2px;
-    padding: 18px;
-    margin-bottom: 12px;
-    border: 1px solid var(--parchment);
-    border-left: 5px solid var(--crimson);
-    display: flex;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 10px;
+    background: white; border-radius: 2px; padding: 18px; margin-bottom: 12px;
+    border: 1px solid var(--parchment); border-left: 5px solid var(--crimson);
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;
     box-shadow: 0 2px 6px rgba(26,5,5,0.03);
 }
-
+.grade-info { flex: 1 1 200px; min-width: 0; }
+.grade-comment { margin-top: 4px; font-size: 13px; font-style: italic; color: #8a7055; overflow-wrap: anywhere; }
+.grade-date { margin-top: 4px; font-size: 12px; color: #8a7055; }
 .grade-type-badge {
-    background: var(--ivory-dark);
-    padding: 5px 14px;
-    border-radius: 2px;
-    font-family: 'Cinzel', serif;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    color: var(--crimson-deep);
-    border: 1px solid var(--parchment);
+    background: var(--ivory-dark); padding: 5px 14px; border-radius: 2px;
+    font-family: 'Cinzel', serif; font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+    color: var(--crimson-deep); border: 1px solid var(--parchment);
 }
-
-.grade-score {
-    font-family: 'Cinzel', serif;
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--crimson);
-    margin-left: 10px;
-}
+.grade-score { font-family: 'Cinzel', serif; font-size: 20px; font-weight: 700; color: var(--crimson); margin-left: 10px; }
+.grade-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 
 .delete-grade-btn {
-    background: rgba(139,0,0,0.08);
-    border: 1px solid rgba(139,0,0,0.2);
-    padding: 8px 18px;
-    border-radius: 2px;
-    font-family: 'Cinzel', serif;
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    color: var(--crimson);
-    cursor: pointer;
-    transition: 0.2s;
+    background: rgba(139,0,0,0.08); border: 1px solid rgba(139,0,0,0.2); padding: 8px 18px; border-radius: 2px;
+    font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.08em; color: var(--crimson); cursor: pointer; transition: 0.2s;
 }
-
-.delete-grade-btn:hover {
-    background: var(--crimson);
-    color: var(--gold-pale);
-}
-
-.grade-actions {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    align-items: center;
-}
-
+.delete-grade-btn:hover { background: var(--crimson); color: var(--gold-pale); }
 .edit-grade-btn {
-    background: rgba(201,168,76,0.12);
-    border: 1px solid rgba(201,168,76,0.4);
-    padding: 8px 18px;
-    border-radius: 2px;
-    font-family: 'Cinzel', serif;
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    color: var(--crimson-deep);
-    cursor: pointer;
-    transition: 0.2s;
+    background: rgba(201,168,76,0.12); border: 1px solid rgba(201,168,76,0.4); padding: 8px 18px; border-radius: 2px;
+    font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.08em; color: var(--crimson-deep); cursor: pointer; transition: 0.2s;
 }
+.edit-grade-btn:hover { background: var(--gold); color: var(--crimson-deep); }
 
-.edit-grade-btn:hover {
-    background: var(--gold);
-    color: var(--crimson-deep);
-}
-
-/* Comments section */
-.comments-list {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-}
-
-.comment-card {
-    background: white;
-    border-radius: 2px;
-    padding: 22px;
-    border: 1px solid var(--parchment);
-    border-left: 5px solid var(--crimson);
-}
-
-.comment-card .student {
-    font-family: 'Cinzel', serif;
-    font-weight: 700;
-    color: var(--crimson-deep);
-    font-size: 14px;
-    letter-spacing: 0.06em;
-    margin-bottom: 8px;
-}
-
-/* Vistas */
-.view { display: none; }
-.view.active { display: block; }
-
-/* responsive */
-@media (max-width: 768px) {
-    .sidebar { width: 72px; padding: 20px 8px; }
-    .sidebar .logo span,
-    .sidebar .user-info span:not(.user-avatar),
-    .nav-btn span,
-    .logout-btn span { display: none; }
-    .nav-btn i { margin-right: 0; font-size: 20px; }
-    .nav-btn { justify-content: center; padding: 14px 0; }
-    .main-content { margin-left: 72px; padding: 24px 16px; }
-    .page-title { font-size: 20px; }
-    .student-grade-card { flex-direction: column; align-items: stretch; }
-    .grade-form-row { flex-direction: column; }
-    .student-modal .modal-content { padding: 24px 20px; }
-}
-
-/* ========== MODAL ========== */
-.modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(26, 5, 5, 0.85);
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
-    z-index: 9999;
-    align-items: center;
-    justify-content: center;
-}
-
-.modal.show,
-.modal[style*="display: flex"] {
-    display: flex !important;
-}
-
-.modal-content {
-    background: var(--ivory);
-    border-radius: 8px;
-    padding: 30px;
-    width: 90%;
-    max-width: 500px;
-    position: relative;
-    border: 1px solid var(--gold);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
-    animation: modalFadeIn 0.3s ease;
-}
-
-@keyframes modalFadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.modal-content h3 {
-    font-family: 'Cinzel', serif;
-    color: var(--crimson-deep);
-    margin-bottom: 20px;
-    font-size: 16px;
-    letter-spacing: 0.1em;
-}
-
-.modal-content .close {
-    position: absolute;
-    top: 12px;
-    right: 16px;
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
-    color: var(--gold);
-    background: none;
-    border: none;
-    line-height: 1;
-}
-
-.modal-content .close:hover {
-    color: var(--crimson);
-}
-
-/* Ajuste de z-index para que el modal de SweetAlert (1060) esté por encima */
-#studentGradesModal {
-    z-index: 1050;
-}
-
-/* Asegurar que el overlay del modal no tape SweetAlert */
-.modal-overlay, .gd-modal-overlay {
-    z-index: 1049;
-}
-/* Asegurar que SweetAlert esté por encima de los modales */
-.swal2-container {
-    z-index: 99999 !important;
-}
-
-/* ========== BOTÓN CAMBIAR CONTRASEÑA SIDEBAR ========== */
-
-.btn-cambiar-pass {
-    background: transparent;
-    border: 1px solid rgba(139,0,0,0.4);
-    padding: 13px 14px;
-    border-radius: 2px;
-    font-family: 'Cinzel', serif;
-    font-size: 12px;
-    font-weight: 400;
-    letter-spacing: 0.06em;
-    color: rgba(230,210,180,0.75);
-    cursor: pointer;
-    transition: all 0.25s ease;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-    margin-bottom: 8px;
-    white-space: nowrap;
-}
-
-.btn-cambiar-pass i {
-    width: 18px;
-    color: var(--gold);
-    opacity: 0.6;
-}
-
-.btn-cambiar-pass:hover {
-    background: rgba(139,0,0,0.3);
-    color: var(--gold-light);
-    border-color: var(--crimson);
-}
-
-.btn-cambiar-pass:hover i {
-    opacity: 1;
-}
-
-/* ========== EXPORTAR — GRUPAL (junto al header de grado) ========== */
-.btn-exportar-grupo {
+/* ---------- BOTONES DE EXPORTAR ---------- */
+.btn-exportar-grupo, .btn-exportar-seccion {
     background: linear-gradient(135deg, var(--crimson-deep), var(--crimson));
-    border: 1px solid rgba(201,168,76,0.4);
-    padding: 6px 14px;
-    border-radius: 2px;
-    color: var(--gold-pale);
-    font-family: 'Cinzel', serif;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 2px 8px rgba(92,0,0,0.2);
-    white-space: nowrap;
+    border: 1px solid rgba(201,168,76,0.4); padding: 6px 14px; border-radius: 2px; color: var(--gold-pale);
+    font-family: 'Cinzel', serif; font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+    cursor: pointer; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(92,0,0,0.2); white-space: nowrap;
 }
-
-.btn-exportar-grupo:hover {
-    background: linear-gradient(135deg, var(--crimson), var(--crimson-light));
-    transform: translateY(-1px);
+.btn-exportar-seccion { padding: 5px 12px; letter-spacing: 0.08em; }
+.btn-exportar-grupo:hover, .btn-exportar-seccion:hover {
+    background: linear-gradient(135deg, var(--crimson), var(--crimson-light)); transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(92,0,0,0.3);
 }
-
 .btn-exportar-grupo i { margin-right: 5px; }
+.btn-exportar-seccion i { margin-right: 4px; }
 
-/* ========== EXPORTAR — INDIVIDUAL (junto a las pestañas de trimestre) ========== */
 .btn-exportar-individual {
     background: linear-gradient(135deg, var(--crimson-deep), var(--crimson));
-    border: 1px solid var(--gold);
-    padding: 10px 20px;
-    border-radius: 2px;
-    color: var(--gold-pale);
-    font-family: 'Cinzel', serif;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 3px 10px rgba(92,0,0,0.25);
-    white-space: nowrap;
-    margin-left: auto;
+    border: 1px solid var(--gold); padding: 10px 20px; border-radius: 2px; color: var(--gold-pale);
+    font-family: 'Cinzel', serif; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+    cursor: pointer; transition: all 0.2s ease; box-shadow: 0 3px 10px rgba(92,0,0,0.25);
+    white-space: nowrap; margin-left: auto;
 }
-
-.btn-exportar-individual:hover {
-    background: linear-gradient(135deg, var(--crimson), var(--crimson-light));
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(92,0,0,0.3);
-}
-
+.btn-exportar-individual:hover { background: linear-gradient(135deg, var(--crimson), var(--crimson-light)); transform: translateY(-1px); box-shadow: 0 6px 16px rgba(92,0,0,0.3); }
 .btn-exportar-individual i { margin-right: 6px; }
 
-/* ========== ÍCONOS DEL HEADER DE GRADO (solo rota la flecha) ========== */
+/* ---------- ÍCONOS DE GRADO / SECCIÓN (solo rota la flecha) ---------- */
 .grade-header .fa-chevron-down { color: var(--gold); transition: transform 0.3s; }
 .grade-header.collapsed .fa-chevron-down { transform: rotate(-90deg); }
 .grade-header .fa-graduation-cap { color: var(--gold); }
-/* ========== SUB-SECCIONES (A, B, C...) dentro de cada grado ========== */
-.section-block {
-    margin-bottom: 14px;
-}
 
-.section-block:last-child {
-    margin-bottom: 0;
-}
-
+.section-block { margin-bottom: 14px; }
+.section-block:last-child { margin-bottom: 0; }
 .section-header {
-    background: rgba(201,168,76,0.08);
-    padding: 10px 16px;
-    font-family: 'Cinzel', serif;
-    font-weight: 600;
-    font-size: 12px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--crimson-deep);
-    cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border: 1px solid var(--parchment);
-    border-left: 3px solid var(--gold);
-    border-radius: 2px;
-    transition: 0.2s;
-    margin-bottom: 10px;
+    background: rgba(201,168,76,0.08); padding: 10px 16px; margin-bottom: 10px;
+    font-family: 'Cinzel', serif; font-weight: 600; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--crimson-deep); cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center;
+    border: 1px solid var(--parchment); border-left: 3px solid var(--gold); border-radius: 2px; transition: 0.2s;
+}
+.section-header:hover { background: var(--parchment); }
+.section-header .fa-chevron-down { color: var(--gold); transition: transform 0.3s; }
+.section-header.collapsed .fa-chevron-down { transform: rotate(-90deg); }
+.section-students.collapsed { display: none; }
+.section-header-actions { display: flex; align-items: center; gap: 12px; }
+
+/* ========== RESPONSIVE (propio del profesor) ========== */
+@media (pointer: coarse) {
+    .edit-grade-btn, .delete-grade-btn,
+    .btn-exportar-grupo, .btn-exportar-seccion, .btn-exportar-individual { min-height: 44px; }
 }
 
-.section-header:hover {
-    background: var(--parchment);
-}
+@media (max-width: 767px) {
+    .grades-panel { padding: 16px; }
+    .filter-bar .form-group { min-width: 100%; }
 
-.section-header .fa-chevron-down {
-    color: var(--gold);
-    transition: transform 0.3s;
-}
+    .grade-header, .section-header { flex-wrap: wrap; gap: 8px; padding-left: 14px; padding-right: 14px; }
+    .section-header-actions { flex-wrap: wrap; }
+    .grade-students { padding: 12px; }
 
-.section-header.collapsed .fa-chevron-down {
-    transform: rotate(-90deg);
-}
+    .student-grade-card { flex-direction: column; align-items: stretch; padding: 14px; }
+    .student-grade-card:hover { transform: none; }
 
-.section-students.collapsed {
-    display: none;
-}
+    /* Modal del estudiante: hoja inferior de ancho completo */
+    .student-modal .modal-content {
+        max-height: 94dvh; padding: 22px 14px; border-radius: 12px 12px 0 0;
+    }
+    .student-header { flex-wrap: wrap; gap: 12px; }
+    .student-avatar { font-size: 36px; }
+    .student-details h3 { font-size: 17px; }
 
-/* ========== BOTÓN EXPORTAR POR SECCIÓN (dentro del header de la sección) ========== */
-.section-header-actions {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
+    .trimestre-tabs { gap: 8px; margin-bottom: 20px; }
+    .trimestre-tab { flex: 1 1 calc(50% - 8px); padding: 10px 8px; text-align: center; }
+    .btn-exportar-individual { width: 100%; margin-left: 0; }
 
-.btn-exportar-seccion {
-    background: linear-gradient(135deg, var(--crimson-deep), var(--crimson));
-    border: 1px solid rgba(201,168,76,0.4);
-    padding: 5px 12px;
-    border-radius: 2px;
-    color: var(--gold-pale);
-    font-family: 'Cinzel', serif;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 2px 6px rgba(92,0,0,0.2);
-    white-space: nowrap;
-}
+    .period-avg { padding: 14px 12px; margin-bottom: 20px; }
+    .add-grade-section { padding: 16px; }
 
-.btn-exportar-seccion:hover {
-    background: linear-gradient(135deg, var(--crimson), var(--crimson-light));
-    transform: translateY(-1px);
-    box-shadow: 0 4px 10px rgba(92,0,0,0.3);
-}
+    /* Formulario de nueva nota en una columna (!important: el JS trae estilos en línea) */
+    .grade-form-row { flex-direction: column; align-items: stretch; gap: 14px; }
+    .grade-form-row .form-group { flex: none !important; width: 100%; min-width: 0; }
+    .grade-form-row .btn-primary { width: 100%; margin-top: 0 !important; }
 
-.btn-exportar-seccion i {
-    margin-right: 4px;
+    .grade-history-item { padding: 14px; }
+    .grade-actions { width: 100%; }
+    .grade-actions button { flex: 1; }
 }

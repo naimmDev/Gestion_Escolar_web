@@ -1,0 +1,65 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=Cinzel:wght@400;600;700;900&family=EB+Garamond:wght@400;500;600&display=swap');
+
+/*
+ * Puntos de quiebre (las variables CSS no funcionan dentro de @media, se respetan a mano):
+ *   Teléfono   < 768px         → menú tipo cajón + barra superior
+ *   Tablet     768 – 1023px    → carril de íconos
+ *   Laptop     ≥ 1024px        → barra lateral completa
+ *   Monitor    ≥ 1440px        → contenido centrado con ancho máximo
+ */
+:root {
+    --crimson: #8B0000;  --crimson-deep: #5C0000;  --crimson-mid: #A00010;  --crimson-light: #B22222;
+    --gold: #C9A84C;     --gold-light: #E2C97E;    --gold-pale: #F5E6B8;
+    --ivory: #FAF6EE;    --ivory-dark: #F0E8D5;    --parchment: #E8DEC6;
+    --ink: #1A0A0A;      --ink-soft: #3B1A1A;      --shadow: rgba(92, 0, 0, 0.25);
+
+    --sidebar-w: 280px;
+    --rail-w: 72px;
+    --drawer-w: min(300px, 86vw);
+    --topbar-h: 56px;
+    --space-page: clamp(16px, 3vw, 40px);
+    --content-max: 1400px;
+    --fs-title: clamp(1.25rem, 1rem + 1.2vw, 1.625rem);
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
+body {
+    font-family: 'EB Garamond', Georgia, serif;
+    background: var(--ivory);
+    color: var(--ink);
+    min-height: 100dvh;
+}
+
+img, svg, video { max-width: 100%; height: auto; }
+
+/* Pantallas táctiles: sin zoom automático en iOS y áreas de toque de 44px */
+@media (pointer: coarse) {
+    input:not([type="checkbox"]):not([type="radio"]),
+    select,
+    textarea { font-size: 16px !important; }
+
+    .btn-primary, .btn-edit, .btn-danger, .btn-reset, .nav-btn, .btn-cambiar-pass,
+    .logout-btn, .trimestre-tab, .user-tab-btn, .pagination button { min-height: 44px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* SweetAlert siempre por encima de los modales (z-index 9999) */
+.swal2-container { z-index: 99999 !important; }
+
+.sr-only {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip: rect(0 0 0 0); white-space: nowrap;
+}
+@media (hover: none) {
+    .student-grade-card:hover, .subject-card:hover, .stat-card:hover { transform: none; }
+}

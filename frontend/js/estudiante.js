@@ -1,3 +1,6 @@
+// escapeHtml, openModal/closeModal, openChangePasswordModal, logout, pageshow,
+// cambio de contraseña y cierre de modales por Esc/clic fuera viven en common.js.
+
 // ==================== VARIABLES GLOBALES ====================
 let currentStudent = null;
 let myEnrollments  = [];
@@ -7,37 +10,15 @@ let mySubjects     = [];
 const TRIMESTRES = ['I Trimestre', 'II Trimestre', 'III Trimestre'];
 let periodos = {};   // { 'I Trimestre': true/false, ... } (true = abierto)
 
-// Función global para cerrar modal
-window.closeModal = function(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.style.display = 'none';
-        document.body.style.overflow = '';
-    }
-};
-
-// Forzar recarga si la página se restaura desde bfcache (botón Atrás/Adelante)
-window.addEventListener('pageshow', function (event) {
-    if (event.persisted) {
-        window.location.reload();
-    }
-});
-
-window.openChangePasswordModal = function() {
-    document.getElementById('changePasswordForm').reset();
-    document.getElementById('changePasswordModal').style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-};
-
 // ==================== CARGA DE DATOS ====================
 async function loadData() {
     currentStudent = JSON.parse(localStorage.getItem('currentUser'));
-    
+
     if (!currentStudent || currentStudent.rol !== 'estudiante') {
         window.location.href = 'index.html';
         return;
     }
-    
+
     if (!currentStudent.password_cambiada && !currentStudent.password_skipped) {
         window.location.href = 'cambiar_password.php';
         return;
@@ -118,7 +99,7 @@ function getGradesForSubjectTrimestre(subjectId, trimestre) {
 // ==================== FUNCIONES DE CÁLCULO ====================
 function calcularNotaTrimestral(subjectId, trimestre) {
     const grades = myGrades.filter(g => g.subjectId === subjectId && g.trimestre === trimestre);
-    
+
     const parciales = grades.filter(g => g.type === 'PARCIAL');
     const apreciaciones = grades.filter(g => g.type === 'APRECIACION');
     const examenes = grades.filter(g => g.type === 'EXAMEN_TRIMESTRAL');
@@ -163,7 +144,7 @@ function calcularPromedioSimple(subjectId) {
 // ==================== DASHBOARD ====================
 function updateDashboard() {
     document.getElementById('mySubjectsCount').textContent = mySubjects.length;
-    
+
     let total = 0, count = 0;
     for (const subject of mySubjects) {
         const avg = calcularPromedioSimple(subject.id);
@@ -173,7 +154,7 @@ function updateDashboard() {
         }
     }
     document.getElementById('myAverage').textContent = count > 0 ? (total / count).toFixed(1) : 0;
-    
+
     let approved = 0;
     for (const subject of mySubjects) {
         const avg = calcularPromedioSimple(subject.id);
@@ -185,7 +166,7 @@ function updateDashboard() {
 // ==================== REPORTE DE NOTAS ====================
 function renderGradesReport() {
     const container = document.getElementById('gradesReport');
-    
+
     let total = 0, count = 0;
     for (const subject of mySubjects) {
         const avg = calcularPromedioSimple(subject.id);
@@ -207,7 +188,7 @@ function renderGradesReport() {
         return;
     }
 
-       let html = `
+    let html = `
         <div class="report-header">
             <h3><i class="fas fa-chart-line"></i> Reporte Académico</h3>
             <div class="general-average">
@@ -302,6 +283,7 @@ function renderTrimestreSection(trimestre) {
         </div>
     `;
 }
+
 function renderSubjectRow(subject, grades, notaTrim, trimestre) {
     const notasBtn = grades.length > 0
         ? `<button class="btn-ver-notas" onclick="openGradesDetailModal(${parseInt(subject.id)}, '${trimestre}')">
@@ -333,7 +315,7 @@ function openGradesDetailModal(subjectId, trimestre) {
     const subjectName = mySubjects.find(s => parseInt(s.id) === subjectId)?.name || '';
     const grades = getGradesForSubjectTrimestre(subjectId, trimestre);
     const resumen = generarResumenTrimestre(subjectId, trimestre);
-    
+
     const parciales = grades.filter(g => g.type === 'PARCIAL');
     const apreciaciones = grades.filter(g => g.type === 'APRECIACION');
     const examenes = grades.filter(g => g.type === 'EXAMEN_TRIMESTRAL');
@@ -423,6 +405,7 @@ function openGradesDetailModal(subjectId, trimestre) {
         document.getElementById('gradesDetailOverlay').classList.add('visible');
     });
 }
+
 // ==================== EXPORTAR BOLETÍN (PDF / Excel) ====================
 // El archivo lo genera el backend (GET /notas/exportar.php).
 
@@ -548,47 +531,11 @@ async function renderMyComments() {
     }
 }
 
-// ==================== CAMBIO CONTRASEÑA ====================
-document.getElementById('changePasswordForm')?.addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const actual    = document.getElementById('cpActual').value;
-    const nueva     = document.getElementById('cpNueva').value;
-    const confirmar = document.getElementById('cpConfirmar').value;
-
-    if (nueva !== confirmar) {
-        Swal.fire('Error', 'Las contraseñas nuevas no coinciden', 'error');
-        return;
-    }
-    if (nueva.length < 6) {
-        Swal.fire('Error', 'La nueva contraseña debe tener al menos 6 caracteres', 'error');
-        return;
-    }
-
-    try {
-        const res  = await apiFetch('/auth/cambiar_password.php', {
-            method: 'POST',
-            body: JSON.stringify({ password_actual: actual, password_nueva: nueva })
-        });
-        const json = await res.json();
-        if (res.ok) {
-            const user = JSON.parse(localStorage.getItem('currentUser'));
-            user.password_cambiada = true;
-            localStorage.setItem('currentUser', JSON.stringify(user));
-            closeModal('changePasswordModal');
-            Swal.fire({ title: '¡Contraseña actualizada!', icon: 'success', timer: 1500, showConfirmButton: false });
-        } else {
-            Swal.fire('Error', json.error || 'No se pudo actualizar', 'error');
-        }
-    } catch (err) {
-        Swal.fire('Error', err.message, 'error');
-    }
-});
-
 // ==================== NAVEGACIÓN ====================
 document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', function () {
         if (!this.dataset.view) return;
-        
+
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         this.classList.add('active');
         const view = this.dataset.view;
@@ -598,27 +545,6 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
         if (view === 'comments') { loadCommentSubjects(); renderMyComments(); }
     });
 });
-
-window.addEventListener('click', function (event) {
-    document.querySelectorAll('.modal').forEach(modal => {
-        if (event.target === modal) closeModal(modal.id);
-    });
-});
-
-// ==================== LOGOUT ====================
-async function logout() {
-    try { await apiFetch('/auth/logout.php', { method: 'POST' }); } catch (e) {}
-    localStorage.removeItem('currentUser');
-    window.location.href = 'index.html';
-}
-
-// ==================== UTILIDADES ====================
-function escapeHtml(str) {
-    if (str === null || str === undefined) return '';
-    return String(str).replace(/[&<>"']/g, m => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[m]));
-}
 
 // ==================== INICIALIZAR ====================
 loadData();

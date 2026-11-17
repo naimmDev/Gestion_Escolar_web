@@ -12,12 +12,7 @@ if ($token) {
         ->execute([hash('sha256', $token)]);
 }
 
-setcookie('sesion_token', '', [
-    'expires'  => time() - 3600,
-    'path'     => '/',
-    'httponly' => true,
-    'samesite' => 'Lax'
-]);
+cookieSesion('', time() - 3600);
 
 sendSuccess(["message" => "Sesión cerrada"]);
 ?>

@@ -1,10 +1,4 @@
-
-// Forzar recarga si la página se restaura desde bfcache (botón Atrás/Adelante)
-window.addEventListener('pageshow', function (event) {
-    if (event.persisted) {
-        window.location.reload();
-    }
-});
+// escapeHtml y pageshow viven en common.js.
 
 (function() {
 const user = JSON.parse(localStorage.getItem('currentUser'));
@@ -63,7 +57,7 @@ function renderPreguntas() {
             <div class="input-group" style="margin-top:8px;">
                 <label><i class="fas fa-pen"></i> Tu respuesta</label>
                 <input type="text" id="respuesta_${i}" placeholder="Escribe tu respuesta..." autocomplete="off"
-                       value="${document.getElementById('respuesta_' + i)?.value || ''}">
+                       value="${escapeHtml(document.getElementById('respuesta_' + i)?.value || '')}">
             </div>
         </div>`;
     }
@@ -85,15 +79,15 @@ document.getElementById('preguntasForm').addEventListener('submit', async functi
     for (let i = 0; i < 3; i++) {
         const preguntaId = document.getElementById(`pregunta_${i}`).value;
         const respuesta  = document.getElementById(`respuesta_${i}`).value.trim();
-        
+
         if (!preguntaId || !respuesta) {
             Swal.fire('Incompleto', `Completa la pregunta y respuesta ${i + 1}`, 'warning');
             return;
         }
-        
-        preguntas.push({ 
-            pregunta_id: parseInt(preguntaId), 
-            respuesta: respuesta 
+
+        preguntas.push({
+            pregunta_id: parseInt(preguntaId),
+            respuesta: respuesta
         });
     }
 
@@ -104,7 +98,6 @@ document.getElementById('preguntasForm').addEventListener('submit', async functi
     }
 
     const requestBody = { preguntas: preguntas };
-    
 
     try {
         const res = await apiFetch('/auth/configurar_preguntas.php', {
@@ -114,7 +107,7 @@ document.getElementById('preguntasForm').addEventListener('submit', async functi
             },
             body: JSON.stringify(requestBody)
         });
-        
+
         const json = await res.json();
 
         if (res.ok) {
@@ -137,13 +130,6 @@ document.getElementById('preguntasForm').addEventListener('submit', async functi
         Swal.fire('Error', 'No se pudo conectar con el servidor: ' + err.message, 'error');
     }
 });
-
-function escapeHtml(str) {
-    if (str === null || str === undefined) return '';
-    return String(str).replace(/[&<>"']/g, m => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[m]));
-}
 
 cargarPreguntas();
 

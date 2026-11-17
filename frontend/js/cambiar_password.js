@@ -1,10 +1,4 @@
-
-// Forzar recarga si la página se restaura desde bfcache (botón Atrás/Adelante)
-window.addEventListener('pageshow', function (event) {
-    if (event.persisted) {
-        window.location.reload();
-    }
-});
+// pageshow vive en common.js.
 
 (function() {
 const user = JSON.parse(localStorage.getItem('currentUser'));
@@ -52,7 +46,7 @@ document.getElementById('cambiarPasswordForm').addEventListener('submit', async 
             user.password_cambiada = true;
             delete user.password_skipped; // Limpiar flag de "más tarde"
             localStorage.setItem('currentUser', JSON.stringify(user));
-            
+
             Swal.fire({
                 title: '¡Contraseña actualizada!',
                 text: 'Serás redirigido para configurar tus preguntas de seguridad',
@@ -60,7 +54,7 @@ document.getElementById('cambiarPasswordForm').addEventListener('submit', async 
                 timer: 2000,
                 showConfirmButton: false
             });
-            
+
             setTimeout(() => {
                 if (user.preguntas_configuradas) {
                     const routes = { profesor: 'profesor.php', estudiante: 'estudiante.php' };
@@ -88,7 +82,7 @@ window.skipPasswordChange = function() {
         // Guardar que ya vio el mensaje pero no cambió contraseña
         user.password_skipped = true;
         localStorage.setItem('currentUser', JSON.stringify(user));
-        
+
         if (user.preguntas_configuradas) {
             const routes = { profesor: 'profesor.php', estudiante: 'estudiante.php' };
             window.location.href = routes[user.rol];

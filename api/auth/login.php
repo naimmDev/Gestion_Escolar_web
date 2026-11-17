@@ -70,12 +70,7 @@ $expiresAt   = date('Y-m-d H:i:s', strtotime('+8 hours'));
 $pdo->prepare("INSERT INTO sesion (usuario_id, token, expires_at, activa) VALUES (?, ?, ?, 1)")
     ->execute([$user['id'], $tokenHash, $expiresAt]);
 
-setcookie('sesion_token', $token, [
-    'expires'  => strtotime('+8 hours'),
-    'path'     => '/',
-    'httponly' => true,
-    'samesite' => 'Lax'
-]);
+cookieSesion($token, strtotime('+8 hours'));
 
 sendSuccess([
     "rol"           => $user['rol'],

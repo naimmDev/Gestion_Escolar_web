@@ -1,7 +1,9 @@
+// escapeHtml, el cierre de modales por clic fuera/Esc y pageshow viven en common.js.
+
 // Esperar a que el DOM esté listo
 document.addEventListener('DOMContentLoaded', function() {
 
-    // ==================== LOGIN ====================
+// ==================== LOGIN ====================
 const loginForm = document.getElementById('loginForm');
 if (loginForm) {
     loginForm.addEventListener('submit', async function (e) {
@@ -50,7 +52,7 @@ if (loginForm) {
                 window.location.href = 'configurar_preguntas.php';
                 return;
             }
-            
+
             const routes = { profesor: 'profesor.php', estudiante: 'estudiante.php' };
             window.location.href = routes[data.rol];
 
@@ -89,21 +91,21 @@ window.closeRecoveryModal = function() {
 
 window.checkUserAndLoadQuestions = async function() {
     const identificacion = document.getElementById('recoveryIdentificacion').value.trim();
-    
+
     if (!identificacion) {
         Swal.fire('Error', 'Ingresa tu número de identificación', 'error');
         return;
     }
-    
+
     try {
         const response = await fetch(`${API_URL}/auth/preguntas_usuario.php?identificacion=${encodeURIComponent(identificacion)}`);
         const json = await response.json();
-        
+
         if (!response.ok) {
             Swal.fire('Error', json.error || 'Usuario no encontrado o no tiene preguntas configuradas', 'error');
             return;
         }
-        
+
         const pregunta = json.data || json;
 
         if (!pregunta || !pregunta.pregunta_id) {
@@ -113,7 +115,7 @@ window.checkUserAndLoadQuestions = async function() {
 
         recoveryUserData = { identificacion };
         selectedPreguntaId = pregunta.pregunta_id;
-        
+
         document.getElementById('preguntaRecuperacion').innerHTML = `
             <p style="background: rgba(240,232,213,0.6); padding: 12px 16px; border-radius: 2px;
                       border-left: 3px solid var(--crimson); font-family: 'EB Garamond', serif;
@@ -122,11 +124,11 @@ window.checkUserAndLoadQuestions = async function() {
                 ${escapeHtml(pregunta.pregunta)}
             </p>
         `;
-        
+
         document.getElementById('step1').style.display = 'none';
         document.getElementById('step2').style.display = 'block';
         document.getElementById('respuestaSeguridad').focus();
-        
+
     } catch (err) {
         console.error(err);
         Swal.fire('Error', 'No se pudo conectar con el servidor', 'error');
@@ -138,31 +140,31 @@ const recoveryForm = document.getElementById('recoveryForm');
 if (recoveryForm) {
     recoveryForm.addEventListener('submit', async function(e) {
         e.preventDefault();
-        
+
         const nuevaPassword = document.getElementById('newPassword').value;
         const confirmPassword = document.getElementById('confirmNewPassword').value;
         const respuesta = document.getElementById('respuestaSeguridad').value.trim();
-        
+
         if (nuevaPassword !== confirmPassword) {
             Swal.fire('Error', 'Las contraseñas no coinciden', 'error');
             return;
         }
-        
+
         if (nuevaPassword.length < 6) {
             Swal.fire('Error', 'La contraseña debe tener al menos 6 caracteres', 'error');
             return;
         }
-        
+
         if (!respuesta) {
             Swal.fire('Error', 'Responde la pregunta de seguridad', 'error');
             return;
         }
-        
+
         if (!recoveryUserData || !selectedPreguntaId) {
             Swal.fire('Error', 'No se pudo verificar la pregunta. Intenta de nuevo.', 'error');
             return;
         }
-        
+
         try {
             const response = await fetch(`${API_URL}/auth/recuperar_password.php`, {
                 method: 'POST',
@@ -174,9 +176,9 @@ if (recoveryForm) {
                     password_nueva: nuevaPassword
                 })
             });
-            
+
             const json = await response.json();
-            
+
             if (response.ok) {
                 Swal.fire({
                     title: '¡Contraseña actualizada!',
@@ -198,16 +200,5 @@ if (recoveryForm) {
 } else {
     console.error('No se encontró el formulario de recuperación');
 }
-
-function escapeHtml(str) {
-    if (str === null || str === undefined) return '';
-    return String(str).replace(/[&<>"']/g, m => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[m]));
-}
-window.onclick = function(event) {
-    const modal = document.getElementById('recoveryModal');
-    if (event.target === modal) closeRecoveryModal();
-};
 
 }); // Fin DOMContentLoaded

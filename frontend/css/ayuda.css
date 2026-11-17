@@ -1,7 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=Cinzel:wght@400;600;700;900&family=EB+Garamond:wght@400;500;600&display=swap');
-
-* { margin:0; padding:0; box-sizing:border-box; }
-
 /*
  * NOTA SOBRE CACHÉ DEL NAVEGADOR:
  * Si modificas este archivo y los cambios no se ven reflejados en el navegador
@@ -18,18 +14,6 @@
  * el funcionamiento) o quitarlo sin problema.
  */
 
-:root {
-    --crimson: #8B0000;
-    --crimson-deep: #5C0000;
-    --gold: #C9A84C;
-    --gold-light: #E2C97E;
-    --gold-pale: #F5E6B8;
-    --ivory: #FAF6EE;
-    --ivory-dark: #F0E8D5;
-    --parchment: #E8DEC6;
-    --ink: #1A0A0A;
-    --ink-soft: #3B1A1A;
-}
 
 body {
     font-family: 'EB Garamond', Georgia, serif;
@@ -172,4 +156,10 @@ body {
 @media (max-width: 600px) {
     .btn-volver { position: static; margin-bottom: 16px; display: inline-block; }
     .ayuda-header h1 { font-size: 22px; }
+}
+
+@media (max-width: 480px) {
+    .ayuda-container { padding: 24px 16px 64px; }
+    .ayuda-question { padding: 12px 14px; }
+    .ayuda-answer-inner { padding: 0 14px 14px; }
 }

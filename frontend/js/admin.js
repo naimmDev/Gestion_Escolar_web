@@ -3,6 +3,9 @@
  * Si editas el archivo y los cambios no se aplican al recargar la página,
  * agrega o sube el parámetro de versión en el <script> que carga el archivo,
  * ej: js/admin.js?v=2 -> ?v=3
+ *
+ * escapeHtml, showToast, openModal/closeModal, logout, pageshow y el cambio de
+ * contraseña viven en common.js.
  */
 
 // ==================== VERIFICACIÓN DE SESIÓN ====================
@@ -12,57 +15,6 @@ if (!currentUser || currentUser.rol !== 'admin') {
 }
 
 window.Swal = window.Swal.mixin({ scrollbarPadding: false });
-
-// Forzar recarga si la página se restaura desde bfcache (botón Atrás/Adelante)
-window.addEventListener('pageshow', function (event) {
-    if (event.persisted) {
-        window.location.reload();
-    }
-});
-
-// ==================== FUNCIONES GLOBALES ====================
-window.closeModal = function (modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.style.display = 'none';
-        document.body.style.overflow = '';
-        modal.classList.remove('show');
-    }
-};
-
-window.openModal = function (modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
-        modal.classList.add('show');
-    } else {
-        Swal.fire('Error', 'No se pudo abrir el modal', 'error');
-    }
-};
-
-// Cerrar modal con ESC
-document.addEventListener('keydown', function (event) {
-    if (event.key === 'Escape') {
-        const modals = document.querySelectorAll('.modal');
-        modals.forEach(modal => {
-            if (modal.style.display === 'flex') {
-                modal.style.display = 'none';
-                document.body.style.overflow = '';
-            }
-        });
-    }
-});
-
-// Cerrar modal si se hace clic fuera del contenido (UN SOLO LISTENER)
-window.addEventListener('click', function (event) {
-    const modals = document.querySelectorAll('.modal');
-    modals.forEach(modal => {
-        if (event.target === modal) {
-            closeModal(modal.id);
-        }
-    });
-});
 
 document.addEventListener('DOMContentLoaded', () => {
     const nameEl = document.getElementById('adminName');
@@ -99,10 +51,6 @@ let enrollmentTotal = 0;
 let periods = [];
 
 // ==================== UTILIDADES ====================
-function showToast(title, icon = 'success') {
-    Swal.fire({ title, icon, timer: 1500, showConfirmButton: false, toast: true, position: 'top-end' });
-}
-
 // Texto según el resultado del correo (data.correo del backend):
 // 'enviado' | 'fallido' | 'desactivado' | 'no_aplica'
 function notaCorreo(correo) {
@@ -131,13 +79,6 @@ async function confirmDelete(message) {
     return result.isConfirmed;
 }
 
-function escapeHtml(str) {
-    if (str === null || str === undefined) return '';
-    return String(str).replace(/[&<>"']/g, m => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[m]));
-}
-
 function normalizarTexto(s) {
     return String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 }
@@ -162,12 +103,6 @@ function togglePasswordEdit(inputId) {
     input.readOnly = !input.readOnly;
     input.classList.toggle('password-editable', !input.readOnly);
     if (!input.readOnly) input.focus();
-}
-
-async function logout() {
-    try { await apiFetch('/auth/logout.php', { method: 'POST' }); } catch (e) { }
-    localStorage.removeItem('currentUser');
-    window.location.href = 'index.html';
 }
 
 // ==================== CARGAR DATOS ====================
@@ -939,42 +874,6 @@ document.getElementById('enrollmentForm')?.addEventListener('submit', async func
     } catch (error) { Swal.fire('Error', error.message, 'error'); }
 });
 
-// ==================== CAMBIO CONTRASEÑA ====================
-document.getElementById('changePasswordForm')?.addEventListener('submit', async function (e) {
-    e.preventDefault();
-    const actual = document.getElementById('cpActual').value;
-    const nueva = document.getElementById('cpNueva').value;
-    const confirmar = document.getElementById('cpConfirmar').value;
-
-    if (nueva !== confirmar) {
-        Swal.fire('Error', 'Las contraseñas nuevas no coinciden', 'error');
-        return;
-    }
-    if (nueva.length < 6) {
-        Swal.fire('Error', 'La nueva contraseña debe tener al menos 6 caracteres', 'error');
-        return;
-    }
-
-    try {
-        const res = await apiFetch('/auth/cambiar_password.php', {
-            method: 'POST',
-            body: JSON.stringify({ password_actual: actual, password_nueva: nueva })
-        });
-        const json = await res.json();
-        if (res.ok) {
-            const user = JSON.parse(localStorage.getItem('currentUser'));
-            user.password_cambiada = true;
-            localStorage.setItem('currentUser', JSON.stringify(user));
-            closeModal('changePasswordModal');
-            Swal.fire({ title: '¡Contraseña actualizada!', icon: 'success', timer: 1500, showConfirmButton: false });
-        } else {
-            Swal.fire('Error', json.error || 'No se pudo actualizar', 'error');
-        }
-    } catch (err) {
-        Swal.fire('Error', err.message, 'error');
-    }
-});
-
 // ==================== NAVEGACIÓN ====================
 document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', function () {
@@ -1091,7 +990,7 @@ async function buscarEstudiantes(cfg) {
                 `${escapeHtml(e.grade || 'Sin grado')}${e.seccion ? ' ' + escapeHtml(e.seccion) : ''}</option>`
             ).join('');
         if (previo && items.some(e => String(e.id) === previo)) sel.value = previo;
-                if (cfg === BUSCADOR_REPORTES) actualizarVistaPreviaReporte();
+        if (cfg === BUSCADOR_REPORTES) actualizarVistaPreviaReporte();
 
         const total = data.total ?? items.length;
         count.textContent = total === 0
@@ -1213,8 +1112,8 @@ async function loadReportsPage() {
         if (count) count.textContent = 'Error al iniciar el buscador: ' + error.message;
     }
 
-        const sel = document.getElementById('reportSubjectSelect');
-        sel.innerHTML = '<option value="">Cargando materias...</option>';
+    const sel = document.getElementById('reportSubjectSelect');
+    sel.innerHTML = '<option value="">Cargando materias...</option>';
     try {
         const materias = await fetchAllPages('/materias/');
         montarBuscadorMaterias('reportSubjectSelect', 'reportSubjectSearch', materias,
@@ -1227,7 +1126,7 @@ async function loadReportsPage() {
     ['reportStudentSelect', 'reportGradeSelect', 'reportSectionFilter'].forEach(id => {
         document.getElementById(id).onchange = actualizarVistaPreviaReporte;
     });
-        actualizarVistaPreviaReporte();
+    actualizarVistaPreviaReporte();
 }
 
 async function exportarReporteAdmin() {
@@ -1292,6 +1191,8 @@ function actualizarVistaPreviaReporte() {
 
     document.getElementById('reportPreview').textContent = txt;
 }
+
+// ==================== PERÍODOS ====================
 async function loadPeriodsPage() {
     const cont = document.getElementById('periodsList');
     cont.innerHTML = '<div class="check-empty">Cargando períodos...</div>';
