@@ -12,7 +12,7 @@ if ($token) {
         ->execute([hash('sha256', $token)]);
 }
 
-cookieSesion('', time() - 3600);
+cookieSesion('', time() - 3600, ($cred['trust_proxy_https'] ?? false) === true);
 
 sendSuccess(["message" => "Sesión cerrada"]);
 ?>

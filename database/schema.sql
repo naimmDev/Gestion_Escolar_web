@@ -32,7 +32,10 @@ CREATE TABLE `comentario` (
   `estudiante_id` int(11) NOT NULL,
   `materia_id` int(11) NOT NULL,
   `comentario` text NOT NULL,
-  `fecha` datetime DEFAULT current_timestamp()
+  `fecha` datetime DEFAULT current_timestamp(),
+  `fecha_lectura` datetime DEFAULT NULL,
+  `respuesta` text DEFAULT NULL,
+  `fecha_respuesta` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------

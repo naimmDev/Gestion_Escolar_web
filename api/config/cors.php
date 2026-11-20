@@ -1,8 +1,9 @@
 <?php
 $origenesPermitidos = [
+    // Orígenes para desarrollo local cuando frontend y API están separados.
+    // En producción, frontend y API bajo el mismo origen no requieren CORS.
     'http://localhost',
     'http://localhost:3000',
-    //aquí irá el dominio real cuando se despliegue
 ];
 
 function aplicarCORS(array $origenesPermitidos): void

@@ -57,10 +57,10 @@ function getJsonBody(): array {
     return $data;
 }
 
-/** Crea o borra la cookie de sesión. Lleva 'secure' automáticamente cuando hay HTTPS. */
-function cookieSesion(string $valor, int $expira): void {
+/** Crea o borra la cookie de sesión; solo confía en X-Forwarded-Proto si se configura un proxy confiable. */
+function cookieSesion(string $valor, int $expira, bool $confiarProxy = false): void {
     $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-          || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+          || ($confiarProxy && (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https'));
     setcookie('sesion_token', $valor, [
         'expires'  => $expira,
         'path'     => '/',

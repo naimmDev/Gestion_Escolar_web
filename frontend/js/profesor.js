@@ -948,6 +948,11 @@ async function exportarReporteIndividual() {
 }
 
 // ==================== COMENTARIOS ====================
+async function cargarComentariosProfesor() {
+    myComments = await apiGet('/comentarios/');
+    renderComments();
+}
+
 function renderComments() {
     const container = document.getElementById('commentsList');
     if (!container) return;
@@ -959,12 +964,79 @@ function renderComments() {
 
     container.innerHTML = myComments.map(c => `
         <div class="comment-card">
-            <div class="student"><i class="fas fa-user-graduate"></i> ${escapeHtml(c.estudiante_nombre)}</div>
-            <div class="subject"><i class="fas fa-book"></i> ${escapeHtml(c.materia_nombre)}</div>
+            <div class="comment-card-heading">
+                <div>
+                    <div class="student"><i class="fas fa-user-graduate"></i> ${escapeHtml(c.estudiante_nombre)}</div>
+                    <div class="subject"><i class="fas fa-book"></i> ${escapeHtml(c.materia_nombre)}</div>
+                </div>
+                <span class="comment-status comment-status--${escapeHtml(c.estado)}">${c.estado === 'nuevo' ? 'Nuevo' : c.estado === 'leido' ? 'Leído' : 'Respondido'}</span>
+            </div>
             <div class="comment"><i class="fas fa-quote-left"></i> "${escapeHtml(c.comentario)}"</div>
             <div class="date"><i class="fas fa-calendar-alt"></i> ${c.fecha ? c.fecha.split(' ')[0] : ''}</div>
+            ${c.respuesta ? `
+                <div class="comment-response">
+                    <div class="comment-response-label"><i class="fas fa-reply"></i> Tu respuesta</div>
+                    <div class="comment-response-text">${escapeHtml(c.respuesta)}</div>
+                    <div class="date">${c.fecha_respuesta ? c.fecha_respuesta.split(' ')[0] : ''}</div>
+                </div>
+            ` : ''}
+            ${!c.respuesta ? `
+                <div class="comment-actions">
+                    ${c.estado === 'nuevo' ? `<button type="button" class="btn-primary comment-action" onclick="marcarComentarioLeido(${Number(c.id)})"><i class="fas fa-eye"></i> Marcar leído</button>` : ''}
+                    <button type="button" class="btn-primary comment-action" onclick="responderComentario(${Number(c.id)})"><i class="fas fa-reply"></i> Responder</button>
+                </div>
+            ` : ''}
         </div>
     `).join('');
+}
+
+async function marcarComentarioLeido(id) {
+    try {
+        const res = await apiFetch('/comentarios/', {
+            method: 'PUT',
+            body: JSON.stringify({ id, accion: 'leer' })
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(json.error || 'No se pudo actualizar el comentario');
+
+        await cargarComentariosProfesor();
+    } catch (error) {
+        Swal.fire('Error', error.message, 'error');
+    }
+}
+
+async function responderComentario(id) {
+    const result = await Swal.fire({
+        title: 'Responder comentario',
+        input: 'textarea',
+        inputLabel: 'La respuesta se mostrará en el panel del estudiante.',
+        inputPlaceholder: 'Escribe tu respuesta...',
+        inputAttributes: { maxlength: '2000', 'aria-label': 'Respuesta al comentario' },
+        showCancelButton: true,
+        confirmButtonText: 'Enviar respuesta',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#8B0000',
+        inputValidator: value => {
+            const respuesta = (value || '').trim();
+            if (!respuesta) return 'Escribe una respuesta antes de enviarla';
+            if (respuesta.length > 2000) return 'La respuesta no puede superar 2000 caracteres';
+        }
+    });
+    if (!result.isConfirmed) return;
+
+    try {
+        const res = await apiFetch('/comentarios/', {
+            method: 'PUT',
+            body: JSON.stringify({ id, accion: 'responder', respuesta: result.value.trim() })
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(json.error || 'No se pudo guardar la respuesta');
+
+        Swal.fire({ title: 'Respuesta enviada', icon: 'success', timer: 1500, showConfirmButton: false, toast: true, position: 'top-end' });
+        await cargarComentariosProfesor();
+    } catch (error) {
+        Swal.fire('Error', error.message, 'error');
+    }
 }
 
 // ==================== NAVEGACIÓN ====================
@@ -979,7 +1051,7 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
         document.getElementById(`${view}View`).classList.add('active');
         if (view === 'subjects')  renderSubjects();
         if (view === 'grades')    { loadSubjectSelect(); if (currentSubjectId) { document.getElementById('gradeSubject').value = currentSubjectId; changeSubject(); } }
-        if (view === 'comments')  renderComments();
+        if (view === 'comments')  cargarComentariosProfesor().catch(error => Swal.fire('Error', error.message, 'error'));
     });
 });
 

@@ -1,12 +1,26 @@
 # Documentación Frontend — Sistema de Gestión Escolar
-**Versión:** 2.5.0
+**Versión:** 2.7.1
 **Stack:** HTML5 · CSS3 · JavaScript (vanilla, sin frameworks) · SweetAlert2 · Font Awesome 6
-**Consumo de API:** `http://localhost/gestion_escolar/api` (ver `documentacion_backend.md`, v2.6.0)
+**Consumo de API:** ruta relativa `../api` bajo el mismo origen (ver `documentacion_backend.md`)
 **Fecha:** Octubre 2026
 
 > Este documento complementa `documentacion_backend.md`. Cubre la estructura de
 > páginas, los scripts JS, el flujo de autenticación/primer ingreso, la exportación de
 > reportes, el **sistema de Ayuda** y el **panel de períodos**.
+>
+> **Cambios de la v2.7.0 a la v2.7.1:**
+> - Estudiante → **Mis Notas**: al entrar, se expande el trimestre abierto y se contraen los
+>   trimestres cerrados.
+>
+> **Cambios de la v2.6.0 a la v2.7.0:**
+> - Profesor: identificar comentarios nuevos/leídos/respondidos, marcarlos como leídos y enviar
+>   una respuesta oficial una sola vez por comentario.
+> - Estudiante: consultar el estado y la respuesta en su panel; recibe un correo de aviso sin
+>   incluir el texto de la respuesta.
+>
+> **Cambios de la v2.5.0 a la v2.6.0:**
+> - Documentar el uso de una URL relativa para la API y el despliegue recomendado de frontend
+>   y API bajo el mismo origen, conservando configuraciones independientes por entorno.
 >
 > **Cambios de la v2.4.1 a la v2.5.0:**
 > - Admin → formularios de estudiantes y profesores: separar el nombre y el apellido, con
@@ -118,11 +132,17 @@ usan los tres.
 
 ## 2. Módulo de Conexión a la API (`api.js`)
 
-Punto único de configuración de la URL base:
+La URL base se calcula desde la ubicación del frontend, por lo que funciona en local y al
+publicar frontend y API bajo el mismo origen, incluso si el proyecto está en una subcarpeta:
 
 ```js
-const API_URL = 'http://localhost/gestion_escolar/api';
+const API_URL = (window.SGE_API_URL || new URL('../api', window.location.href).href).replace(/\/$/, '');
 ```
+
+`window.SGE_API_URL` es una opción para una instalación que separe frontend y API; no se
+necesita para el despliegue recomendado bajo el mismo dominio. Si se usa en un sitio HTTPS,
+la URL configurada también debe usar HTTPS. La API y el frontend deben conservar la misma
+ruta relativa del proyecto.
 
 ### `apiFetch(endpoint, options)`
 - Agrega `Content-Type: application/json` y siempre usa `credentials: 'include'`, para que
@@ -549,8 +569,10 @@ opciones y descarga el resultado (ver sección 11). No se usan jsPDF ni SheetJS.
   `GET /notas/?resumen=1`.
 
 ### Comentarios
-Vista de solo lectura con los comentarios enviados por estudiantes en las materias del
-profesor (`GET /comentarios/`, ya filtrado por rol en backend).
+Lista los comentarios de las materias asignadas (`GET /comentarios/`, filtrado en backend).
+Cada tarjeta indica **Nuevo**, **Leído** o **Respondido**. El profesor puede marcar como leído
+un comentario nuevo y enviar una respuesta oficial una sola vez; al responder queda leído.
+El estudiante recibe un correo de aviso y consulta el texto de la respuesta desde su panel.
 
 ---
 
@@ -576,7 +598,8 @@ de la "nota trimestral" oficial.
   tarjeta de **Exportar Boletín** y una sección por cada uno de los 3 trimestres, mostrando
   por materia: botón "Ver notas (N)", nota trimestral (o "En curso" si falta algún
   componente) y un badge de estado (Aprobado / En proceso / Incompleto / Sin definir).
-- Los trimestres son colapsables (clic en el encabezado).
+- Los trimestres son colapsables (clic en el encabezado); al entrar, se expande el período
+  abierto y se contraen los cerrados.
 - **Modal de detalle** (`openGradesDetailModal`): agrupa las notas por tipo (Parciales,
   Apreciación, Examen Trimestral) con su promedio y muestra el resumen del trimestre.
 
@@ -598,7 +621,9 @@ propio, así que el estudiante solo puede exportar sus datos.
 ### Comentarios
 El estudiante puede enviar un comentario sobre una materia en la que esté matriculado
 (`POST /comentarios/`, valida en backend la matrícula) y ver el historial de sus propios
-comentarios enviados.
+comentarios enviados. Cada tarjeta indica si está pendiente de revisión, en revisión o
+respondida. Si el profesor responde, el estudiante ve el texto y la fecha de respuesta en el
+panel y recibe un correo que lo invita a iniciar sesión; el correo no contiene el texto.
 
 ---
 
@@ -624,8 +649,8 @@ coincide), se muestran **todas** las secciones como fallback.
 |---|---|
 | `AYUDA_COMUN` | Login, primer ingreso, preguntas de seguridad, recuperación de contraseña, cambio de contraseña desde el panel, **bloqueo de cuenta tras 5 intentos fallidos** y cerrar sesión. Se muestra siempre. |
 | `AYUDA_ADMIN` | Dashboard, sección **Usuarios** (pestañas), alta/baja/edición de estudiantes y profesores, materias, **matrícula múltiple**, **Reportes** (filtros por grado y sección, vista previa y qué reporte se genera según la selección), **restablecer acceso** y **cómo abrir o cerrar un trimestre**. |
-| `AYUDA_PROFESOR` | Dashboard, materias asignadas, registrar y eliminar notas, exportar notas de un grado o de una sección, exportar el reporte de un estudiante, ver comentarios y **por qué no se pueden registrar o eliminar notas (trimestre cerrado)**. |
-| `AYUDA_ESTUDIANTE` | Dashboard, consultar notas por trimestre, descargar notas/boletín, enviar comentarios y por qué una nota trimestral aparece "En curso". |
+| `AYUDA_PROFESOR` | Dashboard, materias asignadas, registrar y eliminar notas, exportar notas de un grado o de una sección, exportar el reporte de un estudiante, ver, marcar como leídos y responder comentarios y **por qué no se pueden registrar o eliminar notas (trimestre cerrado)**. |
+| `AYUDA_ESTUDIANTE` | Dashboard, consultar notas por trimestre, descargar notas/boletín, enviar comentarios y consultar sus estados/respuestas y por qué una nota trimestral aparece "En curso". |
 | `AYUDA_FAQ` | Preguntas transversales. Incluye un ítem solo para `admin` (`roles: ['admin']`) sobre por qué no se puede eliminar un registro con calificaciones asociadas. |
 
 > **Al editar `ayuda.js`:** cada ítem de un arreglo debe terminar con coma salvo el último. Una

@@ -35,7 +35,7 @@ const AYUDA_PROFESOR = [
     { q: '¿Cómo elimino una nota?', a: 'Las notas registradas aparecen en el historial del trimestre seleccionado. Presione <strong>"Eliminar"</strong> para borrar una nota (requiere confirmación).' },
     { q: '¿Cómo exporto las notas de un grado completo?', a: 'En <strong>"Gestionar Notas"</strong>, seleccione la materia y presione <strong>"Exportar Notas"</strong> junto al encabezado del grado. Elija el trimestre (o todos) y el formato (PDF o Excel). Si el grado tiene varias secciones, cada sección tiene su propio botón de exportar para descargar solo a esos estudiantes.' },
     { q: '¿Cómo exporto el reporte de un estudiante?', a: 'Abra el detalle del estudiante y presione <strong>"Exportar Notas"</strong>, junto a las pestañas de trimestre. Elija PDF o Excel; el reporte incluye los tres trimestres y la nota final del curso.' },
-    { q: '¿Dónde veo los comentarios de mis estudiantes?', a: 'En la sección <strong>"Comentarios"</strong> se muestran los comentarios enviados por los estudiantes sobre las materias que usted tiene asignadas.' },
+    { q: '¿Dónde veo y respondo los comentarios de mis estudiantes?', a: 'En <strong>"Comentarios"</strong> se muestran los comentarios de sus materias con estado <strong>Nuevo</strong>, <strong>Leído</strong> o <strong>Respondido</strong>. Puede marcar un comentario como leído y enviar una respuesta oficial. El estudiante verá la respuesta en su panel y recibirá un correo de aviso.' },
     { q: '¿Por qué no puedo registrar, editar o eliminar notas?', a: 'Probablemente el trimestre está <strong>cerrado</strong>. En ese caso solo puede consultar las notas. Si necesita modificar algo, contacte al Administrador para que lo abra.' }
 ];
 
@@ -43,7 +43,7 @@ const AYUDA_ESTUDIANTE = [
     { q: '¿Qué muestra mi Dashboard?', a: 'Un resumen con el número de materias matriculadas, su promedio general y la cantidad de materias aprobadas.' },
     { q: '¿Cómo consulto mis notas?', a: 'En <strong>"Mis Notas"</strong>, el reporte se organiza por trimestre. Presione sobre un trimestre para expandirlo y luego sobre <strong>"Ver notas"</strong> junto a una materia para ver el detalle de cada evaluación.' },
     { q: '¿Cómo descargo mis notas?', a: 'Para un trimestre, presione <strong>"Exportar Notas"</strong> en el encabezado de ese trimestre. Para el boletín con los tres trimestres y la nota final por materia, presione <strong>"Exportar Boletín"</strong> al inicio del reporte. En ambos casos elija PDF o Excel.' },
-    { q: '¿Cómo envío un comentario sobre una materia?', a: 'En <strong>"Comentarios"</strong>, elija la materia, escriba su comentario y presione <strong>"Enviar Comentario"</strong>. Sus comentarios enviados se listan debajo del formulario.' },
+    { q: '¿Cómo envío un comentario sobre una materia?', a: 'En <strong>"Comentarios"</strong>, elija la materia, escriba su comentario y presione <strong>"Enviar Comentario"</strong>. Sus comentarios enviados se listan debajo del formulario. Podrá ver si está pendiente de revisión, en revisión o respondido; cuando el profesor responda, verá el texto en esta sección y recibirá un correo de aviso.' },
     { q: '¿Por qué mi nota trimestral aparece como "En curso"?', a: 'Esto ocurre cuando aún falta registrar alguno de los componentes de evaluación del trimestre (Parciales, Apreciación o Examen Trimestral).' }
 ];
 

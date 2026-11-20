@@ -228,6 +228,7 @@ function renderGradesReport() {
 }
 
 function renderTrimestreSection(trimestre) {
+    const trimestreColapsado = periodos[trimestre] !== true;
     let hasAnyGrade = false;
     let trimestreTotal = 0;
     let trimestreCount = 0;
@@ -249,7 +250,7 @@ function renderTrimestreSection(trimestre) {
 
     return `
         <div class="trimestre-container">
-            <div class="trimestre-header">
+            <div class="trimestre-header ${trimestreColapsado ? 'collapsed' : ''}">
                 <div class="trimestre-title"><i class="fas fa-calendar-alt"></i> ${trimestre}${periodos[trimestre] === false ? ' <span class="trimestre-closed-badge"><i class="fas fa-lock"></i> Cerrado</span>' : ''}</div>
                 <div class="trimestre-header-actions">
                     <div class="trimestre-average">
@@ -265,7 +266,7 @@ function renderTrimestreSection(trimestre) {
                     </button>
                 </div>
             </div>
-            <div class="trimestre-content">
+            <div class="trimestre-content ${trimestreColapsado ? 'collapsed' : ''}">
                 ${hasAnyGrade ? `
                     <table class="subjects-table">
                         <thead>
@@ -526,9 +527,19 @@ async function renderMyComments() {
 
         container.innerHTML = comments.map(c => `
             <div class="comment-card">
-                <div class="subject"><i class="fas fa-book"></i> ${escapeHtml(c.materia_nombre)}</div>
+                <div class="comment-card-heading">
+                    <div class="subject"><i class="fas fa-book"></i> ${escapeHtml(c.materia_nombre)}</div>
+                    <span class="comment-status comment-status--${escapeHtml(c.estado)}">${c.estado === 'respondido' ? 'Respondido' : c.estado === 'leido' ? 'En revisión' : 'Pendiente de revisión'}</span>
+                </div>
                 <div class="comment">"${escapeHtml(c.comentario)}"</div>
                 <div class="date"><i class="fas fa-calendar-alt"></i> ${c.fecha ? c.fecha.split(' ')[0] : ''}</div>
+                ${c.respuesta ? `
+                    <div class="comment-response">
+                        <div class="comment-response-label"><i class="fas fa-reply"></i> Respuesta del profesor</div>
+                        <div class="comment-response-text">${escapeHtml(c.respuesta)}</div>
+                        <div class="date">${c.fecha_respuesta ? c.fecha_respuesta.split(' ')[0] : ''}</div>
+                    </div>
+                ` : ''}
             </div>
         `).join('');
     } catch {

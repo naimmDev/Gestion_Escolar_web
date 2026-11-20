@@ -1,5 +1,5 @@
 # Documentación Backend — Sistema de Gestión Escolar
-**Versión:** 2.7.0
+**Versión:** 2.8.0
 **Stack:** PHP 8.2 · MariaDB 10.4 · XAMPP
 **Fecha de inicio:** Junio 2026
 
@@ -209,8 +209,11 @@ gestion_escolar/
 | materia_id | INT FK | Referencia a `materia` (`ON DELETE CASCADE`) |
 | comentario | TEXT | Contenido del comentario |
 | fecha | DATETIME | Fecha de envío |
+| fecha_lectura | DATETIME NULL | Cuándo el profesor marcó el comentario como leído |
+| respuesta | TEXT NULL | Respuesta oficial del profesor |
+| fecha_respuesta | DATETIME NULL | Cuándo se envió la respuesta |
 
-> Por el `ON DELETE CASCADE`, borrar un estudiante o una materia elimina sus comentarios; por eso los endpoints de borrado piden confirmación previa (ver sección 4).
+En bases existentes, aplicar una sola vez `database/migrations/2026-11-19_respuestas_comentarios.sql`; los comentarios previos se inicializan como leídos. Por el `ON DELETE CASCADE`, borrar un estudiante o una materia elimina sus comentarios; por eso los endpoints de borrado piden confirmación previa (ver sección 4).
 
 #### `pregunta_seguridad`
 | Campo | Tipo | Descripción |
@@ -251,7 +254,7 @@ gestion_escolar/
 
 La sesión viaja en una cookie `sesion_token`:
 - `httpOnly` (no legible por JavaScript — mitiga robo de sesión por XSS)
-- `path=/`, `samesite=Lax`
+- `path=/`, `samesite=Lax`; `secure` se activa cuando PHP detecta HTTPS directamente. Si TLS termina en un proxy, `trust_proxy_https` debe habilitarse solo cuando ese proxy sobrescriba `X-Forwarded-Proto`.
 - Expira a las 8 horas
 
 El navegador la adjunta automáticamente en cada petición al mismo origen; el frontend solo necesita mandar `credentials: 'include'` en cada `fetch()`.
@@ -260,7 +263,7 @@ El navegador la adjunta automáticamente en cada petición al mismo origen; el f
 
 ### CORS
 
-`config/cors.php` define una lista blanca de orígenes (`http://localhost`, `http://localhost:3000`; el dominio real se agregará al desplegar). `aplicarCORS()` solo refleja el header `Origin` de la petición si está en esa lista, y siempre manda `Access-Control-Allow-Credentials: true`. Nunca se usa `Access-Control-Allow-Origin: *` (incompatible con cookies). `db.php` llama a `aplicarCORS()`, responde las peticiones `OPTIONS` y fija `Content-Type: application/json`.
+`config/cors.php` define una lista blanca para desarrollo local (`http://localhost`, `http://localhost:3000`). El despliegue recomendado sirve frontend y API bajo el mismo origen; en ese caso el navegador no requiere CORS para sus llamadas. Si en el futuro se separan, se debe permitir únicamente el origen HTTPS exacto del frontend. `aplicarCORS()` no usa `Access-Control-Allow-Origin: *` (incompatible con cookies). `db.php` responde las peticiones `OPTIONS` y fija `Content-Type: application/json`.
 
 `db.php` también registra un manejador global de excepciones: cualquier error no capturado responde `500` con JSON genérico (`"Error interno del servidor"`).
 
@@ -539,8 +542,13 @@ Separación deliberada: cambiar el formato de salida o agregar uno nuevo no requ
 ### Comentarios
 | Método | Endpoint | Rol | Descripción |
 |---|---|---|---|
-| GET | `/comentarios/` | admin, profesor, estudiante | Filtrado por rol |
+| GET | `/comentarios/` | admin, profesor, estudiante | Filtrado por rol; incluye `estado`, `respuesta` y fechas de lectura/respuesta |
 | POST | `/comentarios/` | estudiante | Enviar comentario (requiere matrícula en la materia; 403 si no está matriculado) |
+| PUT | `/comentarios/` | profesor | Marcar como leído o responder un comentario de una materia propia |
+
+`GET /comentarios/` devuelve `estado` derivado: `nuevo` (sin lectura ni respuesta), `leido` o `respondido`. El estudiante solo ve sus comentarios y respuestas; el profesor solo los de sus materias; el admin puede consultar todos.
+
+**PUT — Body:** `{ "id": 12, "accion": "leer" }` o `{ "id": 12, "accion": "responder", "respuesta": "..." }`. Solo el profesor asignado a la materia puede realizar estas acciones. Una respuesta no puede estar vacía, admite hasta 2000 caracteres y se envía una sola vez por comentario. Al responder, queda marcado como leído y se encola un correo de aviso al estudiante; el texto de la respuesta se consulta dentro del panel.
 
 En GET `/notas/`, `estudiante_nombre` y `profesor_nombre`, y en GET `/comentarios/`, `estudiante_nombre`, contienen el nombre completo ("Nombre Apellido").
 
@@ -563,6 +571,8 @@ En GET `/notas/`, `estudiante_nombre` y `profesor_nombre`, y en GET `/comentario
 | Exportar cualquier reporte (sin restricción de materia propia) | ✅ | ❌ | ❌ |
 | Enviar comentarios | ❌ | ❌ | ✅ |
 | Ver comentarios de sus materias | ❌ | 👁️ | ❌ |
+| Marcar leídos y responder comentarios de sus materias | ❌ | ✅ | ❌ |
+| Ver comentarios propios y sus respuestas | ❌ | ❌ | ✅ |
 | Ver todos los comentarios | ✅ | ❌ | ❌ |
 | Restablecer acceso de usuario | ✅ | ❌ | ❌ |
 
@@ -713,7 +723,25 @@ Para instalar la base de datos vacía, importar `database/schema.sql` y después
 
 | Funcionalidad | Descripción |
 |---|---|
-| **Resto de la Propuesta de Mejoras** | PWA (6.4) y migración a HTTPS en servidor de producción (6.1). Notificaciones por correo (6.2) implementadas en la v2.7.0; el panel de períodos (6.3) quedó implementado en la v2.5.0. |
+| **Despliegue de producción** | HTTPS/TLS, redirección HTTP→HTTPS y validación en el hosting quedan pendientes hasta elegir dominio y servidor. La PWA, las notificaciones por correo y el panel de períodos están implementados. |
+
+### Preparación para producción
+
+El proyecto recomienda publicar frontend y API bajo el mismo dominio; `frontend/js/api.js`
+calcula la ruta `../api` relativa al frontend, así que no requiere una URL de API codificada
+para producción. La configuración de cada entorno se mantiene en `api/config/credenciales.php`,
+archivo ignorado por Git; conserva la configuración local para XAMPP y crea/configura el archivo
+por separado en el servidor. Usa `credenciales.php.example` como plantilla, nunca subas claves.
+
+Antes de habilitar usuarios en producción, configura en el servidor la URL HTTPS pública de
+`correo.url_sistema`, las credenciales de base de datos y SMTP, y confirma que PHP use HTTPS al
+emitir cookies. Si hay un proxy TLS, debe sobrescribir `X-Forwarded-Proto` con el protocolo
+real y la opción `trust_proxy_https` de `credenciales.php` debe activarse explícitamente.
+Configura HTTP→HTTPS y HSTS en el servidor una vez validado el certificado; en PHP,
+desactiva la exposición de errores al navegador y conserva el registro de errores. Verifica
+también la versión/extensiones de PHP, Composer, las migraciones de base de datos y una copia
+de seguridad antes de la puesta en marcha. Estos pasos dependen del proveedor y todavía no
+están validados contra un hosting concreto.
 
 ---
 
@@ -768,14 +796,15 @@ Sin el bloque `correo` o con `activo = false`, el sistema funciona sin enviar co
 | Acceso restablecido | El propio usuario | Inmediato; incluye su contraseña inicial |
 | Nota nueva | Estudiante | Diferido |
 | Comentario nuevo | Profesor de la materia | Diferido |
+| Comentario respondido | Estudiante | Diferido; el correo avisa y remite al panel, sin incluir el texto de la respuesta |
 | Trimestre cerrado | Todos los profesores | Diferido; solo al cambiar de abierto a cerrado |
 | Cuenta bloqueada (5 intentos fallidos) | Dueño de la cuenta | Diferido; desde login y recuperar_password |
 
-No se envía correo al editar notas ni al reabrir un trimestre. Los correos de nota nueva y comentario nuevo no incluyen el puntaje ni el texto del comentario: solo avisan la materia, tipo de evaluación, actividad y trimestre, o el estudiante y la materia, respectivamente, y piden ingresar al sistema para ver el detalle. La nota puede editarse después y el comentario es información del sistema.
+No se envía correo al editar notas ni al reabrir un trimestre. Los correos de nota nueva, comentario nuevo y comentario respondido no incluyen puntajes, textos de comentarios ni respuestas; avisan el evento y piden ingresar al sistema para ver el detalle.
 
 Un fallo de correo nunca revierte la acción. `enviarCorreo()` no lanza excepciones y devuelve `enviado`, `fallido` o `desactivado`. En POST y PUT de `/estudiantes/` y `/profesores/`, la respuesta incluye `data.correo` con uno de esos estados; PUT sin `initialPassword` devuelve `no_aplica`.
 
-El correo de usuario creado y acceso restablecido se envía durante la petición HTTP. Por eso la respuesta incluye `data.correo`. Nota nueva, comentario nuevo, trimestre cerrado y cuenta bloqueada usan `enviarCorreoDiferido()`: primero se entrega la respuesta HTTP y después se envían los correos mediante una función `shutdown`. `response.php` (`emitirJson`) cierra la conexión con `Content-Length` y `Connection: close`, y usa `fastcgi_finish_request()` cuando está disponible.
+El correo de usuario creado y acceso restablecido se envía durante la petición HTTP. Por eso la respuesta incluye `data.correo`. Nota nueva, comentario nuevo, comentario respondido, trimestre cerrado y cuenta bloqueada usan `enviarCorreoDiferido()`: primero se entrega la respuesta HTTP y después se envían los correos mediante una función `shutdown`. `response.php` (`emitirJson`) cierra la conexión con `Content-Length` y `Connection: close`, y usa `fastcgi_finish_request()` cuando está disponible.
 
 ---
 

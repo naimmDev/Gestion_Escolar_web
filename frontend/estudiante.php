@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/base.css?v=1">
     <link rel="stylesheet" href="css/shell.css?v=1">
-    <link rel="stylesheet" href="css/components.css?v=2">
+    <link rel="stylesheet" href="css/components.css?v=3">
     <link rel="stylesheet" href="css/estudiante.css?v=5">
 </head>
 <body>
@@ -135,7 +135,7 @@
 <script src="js/common.js?v=1"></script>
 <script src="js/shell.js?v=1"></script>
 <script src="js/reportes.js?v=4"></script>
-<script src="js/estudiante.js?v=5"></script>
+<script src="js/estudiante.js?v=7"></script>
 <script src="js/pwa.js" defer></script>
 </body>
 </html>

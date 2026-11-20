@@ -108,6 +108,14 @@ function plantillaComentarioNuevo(string $profesor, string $estudiante, string $
         'texto' => "Hola $profesor, $estudiante dejó un comentario en $materia. Ingresa al sistema (sección Comentarios) para leerlo.\n" . urlSistema()];
 }
 
+function plantillaRespuestaComentario(string $estudiante, string $profesor, string $materia): array {
+    $html = marcoCorreo('Respuesta a tu comentario',
+        '<p>Hola <strong>' . h($estudiante) . '</strong>, <strong>' . h($profesor) . '</strong> respondió tu comentario sobre <strong>' . h($materia) . '</strong>.</p>'
+        . '<p>Inicia sesión y abre la sección <strong>Comentarios</strong> para leer la respuesta.</p>');
+    return ['asunto' => "Respuesta a tu comentario de $materia", 'html' => $html,
+        'texto' => "Hola $estudiante, $profesor respondió tu comentario sobre $materia. Inicia sesión en el sistema y abre la sección Comentarios para leer la respuesta.\n" . urlSistema()];
+}
+
 function plantillaCuentaBloqueada(string $nombre, int $minutos): array {
     $html = marcoCorreo('Tu cuenta fue bloqueada temporalmente',
         '<p>Hola <strong>' . h($nombre) . '</strong>, detectamos varios intentos fallidos de ingreso a tu cuenta, por lo que la bloqueamos durante <strong>' . $minutos . ' minutos</strong>.</p>'
