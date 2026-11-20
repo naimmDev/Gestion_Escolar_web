@@ -1,3 +1,6 @@
+// escapeHtml, openModal/closeModal, openChangePasswordModal, logout, pageshow,
+// cambio de contraseña y cierre de modales por Esc/clic fuera viven en common.js.
+
 // ==================== VARIABLES GLOBALES ====================
 let currentTeacher        = null;
 let mySubjects            = [];
@@ -12,26 +15,6 @@ let currentTrimestre       = 'I Trimestre';
 let studentGradeSearch     = '';
 let periodos = {};   // { 'I Trimestre': true/false, ... } (true = abierto)
 const seccionesAbiertas = new Set();   // claves de grados/secciones expandidos
-
-window.closeModal = function(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.style.display = 'none';
-        document.body.style.overflow = '';
-    }
-};
-
-// Forzar recarga si la página se restaura desde bfcache (botón Atrás/Adelante)
-window.addEventListener('pageshow', function (event) {
-    if (event.persisted) {
-        window.location.reload();
-    }
-});
-window.openChangePasswordModal = function() {
-    document.getElementById('changePasswordForm').reset();
-    document.getElementById('changePasswordModal').style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-};
 
 // ==================== NORMALIZACIÓN ====================
 function normalizeGrade(g) {
@@ -73,11 +56,16 @@ async function loadData() {
         return;
     }
 
-    if (!currentTeacher.password_cambiada && !currentTeacher.password_skipped) {
-        window.location.href = 'cambiar_password.php';
-        return;
-    }
+  if (!currentTeacher.password_cambiada && !currentTeacher.password_skipped) {
+    window.location.href = 'cambiar_password.php';
+    return;
+}
 
+
+if (!currentTeacher.preguntas_configuradas) {
+    window.location.href = 'configurar_preguntas.php';
+    return;
+}
     document.getElementById('teacherName').textContent = currentTeacher.nombre || 'Profesor';
     document.getElementById('welcomeName').textContent = currentTeacher.nombre || 'Profesor';
 
@@ -158,6 +146,7 @@ async function manejarTrimestreCerrado(error) {
     renderTrimestreContent();
     return true;
 }
+
 // ==================== DASHBOARD ====================
 function updateDashboard() {
     const uniqueStudentIds = [...new Set(myEnrollments.map(e => e.studentId))];
@@ -305,7 +294,6 @@ function updateQuickStats() {
             g.subjectId === currentSubjectId &&
             g.type === 'EXAMEN_TRIMESTRAL'
         );
-        const hasAnyNote = myGrades.some(g => g.studentId === s.id && g.subjectId === currentSubjectId);
         const avg = calcularPromedioSimple(s.id, currentSubjectId);
 
         if (hasExam) {
@@ -475,13 +463,11 @@ async function openStudentGradesModal(studentId) {
     if (!currentStudentForModal) return;
     await cargarPeriodos();
     renderStudentModal();
-    document.getElementById('studentGradesModal').style.display = 'flex';
-    document.body.style.overflow = 'hidden';
+    openModal('studentGradesModal');
 }
 
 function closeStudentModal() {
-    document.getElementById('studentGradesModal').style.display = 'none';
-    document.body.style.overflow = '';
+    closeModal('studentGradesModal');
 }
 
 function renderStudentModal() {
@@ -602,25 +588,12 @@ function renderTrimestreContent() {
             </div>
         </div>
     `;
-
-    const resumen = generarResumenTrimestre(currentStudentForModal.id, currentSubjectId, currentTrimestre);
-    if (resumen && grades.length > 0) {
-        container.innerHTML += `
-            <div style="margin-top: 20px; border-top: 2px solid var(--parchment); padding-top: 16px;">
-                <h4 style="font-family: 'Cinzel', serif; color: var(--crimson-deep);">Resumen del Trimestre</h4>
-                <table style="width:100%; border-collapse:collapse; max-width:420px; margin:0 auto;">
-                    <tr><td style="padding:6px 0; color:var(--ink-soft);"><strong>Promedio Parciales</strong></td><td style="text-align:right; font-family:'Cinzel',serif; color:var(--crimson);">${resumen.promParciales !== null ? resumen.promParciales.toFixed(1) : 'Sin datos'}</td></tr>
-                    <tr><td style="padding:6px 0; color:var(--ink-soft);"><strong>Promedio Apreciación</strong></td><td style="text-align:right; font-family:'Cinzel',serif; color:var(--crimson);">${resumen.promApreciacion !== null ? resumen.promApreciacion.toFixed(1) : 'Sin datos'}</td></tr>
-                    <tr><td style="padding:6px 0; color:var(--ink-soft);"><strong>Examen Trimestral</strong></td><td style="text-align:right; font-family:'Cinzel',serif; color:var(--crimson);">${resumen.examen !== null ? resumen.examen.toFixed(1) : 'Sin registrar'}</td></tr>
-                    <tr style="font-weight:bold; border-top:2px solid var(--crimson);">
-                        <td style="padding:10px 0; font-family:'Cinzel',serif; color:var(--crimson-deep);">Nota Trimestral</td>
-                        <td style="text-align:right; font-family:'Cinzel',serif; font-size:18px; color:var(--crimson-deep);">${resumen.notaTrimestral !== null ? resumen.notaTrimestral.toFixed(1) : '<span style="color:#8a7055; font-size:14px;">En curso</span>'}</td>
-                    </tr>
-                </table>
-            </div>
-        `;
-    }
-
+const resumen = currentTrimestre === 'Todas'
+    ? null
+    : generarResumenTrimestre(currentStudentForModal.id, currentSubjectId, currentTrimestre);
+if (resumen && grades.length > 0) {
+    container.innerHTML += `...`;
+}
     if (cerrado) {
         const form = container.querySelector('.add-grade-section');
         if (form) {
@@ -633,6 +606,7 @@ function renderTrimestreContent() {
         }
     }
 }
+
 function renderGradeHistoryItem(grade) {
     let nombreDisplay = grade.nombre;
     if (!nombreDisplay || nombreDisplay.trim() === '') {
@@ -657,7 +631,7 @@ function renderGradeHistoryItem(grade) {
         'EXAMEN_TRIMESTRAL': '<i class="fas fa-star"></i> Examen Trimestral',
         'APRECIACION': '<i class="fas fa-hand-peace"></i> Apreciación'
     };
-       return `
+    return `
         <div class="grade-history-item ${grade.type}">
             <div class="grade-info">
                 <div>
@@ -683,7 +657,6 @@ function renderGradeHistoryItem(grade) {
         </div>
     `;
 }
-
 
 function changeTrimestre(trimestre) {
     currentTrimestre = trimestre;
@@ -744,15 +717,16 @@ async function addNewGrade() {
             g.trimestre === trimestre &&
             g.type === 'EXAMEN_TRIMESTRAL'
         );
-        if (existing) {
-            Swal.fire({
-                title: 'nota de examen final existente',
-                icon: 'info',
-                timer: 2000,
-                showConfirmButton: false
-            });
-            return;
-        }
+      if (existing) {
+    Swal.fire({
+        title: 'Examen ya registrado',
+        text: 'Ya existe un Examen Trimestral para este estudiante en este trimestre.',
+        icon: 'info',
+        timer: 2200,
+        showConfirmButton: false
+    });
+    return;
+}
     }
 
     const payload = {
@@ -789,6 +763,7 @@ async function addNewGrade() {
         Swal.fire('Error', error.message, 'error');
     }
 }
+
 // ==================== EDITAR NOTA ====================
 const TIPO_EVALUACION_LABEL = {
     'PARCIAL': 'Parcial',
@@ -892,7 +867,7 @@ async function deleteGrade(gradeId) {
             if (res.ok) {
                 Swal.fire({ title: 'Nota eliminada', icon: 'success', timer: 1200, showConfirmButton: false });
                 await reloadGradesAndRefresh();
-                        } else {
+            } else {
                 const error = await res.json().catch(() => ({}));
                 if (await manejarTrimestreCerrado(error)) return;
                 Swal.fire('Error', error.error || 'No se pudo eliminar', 'error');
@@ -924,7 +899,6 @@ async function exportarReporteGrupal(grado, seccion = null) {
         return;
     }
 
-    // ✅ FIX: la sección "Sin sección" se compara correctamente
     const estudiantesFiltrados = getStudentsForSubject(currentSubjectId).filter(s => {
         if ((s.grade || 'Sin grado') !== grado) return false;
         if (seccion) {
@@ -993,41 +967,6 @@ function renderComments() {
     `).join('');
 }
 
-document.getElementById('changePasswordForm')?.addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const actual    = document.getElementById('cpActual').value;
-    const nueva     = document.getElementById('cpNueva').value;
-    const confirmar = document.getElementById('cpConfirmar').value;
-
-    if (nueva !== confirmar) {
-        Swal.fire('Error', 'Las contraseñas nuevas no coinciden', 'error');
-        return;
-    }
-    if (nueva.length < 6) {
-        Swal.fire('Error', 'La nueva contraseña debe tener al menos 6 caracteres', 'error');
-        return;
-    }
-
-    try {
-        const res  = await apiFetch('/auth/cambiar_password.php', {
-            method: 'POST',
-            body: JSON.stringify({ password_actual: actual, password_nueva: nueva })
-        });
-        const json = await res.json();
-        if (res.ok) {
-            const user = JSON.parse(localStorage.getItem('currentUser'));
-            user.password_cambiada = true;
-            localStorage.setItem('currentUser', JSON.stringify(user));
-            closeModal('changePasswordModal');
-            Swal.fire({ title: '¡Contraseña actualizada!', icon: 'success', timer: 1500, showConfirmButton: false });
-        } else {
-            Swal.fire('Error', json.error || 'No se pudo actualizar', 'error');
-        }
-    } catch (err) {
-        Swal.fire('Error', err.message, 'error');
-    }
-});
-
 // ==================== NAVEGACIÓN ====================
 document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', function () {
@@ -1043,33 +982,6 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
         if (view === 'comments')  renderComments();
     });
 });
-
-window.addEventListener('click', function (event) {
-    if (event.target.id === 'studentGradesModal') {
-        closeStudentModal();
-        return;
-    }
-    document.querySelectorAll('.modal').forEach(modal => {
-        if (event.target === modal && modal.id !== 'studentGradesModal') {
-            closeModal(modal.id);
-        }
-    });
-});
-
-// ==================== LOGOUT ====================
-async function logout() {
-    try { await apiFetch('/auth/logout.php', { method: 'POST' }); } catch (e) {}
-    localStorage.removeItem('currentUser');
-    window.location.href = 'index.html';
-}
-
-// ==================== UTILIDADES ====================
-function escapeHtml(str) {
-    if (str === null || str === undefined) return '';
-    return String(str).replace(/[&<>"']/g, m => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[m]));
-}
 
 // ==================== INICIALIZAR ====================
 loadData();

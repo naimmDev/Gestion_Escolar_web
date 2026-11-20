@@ -22,16 +22,14 @@
 
 body {
     font-family: 'EB Garamond', Georgia, serif;
-    min-height: 100vh;
+    min-height: 100dvh;
     background:
         radial-gradient(ellipse at 20% 20%, rgba(139,0,0,0.18) 0%, transparent 55%),
         radial-gradient(ellipse at 80% 80%, rgba(92,0,0,0.22) 0%, transparent 55%),
         linear-gradient(160deg, #1A0A0A 0%, #3B0A0A 40%, #200505 100%);
     display: flex;
-    align-items: center;
-    justify-content: center;
     position: relative;
-    overflow: hidden;
+    overflow-x: hidden;
 }
 
 /* Fondo ornamental */
@@ -70,6 +68,7 @@ body::after {
 
 .login-container {
     width: 100%;
+    margin: auto;               /* centra sin cortar el formulario cuando aparece el teclado */
     display: flex;
     justify-content: center;
     padding: 30px 20px;
@@ -83,15 +82,22 @@ body::after {
     padding: 50px 44px;
     width: 100%;
     max-width: 460px;
-    max-height: 90vh;
-    overflow-y: auto;
+    max-height: none;
     position: relative;
     border: 1px solid var(--gold);
-    box-shadow:
+   box-shadow:
         0 0 0 4px rgba(201,168,76,0.12),
         0 0 0 8px rgba(139,0,0,0.08),
         0 30px 80px rgba(0,0,0,0.6),
         inset 0 1px 0 rgba(201,168,76,0.3);
+}
+
+#recoveryModal h3 { text-align: center; }
+
+@media (max-width: 480px) {
+    .login-container { padding: 16px 12px; }
+    .login-card { padding: 32px 20px; }
+    .login-header h1 { font-size: 20px; }
 }
 
 /* Borde ornamental superior */

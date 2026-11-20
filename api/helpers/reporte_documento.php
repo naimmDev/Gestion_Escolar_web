@@ -2,7 +2,11 @@
 require_once __DIR__ . '/reporte_data.php';
 
 function fmtNota($v): string {
-    return $v === null ? 'S/N' : number_format((float)$v, 1);
+    if ($v === null || $v === '' || !is_numeric($v)) {
+        return 'S/N';
+    }
+    // Si es un número, lo formatea a 1 decimal (ej: 4.5)
+    return number_format((float)$v, 1, '.', '');
 }
 
 function ahoraPanama(): DateTime {

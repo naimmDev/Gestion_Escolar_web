@@ -5,11 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Preguntas de Seguridad — Gestión Escolar</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link rel="stylesheet" href="css/login.css?v=3">
+    <link rel="stylesheet" href="css/base.css?v=1">
+    <link rel="stylesheet" href="css/login.css?v=4">
 </head>
 <body>
     <div class="login-container">
@@ -21,8 +20,7 @@
             </div>
             <form id="preguntasForm">
                 <div id="preguntasContainer" class="preguntas-grid">
-                    <!-- Las 3 preguntas se generan aquí por JS -->
-                    <p style="text-align:center; color:#8a7055; grid-column: span 3;"><i class="fas fa-spinner fa-spin"></i> Cargando preguntas...</p>
+                    <p style="text-align:center; color:#8a7055; grid-column: 1 / -1;"><i class="fas fa-spinner fa-spin"></i> Cargando preguntas...</p>
                 </div>
                 <button type="submit" class="login-btn" id="btnGuardar" style="margin-top:30px;" disabled>
                     <i class="fas fa-shield-halved"></i> Guardar y continuar
@@ -31,6 +29,8 @@
         </div>
     </div>
     <script src="js/api.js?v=3"></script>
-    <script src="js/configurar_preguntas.js?v=3"></script>
+    <script src="js/common.js?v=1"></script>
+    <script src="js/configurar_preguntas.js?v=4"></script>
+    <script src="js/pwa.js" defer></script>
 </body>
 </html>

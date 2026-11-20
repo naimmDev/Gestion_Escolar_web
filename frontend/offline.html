@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#8B0000">
+    <title>Sin conexión — Gestión Escolar</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            min-height: 100dvh;
+            display: flex; align-items: center; justify-content: center;
+            padding: 24px;
+            font-family: 'EB Garamond', Georgia, serif;
+            background: linear-gradient(160deg, #1A0A0A 0%, #3B0A0A 40%, #200505 100%);
+            color: #1A0A0A;
+        }
+        .card {
+            width: 100%; max-width: 440px; text-align: center;
+            background: #FAF6EE; border: 1px solid #C9A84C; border-radius: 4px;
+            padding: 40px 28px;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+        }
+        .card::before {
+            content: ''; display: block; height: 4px; margin: -40px -28px 28px;
+            background: linear-gradient(90deg, #5C0000, #C9A84C, #8B0000, #C9A84C, #5C0000);
+        }
+        h1 {
+            font-family: 'Cinzel', Georgia, serif; font-size: 1.35rem;
+            letter-spacing: 0.1em; text-transform: uppercase; color: #5C0000; margin-bottom: 12px;
+        }
+        p { font-size: 1.05rem; color: #3B1A1A; line-height: 1.6; margin-bottom: 24px; }
+        button {
+            min-height: 44px; padding: 12px 28px; cursor: pointer;
+            background: linear-gradient(135deg, #5C0000, #8B0000); color: #F5E6B8;
+            border: 1px solid #C9A84C; border-radius: 2px;
+            font-family: 'Cinzel', Georgia, serif; font-size: 0.8rem;
+            letter-spacing: 0.14em; text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Sin conexión</h1>
+        <p>No se pudo conectar con el sistema. Por seguridad, las notas y datos académicos solo se consultan con conexión a internet.</p>
+        <button type="button" onclick="location.reload()">Reintentar</button>
+    </div>
+</body>
+</html>

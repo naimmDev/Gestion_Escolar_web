@@ -5,11 +5,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profesor — Gestión Escolar</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="css/profesor.css?v=5">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/base.css?v=1">
+    <link rel="stylesheet" href="css/shell.css?v=1">
+    <link rel="stylesheet" href="css/components.css?v=2">
+    <link rel="stylesheet" href="css/profesor.css?v=6">
 </head>
 <body>
     <div class="app-container">
@@ -34,7 +35,7 @@
             <a href="ayuda.html" class="btn-cambiar-pass" style="text-decoration:none;">
                 <i class="fas fa-circle-question"></i> <span> Ayuda</span>
             </a>
-            <button class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> <span> Cerrar sesión</span></button>
+            <button class="logout-btn" onclick="logout()"><i class="fas fa-right-from-bracket"></i> <span> Cerrar sesión</span></button>
         </aside>
 
         <main class="main-content">
@@ -78,7 +79,7 @@
 
             <!-- Gestionar Notas -->
             <div id="gradesView" class="view">
-                <h2 class="page-title"><i class="fas fa-edit"></i> Gestionar Notas</h2>
+                <h2 class="page-title"><i class="fas fa-pen-to-square"></i> Gestionar Notas</h2>
                 
                 <div class="grades-panel">
                     <div class="filter-bar">
@@ -155,8 +156,11 @@
     </div>
 </div>
 <script src="js/api.js?v=3"></script>
+<script src="js/common.js?v=1"></script>
+<script src="js/shell.js?v=1"></script>
 <script src="js/reportes.js?v=4"></script>
-<script src="js/profesor.js?v=8"></script>  
+<script src="js/profesor.js?v=9"></script>
+<script src="js/pwa.js" defer></script>
 </body>
 </html>
 

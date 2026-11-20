@@ -1,3 +1,5 @@
+// escapeHtml viene de common.js (cargarlo antes que este archivo en ayuda.html).
+
 // ==================== CONTENIDO ====================
 const AYUDA_COMUN = [
     { q: '¿Cómo inicio sesión en el sistema?', a: 'Ingrese su correo electrónico y contraseña en la pantalla de inicio, luego presione <strong>"Iniciar sesión"</strong>. Según su rol, el sistema lo redirigirá automáticamente a su panel correspondiente.' },
@@ -6,7 +8,9 @@ const AYUDA_COMUN = [
     { q: '¿Cómo recupero mi contraseña si la olvidé?', a: 'Desde la pantalla de inicio de sesión, presione <strong>"¿Olvidaste tu contraseña?"</strong>, ingrese su número de identificación, responda la pregunta de seguridad que se le presente y defina su nueva contraseña.' },
     { q: '¿Cómo cambio mi contraseña desde mi panel?', a: 'Presione el botón <strong>"Cambiar contraseña"</strong> en el menú lateral, complete el formulario con su contraseña actual y la nueva, y presione <strong>"Guardar"</strong>.' },
     { q: '¿Qué pasa si fallo varias veces al iniciar sesión o al recuperar mi contraseña?', a: 'Tras <strong>5 intentos fallidos</strong> la cuenta se bloquea temporalmente por <strong>15 minutos</strong>. Pasado ese tiempo puede intentar de nuevo; si necesita acceso de inmediato, contacte al Administrador.' },
-    { q: '¿Cómo cierro sesión?', a: 'Presione el botón <strong>"Cerrar sesión"</strong> en la parte inferior del menú lateral.' }
+    { q: '¿Cómo cierro sesión?', a: 'Presione el botón <strong>"Cerrar sesión"</strong> en la parte inferior del menú lateral.' },
+    { q: '¿Cómo instalo el sistema como app en mi celular o computadora?', a: 'En <strong>Android o computadora</strong> (Chrome o Edge) presione <strong>"Instalar app"</strong> en el menú lateral (o en la pantalla de inicio de sesión). En <strong>iPhone o iPad</strong> abra el sistema en Safari, toque <strong>Compartir</strong> y luego <strong>"Agregar a pantalla de inicio"</strong>. La app abrirá directamente en su panel mientras su sesión siga vigente (8 horas).' },
+    { q: '¿Puedo usar el sistema sin conexión a internet?', a: 'No. Por seguridad, las notas y los datos académicos solo se consultan con conexión. Sin internet verá una pantalla de aviso con el botón <strong>"Reintentar"</strong>. Cuando haya una versión nueva del sistema se le avisará y podrá actualizar con un clic.' }
 ];
 
 const AYUDA_ADMIN = [
@@ -19,7 +23,7 @@ const AYUDA_ADMIN = [
     { q: '¿Cómo matriculo a un estudiante en una o varias materias?', a: 'Seleccione <strong>"Matrículas"</strong> → <strong>"Asignar Materia"</strong>. Elija el estudiante (puede filtrar por grado, sección o buscar por nombre), marque <strong>una o varias materias</strong> (puede buscarlas por nombre o código) y presione <strong>"Asignar"</strong>. Las materias en las que ya estaba matriculado se omiten automáticamente.' },
     { q: '¿Qué es la sección "Reportes" y cómo exporto un reporte?', a: 'En <strong>"Reportes"</strong> puede descargar reportes de notas en PDF o Excel de cualquier estudiante o materia. Elija las opciones (estudiante, materia, y opcionalmente grado y sección) y presione <strong>"Exportar"</strong>; luego seleccione el trimestre (uno en particular o todos) y el formato (PDF o Excel). Debe elegir al menos un estudiante o una materia. Debajo del formulario se muestra una vista previa de qué reporte se va a generar.' },
     { q: '¿Qué reporte se genera según lo que elija en "Reportes"?', a: '<strong>Solo estudiante:</strong> boletín completo con todas sus materias. <strong>Estudiante y materia:</strong> reporte individual de ese estudiante en esa materia. <strong>Solo materia:</strong> reporte grupal de todos los matriculados; opcionalmente puede acotarlo a un grado y a una sección (ambos filtros solo aplican cuando no se elige estudiante).' },
-    { q: '¿Cómo restablezco el acceso de un usuario que olvidó su contraseña y sus preguntas de seguridad?', a: 'En <strong>"Usuarios"</strong>, en la tabla de Estudiantes o Profesores, presione el botón <strong>"Restablecer acceso"</strong> (ícono de llave) junto al usuario. Se generará una nueva contraseña inicial y el usuario deberá repetir el cambio de contraseña y la configuración de preguntas de seguridad en su próximo ingreso, como si fuera un usuario nuevo.' } ,
+    { q: '¿Cómo restablezco el acceso de un usuario que olvidó su contraseña y sus preguntas de seguridad?', a: 'En <strong>"Usuarios"</strong>, en la tabla de Estudiantes o Profesores, presione el botón <strong>"Restablecer acceso"</strong> (ícono de llave) junto al usuario. Se generará una nueva contraseña inicial y el usuario deberá repetir el cambio de contraseña y la configuración de preguntas de seguridad en su próximo ingreso, como si fuera un usuario nuevo.' },
     { q: '¿Cómo abro o cierro un trimestre?', a: 'En <strong>"Períodos"</strong> verá una tarjeta por trimestre. Presione <strong>"Cerrar"</strong> o <strong>"Abrir"</strong> para cambiar su estado. Un trimestre cerrado impide a los profesores registrar, editar o eliminar notas; la consulta y la exportación de reportes no se ven afectadas. Las fechas de inicio y fin son solo informativas: el cierre es siempre manual.' }
 ];
 
@@ -83,7 +87,7 @@ function renderAyuda(sections) {
         const itemsHtml = section.items.map(item => `
             <div class="ayuda-item">
                 <div class="ayuda-question" onclick="toggleAyudaItem(this)">
-                    <span>${escapeHtmlAyuda(item.q)}</span>
+                    <span>${escapeHtml(item.q)}</span>
                     <i class="fas fa-chevron-down chevron"></i>
                 </div>
                <div class="ayuda-answer"><div class="ayuda-answer-inner">${item.a}</div></div>
@@ -91,7 +95,7 @@ function renderAyuda(sections) {
         `).join('');
         return `
             <div class="ayuda-section">
-                <div class="ayuda-section-title"><i class="fas ${section.icon}"></i> ${escapeHtmlAyuda(section.title)}</div>
+                <div class="ayuda-section-title"><i class="fas ${section.icon}"></i> ${escapeHtml(section.title)}</div>
                 ${itemsHtml}
             </div>
         `;
@@ -111,13 +115,6 @@ window.toggleAyudaItem = function (questionEl) {
         answer.style.maxHeight = answer.scrollHeight + 'px';
     }
 };
-
-function escapeHtmlAyuda(str) {
-    if (str === null || str === undefined) return '';
-    return String(str).replace(/[&<>"']/g, m => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-    }[m]));
-}
 
 // ==================== BÚSQUEDA ====================
 let allSectionsCache = [];
@@ -153,9 +150,9 @@ async function cargarContactoAdmin(role) {
     try { c = await apiGet('/contacto/admin.php'); } catch (e) { /* usa el texto genérico */ }
 
     const filas = [];
-    if (c.correo)   filas.push(`<strong>Correo:</strong> <a href="mailto:${escapeHtmlAyuda(c.correo)}">${escapeHtmlAyuda(c.correo)}</a>`);
-    if (c.telefono) filas.push(`<strong>Teléfono:</strong> ${escapeHtmlAyuda(c.telefono)}`);
-    if (c.horario)  filas.push(`<strong>Horario:</strong> ${escapeHtmlAyuda(c.horario)}`);
+    if (c.correo)   filas.push(`<strong>Correo:</strong> <a href="mailto:${escapeHtml(c.correo)}">${escapeHtml(c.correo)}</a>`);
+    if (c.telefono) filas.push(`<strong>Teléfono:</strong> ${escapeHtml(c.telefono)}`);
+    if (c.horario)  filas.push(`<strong>Horario:</strong> ${escapeHtml(c.horario)}`);
 
     const detalle = filas.length
         ? filas.join('<br>')

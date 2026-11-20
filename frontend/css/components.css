@@ -1,0 +1,154 @@
+/* ============ Componentes compartidos por todos los paneles ============ */
+
+.view { display: none; }
+.view.active { display: block; }
+
+.page-title {
+    font-family: 'Cinzel', serif; font-size: var(--fs-title); font-weight: 700;
+    color: var(--crimson-deep); letter-spacing: 0.06em; text-transform: uppercase;
+    margin-bottom: 28px; padding-left: 18px; border-left: 4px solid var(--gold);
+}
+.page-title i { color: var(--gold); margin-right: 10px; }
+
+.card {
+    background: white; border-radius: 2px; padding: 28px;
+    border: 1px solid var(--parchment); box-shadow: 0 4px 16px rgba(26,5,5,0.05);
+}
+
+/* ---------- Estadísticas ---------- */
+.stats-grid {
+    display: grid; gap: 20px; margin-bottom: 32px;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+}
+.stat-card {
+    display: flex; align-items: center; gap: 16px; padding: 22px 20px;
+    background: white; border-radius: 2px;
+    border: 1px solid var(--parchment); border-top: 3px solid var(--crimson);
+    box-shadow: 0 4px 20px rgba(26,5,5,0.08);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.stat-card:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(26,5,5,0.12); border-top-color: var(--gold); }
+.stat-icon {
+    width: 60px; height: 60px; flex-shrink: 0; font-size: 36px; color: var(--crimson);
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--ivory-dark), var(--parchment));
+    border: 1px solid rgba(201,168,76,0.2); border-radius: 2px;
+}
+.stat-number { font-family: 'Cinzel', serif; font-size: 34px; font-weight: 700; color: var(--crimson-deep); line-height: 1; }
+.stat-label { font-family: 'Cormorant Garamond', serif; font-size: 14px; color: var(--ink-soft); letter-spacing: 0.04em; margin-top: 4px; }
+
+.welcome-card {
+    position: relative; overflow: hidden; text-align: center;
+    margin-bottom: 24px; padding: 28px;
+    background: linear-gradient(135deg, #2E0808, #1A0505);
+    border: 1px solid rgba(201,168,76,0.25); border-radius: 2px;
+}
+.welcome-card::before { content: '♛'; position: absolute; right: 20px; top: 10px; font-size: 56px; color: rgba(201,168,76,0.07); }
+.welcome-card h3 { font-family: 'Cinzel', serif; font-size: 20px; color: var(--gold-light); letter-spacing: 0.06em; margin-bottom: 10px; }
+.welcome-card p { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 15px; color: rgba(245,230,184,0.65); }
+
+/* ---------- Botones y formularios ---------- */
+.btn-primary {
+    padding: 12px 26px;
+    background: linear-gradient(135deg, var(--crimson-deep), var(--crimson));
+    border: 1px solid var(--gold); border-radius: 2px;
+    font-family: 'Cinzel', serif; font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--gold-pale); cursor: pointer; transition: all 0.22s ease;
+    box-shadow: 0 3px 10px rgba(92,0,0,0.25);
+}
+.btn-primary:hover { background: linear-gradient(135deg, var(--crimson), var(--crimson-light)); transform: translateY(-1px); box-shadow: 0 6px 16px rgba(92,0,0,0.35); }
+
+.form-group { margin-bottom: 18px; }
+.form-group label {
+    display: block; margin-bottom: 6px;
+    font-family: 'Cinzel', serif; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--crimson);
+}
+.form-group input, .form-group select, .form-group textarea, .grade-type-select {
+    width: 100%; padding: 11px 14px;
+    border: 1px solid var(--parchment); border-bottom: 2px solid var(--crimson); border-radius: 2px;
+    font-family: 'EB Garamond', serif; font-size: 15px; color: var(--ink);
+    background: rgba(250,246,238,0.5); outline: none; transition: all 0.2s;
+}
+.form-group textarea { resize: vertical; }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus, .grade-type-select:focus {
+    border-bottom-color: var(--gold); background: white; box-shadow: 0 2px 0 rgba(201,168,76,0.25);
+}
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 480px) { .form-row { grid-template-columns: 1fr; gap: 0; } }
+
+/* ---------- Modales ---------- */
+.modal {
+    display: none; position: fixed; inset: 0; padding: 16px;
+    align-items: center; justify-content: center;
+    background: rgba(26,5,5,0.85); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
+    z-index: 9999;
+}
+.modal.show, .modal[style*="display: flex"] { display: flex !important; }
+
+.modal-content {
+    position: relative; width: 100%; max-width: var(--modal-w, 500px); max-height: 90vh; max-height: 90dvh; overflow-y: auto;
+    padding: 30px; background: var(--ivory); border-radius: 8px;
+    border: 1px solid var(--gold); box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    animation: modalFadeIn 0.3s ease;
+}
+.modal-content h3 { font-family: 'Cinzel', serif; font-size: 16px; letter-spacing: 0.1em; color: var(--crimson-deep); margin-bottom: 20px; }
+
+.close, .modal-content .close {
+    position: absolute; top: 8px; right: 12px; width: 44px; height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; font-weight: bold; line-height: 1; color: var(--gold);
+    background: none; border: none; cursor: pointer; transition: color 0.2s;
+}
+.close:hover, .modal-content .close:hover { color: var(--crimson); }
+
+@keyframes modalFadeIn { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes sheetUp { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* ---------- Comentarios (profesor y estudiante) ---------- */
+.comments-list { display: flex; flex-direction: column; gap: 16px; margin-top: 16px; }
+.comment-card {
+    padding: 20px; background: white; border-radius: 2px;
+    border: 1px solid var(--parchment); border-left: 5px solid var(--crimson);
+    box-shadow: 0 2px 8px rgba(26,5,5,0.04);
+}
+.comment-card .student, .comment-card .subject {
+    font-family: 'Cinzel', serif; font-size: 12px; font-weight: 700; letter-spacing: 0.08em;
+    color: var(--crimson-deep); margin-bottom: 6px;
+}
+.comment-card .subject { font-weight: 600; text-transform: uppercase; }
+.comment-card .comment { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 16px; color: var(--ink-soft); margin-bottom: 8px; }
+.comment-card .date { font-size: 12px; color: #8a7055; letter-spacing: 0.04em; }
+
+/* ---------- Teléfono: modales como hoja inferior y tablas como tarjetas ---------- */
+@media (max-width: 767px) {
+    .modal { padding: 0; align-items: flex-end; }
+    .modal-content {
+        max-width: 100%; max-height: 92vh; max-height: 92dvh; padding: 24px 18px;
+        border-radius: 12px 12px 0 0; animation: sheetUp 0.25s ease;
+    }
+    .card { padding: 16px; }
+    .welcome-card { padding: 22px 16px; }
+
+    /* Cada fila pasa a ser una tarjeta; las etiquetas las pone common.js (data-label) */
+    .data-table, .data-table tbody, .data-table tr, .data-table td,
+    .subjects-table, .subjects-table tbody, .subjects-table tr, .subjects-table td { display: block; width: 100%; }
+
+    .data-table thead, .subjects-table thead {
+        position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+    }
+    .data-table tr, .subjects-table tr { padding: 12px 14px; border-bottom: 1px solid var(--parchment); }
+    .data-table td, .subjects-table td {
+        display: flex; justify-content: space-between; align-items: center; gap: 12px;
+        padding: 6px 0; border: 0; text-align: right; white-space: normal; word-break: break-word;
+    }
+    .data-table td::before, .subjects-table td::before {
+        content: attr(data-label); flex-shrink: 0; text-align: left;
+        font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+        color: var(--crimson);
+    }
+    .data-table td:not([data-label])::before, .subjects-table td:not([data-label])::before,
+    td[data-label="Acciones"]::before { content: none; display: none; }
+    td[data-label="Acciones"] { justify-content: flex-end; padding-top: 10px; }
+    .data-table .empty-row td { display: block; text-align: center; }
+}

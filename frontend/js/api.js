@@ -1,4 +1,7 @@
-const API_URL = 'http://localhost/gestion_escolar/api';
+// La API vive junto al frontend (../api). Funciona en localhost, en la IP de la red local
+// y en producción sin tocar nada. Si algún día la API queda en otro dominio,
+// definir window.SGE_API_URL antes de cargar este archivo.
+const API_URL = (window.SGE_API_URL || new URL('../api', window.location.href).href).replace(/\/$/, '');
 
 async function apiFetch(endpoint, options = {}) {
     const headers = {

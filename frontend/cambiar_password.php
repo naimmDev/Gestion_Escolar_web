@@ -6,12 +6,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cambiar Contraseña — Gestión Escolar</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link rel="stylesheet" href="css/login.css?v=3">
+    <link rel="stylesheet" href="css/base.css?v=1">
+    <link rel="stylesheet" href="css/login.css?v=4">
 </head>
 
 <body>
@@ -37,7 +35,6 @@
                 </div>
                 <button type="submit" class="login-btn"><i class="fas fa-save"></i> Guardar y continuar</button>
 
-                <!-- Botón Más tarde -->
                 <button type="button" class="login-btn" onclick="skipPasswordChange()"
                     style="background: linear-gradient(135deg, #666, #444); margin-top: 10px;">
                     <i class="fas fa-clock"></i> Más tarde
@@ -46,7 +43,9 @@
         </div>
     </div>
     <script src="js/api.js?v=3"></script>
-    <script src="js/cambiar_password.js?v=3"></script>
+    <script src="js/common.js?v=1"></script>
+    <script src="js/cambiar_password.js?v=4"></script>
+    <script src="js/pwa.js" defer></script>
 </body>
 
 </html>
