@@ -201,24 +201,6 @@ function calcularNotaTrimestral(studentId, subjectId, trimestre) {
     return (promParciales + promApreciacion + examen) / 3;
 }
 
-function generarResumenTrimestre(studentId, subjectId, trimestre) {
-    const grades = myGrades.filter(g => g.studentId === studentId && g.subjectId === subjectId && g.trimestre === trimestre);
-    const parciales = grades.filter(g => g.type === 'PARCIAL');
-    const apreciaciones = grades.filter(g => g.type === 'APRECIACION');
-    const examenes = grades.filter(g => g.type === 'EXAMEN_TRIMESTRAL');
-
-    const promParciales = parciales.length ? parciales.reduce((s, g) => s + g.score, 0) / parciales.length : null;
-    const promApreciacion = apreciaciones.length ? apreciaciones.reduce((s, g) => s + g.score, 0) / apreciaciones.length : null;
-    const examen = examenes.length ? examenes[0].score : null;
-
-    let notaTrimestral = null;
-    if (promParciales !== null && promApreciacion !== null && examen !== null) {
-        notaTrimestral = (promParciales + promApreciacion + examen) / 3;
-    }
-
-    return { promParciales, promApreciacion, examen, notaTrimestral };
-}
-
 // ==================== PROMEDIO SIMPLE PARA DASHBOARD ====================
 function calcularPromedioSimple(studentId, subjectId) {
     const grades = myGrades.filter(g => g.studentId === studentId && g.subjectId === subjectId);
@@ -588,12 +570,7 @@ function renderTrimestreContent() {
             </div>
         </div>
     `;
-const resumen = currentTrimestre === 'Todas'
-    ? null
-    : generarResumenTrimestre(currentStudentForModal.id, currentSubjectId, currentTrimestre);
-if (resumen && grades.length > 0) {
-    container.innerHTML += `...`;
-}
+
     if (cerrado) {
         const form = container.querySelector('.add-grade-section');
         if (form) {
@@ -606,7 +583,6 @@ if (resumen && grades.length > 0) {
         }
     }
 }
-
 function renderGradeHistoryItem(grade) {
     let nombreDisplay = grade.nombre;
     if (!nombreDisplay || nombreDisplay.trim() === '') {

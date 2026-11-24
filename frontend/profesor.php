@@ -159,7 +159,7 @@
 <script src="js/common.js?v=1"></script>
 <script src="js/shell.js?v=1"></script>
 <script src="js/reportes.js?v=4"></script>
-<script src="js/profesor.js?v=10"></script>
+<script src="js/profesor.js?v=11"></script>
 <script src="js/pwa.js" defer></script>
 </body>
 </html>
